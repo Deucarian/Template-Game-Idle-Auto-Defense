@@ -1,3 +1,4 @@
+using System.IO;
 using NUnit.Framework;
 using Deucarian.TemplateGameIdleAutoDefense;
 
@@ -16,6 +17,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples.Tests
         {
             IdleAutoDefenseTemplateCompositionSmokeResult result = IdleAutoDefenseTemplateSaveProgressionComposition.RunSmoke();
             Assert.IsTrue(result.Succeeded);
+        }
+
+        [Test]
+        public void SampleSaveResetDeletesTemplateSampleSave()
+        {
+            BasicIdleAutoDefenseSampleSave.Reset();
+            Directory.CreateDirectory(BasicIdleAutoDefenseSampleSave.SaveDirectoryPath);
+            File.WriteAllText(BasicIdleAutoDefenseSampleSave.SaveFilePath, "{}");
+
+            Assert.IsTrue(BasicIdleAutoDefenseSampleSave.HasSave);
+            Assert.IsTrue(BasicIdleAutoDefenseSampleSave.Reset());
+            Assert.IsFalse(BasicIdleAutoDefenseSampleSave.HasSave);
         }
     }
 }

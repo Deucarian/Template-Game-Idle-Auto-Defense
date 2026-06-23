@@ -179,8 +179,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
+        private bool _terminalStateLogged;
 
         public AutoDefenseRuntime Runtime => _runtime;
+        public string RuntimeStateName => RuntimeState.ToString();
         public int SpawnedCount { get; private set; }
         public int DirectOrCombatKillCount { get; private set; }
         public int ProjectileLaunchCount { get; private set; }
@@ -199,6 +201,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public IdleProgressionResultCode LastOfflineRewardCode { get; private set; } = IdleProgressionResultCode.NoElapsedTime;
         public bool EncounterCompleted => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Completed;
         public bool EncounterFailed => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Failed;
+        public string StatusSummary => "State=" + RuntimeState +
+            " Spawned=" + SpawnedCount +
+            " Kills=" + (DirectOrCombatKillCount + ProjectileAdapterKillCount) +
+            " Projectiles=" + ProjectileLaunchCount +
+            " Upgrades=" + SelectedUpgradeCount +
+            " ObjectiveHits=" + ObjectiveDamageEvents;
+
+        private AutoDefenseRuntimeState RuntimeState => _runtime == null ? AutoDefenseRuntimeState.Created : _runtime.State;
 
         private void Awake()
         {
@@ -218,13 +228,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition);
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
 
-            _root = new GameObject("BasicIdleAutoDefenseGame");
-            CreatePrimitive("Template Core", PrimitiveType.Cube, definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
+            _root = new GameObject("Basic Idle Auto Defense Runtime");
+            CreatePrimitive("Central Objective - Template Core", PrimitiveType.Cube, definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
+            CreateSpawnMarkers(definition.SpawnRing.Radius);
             for (int i = 0; i < definition.Mounts.Count; i++)
-                CreatePrimitive(definition.Mounts[i].Id.Value, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
+            {
+                string mountName = definition.Mounts[i].Id.Value.Contains("direct")
+                    ? "Direct Weapon Mount - Close Range"
+                    : "Projectile Weapon Mount - Launcher";
+                CreatePrimitive(mountName, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
+            }
+            CreatePrimitive("Enemy Placeholder Preview - Replace Me", PrimitiveType.Capsule, new Vector3(0f, 0f, -3.25f), new Vector3(0.45f, 0.9f, 0.45f), Color.red);
 
-            _enemyPrefab = CreatePrefab("TemplateIdleEnemyPrefab", PrimitiveType.Capsule, Color.red);
-            _projectilePrefab = CreatePrefab("TemplateIdleProjectilePrefab", PrimitiveType.Sphere, Color.magenta);
+            _enemyPrefab = CreatePrefab("Template Idle Enemy Runtime Prefab", PrimitiveType.Capsule, Color.red);
+            _projectilePrefab = CreatePrefab("Template Idle Projectile Runtime Prefab", PrimitiveType.Sphere, Color.magenta);
 
             var poseResolver = new AutoDefensePerimeterPoseResolver(definition.Objective, definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
@@ -256,6 +273,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _offlineDefinition = BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition();
 
             _runtime.Start();
+            Debug.Log("[Idle Auto Defense Template] Starter scene built. Open the Game view to watch the core, spawn markers, weapon mounts, and placeholder enemies.");
         }
 
         public IdleProgressionResult SimulateOfflineReward(DateTimeOffset lastSeenUtc, DateTimeOffset nowUtc)
@@ -304,6 +322,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _projectileNavigation.Tick((float)(deltaSeconds * ProjectileSpeedMultiplier));
             ApplyDirectDamageBonusIfReady();
             ApplyEncounterRewardIfTerminal();
+            LogTerminalStateIfNeeded();
         }
 
         private void DraftAndApplyUpgradeIfDue(int ticks)
@@ -389,7 +408,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             instance.transform.position = position;
             instance.transform.localScale = scale;
             ApplyColor(instance, color);
+            Collider collider = instance.GetComponent<Collider>();
+            if (collider != null) collider.enabled = false;
             return instance;
+        }
+
+        private void CreateSpawnMarkers(float radius)
+        {
+            CreatePrimitive("Spawn Marker - North Perimeter", PrimitiveType.Cylinder, new Vector3(0f, 0f, radius), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
+            CreatePrimitive("Spawn Marker - East Perimeter", PrimitiveType.Cylinder, new Vector3(radius, 0f, 0f), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
+            CreatePrimitive("Spawn Marker - South Perimeter", PrimitiveType.Cylinder, new Vector3(0f, 0f, -radius), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
+            CreatePrimitive("Spawn Marker - West Perimeter", PrimitiveType.Cylinder, new Vector3(-radius, 0f, 0f), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
+        }
+
+        private void LogTerminalStateIfNeeded()
+        {
+            if (_terminalStateLogged || _runtime == null || _runtime.State == AutoDefenseRuntimeState.Running) return;
+            _terminalStateLogged = true;
+            Debug.Log("[Idle Auto Defense Template] Run ended. " + StatusSummary);
         }
 
         private static void ApplyColor(GameObject instance, Color color)
