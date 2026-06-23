@@ -1,0 +1,29 @@
+{
+  "name": "Deucarian.TemplateGameIdleAutoDefense",
+  "rootNamespace": "Deucarian.TemplateGameIdleAutoDefense",
+  "references": [
+    "Deucarian.AutoDefense",
+    "Deucarian.GameplayFoundation",
+    "Deucarian.Encounters",
+    "Deucarian.Combat",
+    "Deucarian.DefenseGames",
+    "Deucarian.WorldSpawning",
+    "Deucarian.WorldNavigation",
+    "Deucarian.Attacks",
+    "Deucarian.Projectiles",
+    "Deucarian.WeaponSystems",
+    "Deucarian.RunUpgrades",
+    "Deucarian.IdleProgression",
+    "Deucarian.Progression",
+    "Deucarian.Persistence"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

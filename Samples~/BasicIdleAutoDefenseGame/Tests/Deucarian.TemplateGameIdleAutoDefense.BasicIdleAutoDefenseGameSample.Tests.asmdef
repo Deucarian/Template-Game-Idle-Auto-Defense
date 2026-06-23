@@ -1,0 +1,24 @@
+{
+  "name": "Deucarian.TemplateGameIdleAutoDefense.BasicIdleAutoDefenseGameSample.Tests",
+  "rootNamespace": "Deucarian.TemplateGameIdleAutoDefense.Samples.Tests",
+  "references": [
+    "Deucarian.TemplateGameIdleAutoDefense",
+    "Deucarian.TemplateGameIdleAutoDefense.BasicIdleAutoDefenseGameSample"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "noEngineReferences": false
+}

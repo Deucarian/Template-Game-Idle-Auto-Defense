@@ -1,0 +1,29 @@
+{
+  "name": "com.deucarian.template.game.idle-auto-defense",
+  "version": "0.1.0",
+  "displayName": "Deucarian Template Game - Idle Auto Defense",
+  "description": "Starter Unity game template for an idle auto-defense loop built on the Deucarian Auto Defense Suite.",
+  "unity": "6000.3",
+  "author": {
+    "name": "Deucarian"
+  },
+  "license": "MIT",
+  "keywords": [
+    "deucarian",
+    "template",
+    "game",
+    "idle",
+    "auto-defense",
+    "tower-defense"
+  ],
+  "dependencies": {
+    "com.deucarian.auto-defense-suite": "0.1.0"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Idle Auto Defense Game",
+      "description": "A deterministic starter scene with a central objective, perimeter spawns, direct and projectile weapons, upgrades, save/load, offline rewards, and placeholder primitives.",
+      "path": "Samples~/BasicIdleAutoDefenseGame"
+    }
+  ]
+}

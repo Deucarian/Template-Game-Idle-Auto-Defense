@@ -1,0 +1,38 @@
+{
+  "objective": {
+    "id": "template-core",
+    "maximumHealth": 28,
+    "lives": 3,
+    "contactRadius": 0.45
+  },
+  "spawnRing": {
+    "radius": 7,
+    "channels": [
+      "perimeter-north",
+      "perimeter-east",
+      "perimeter-south",
+      "perimeter-west"
+    ]
+  },
+  "weapons": [
+    {
+      "id": "weapon.template.direct",
+      "mode": "direct"
+    },
+    {
+      "id": "weapon.template.projectile",
+      "mode": "projectile"
+    }
+  ],
+  "upgrades": [
+    "upgrade.template.direct.damage",
+    "upgrade.template.projectile.speed",
+    "upgrade.template.objective.repair",
+    "upgrade.template.enemy.pacing"
+  ],
+  "offlineReward": {
+    "maxHours": 8,
+    "creditsPerSecond": 0.25,
+    "partsEveryMinutes": 5
+  }
+}
