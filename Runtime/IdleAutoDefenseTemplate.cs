@@ -7,6 +7,7 @@ using Deucarian.Combat;
 using Deucarian.DefenseGames;
 using Deucarian.Encounters;
 using Deucarian.IdleProgression;
+using Deucarian.Monetization;
 using Deucarian.Persistence;
 using Deucarian.Progression;
 using Deucarian.Projectiles;
@@ -159,6 +160,61 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         }
     }
 
+    public static class IdleAutoDefenseTemplateMonetization
+    {
+        private const string InterstitialCooldownGroup = "template.interstitial.global";
+
+        public static readonly MonetizationPlacementId DoubleRunReward = new MonetizationPlacementId("template.rewarded.double-run-reward");
+        public static readonly MonetizationPlacementId ReviveAfterFailure = new MonetizationPlacementId("template.rewarded.revive-after-failure");
+        public static readonly MonetizationPlacementId RerollUpgradeDraft = new MonetizationPlacementId("template.rewarded.reroll-upgrade-draft");
+        public static readonly MonetizationPlacementId DoubleOfflineReward = new MonetizationPlacementId("template.rewarded.double-offline-reward");
+        public static readonly MonetizationPlacementId SmallCurrencyBonus = new MonetizationPlacementId("template.rewarded.small-currency-bonus");
+        public static readonly MonetizationPlacementId InterstitialAfterRunCompletion = new MonetizationPlacementId("template.interstitial.after-run-completion");
+        public static readonly MonetizationPlacementId InterstitialAfterRunFailure = new MonetizationPlacementId("template.interstitial.after-run-failure");
+
+        public static MonetizationPlacementPolicy[] CreatePlacementPolicies()
+        {
+            return new[]
+            {
+                Rewarded(DoubleOfflineReward, TimeSpan.FromSeconds(10), 6),
+                Rewarded(RerollUpgradeDraft, TimeSpan.FromSeconds(20), 8),
+                Rewarded(ReviveAfterFailure, TimeSpan.FromSeconds(30), 1),
+                Rewarded(DoubleRunReward, TimeSpan.FromSeconds(10), 6),
+                Rewarded(SmallCurrencyBonus, TimeSpan.FromSeconds(20), 5),
+                Interstitial(InterstitialAfterRunCompletion),
+                Interstitial(InterstitialAfterRunFailure)
+            };
+        }
+
+        public static MonetizationSession CreateMockSession()
+        {
+            return new MonetizationSession(CreatePlacementPolicies(), new MockMonetizationProvider());
+        }
+
+        public static MonetizationSession CreateNoOpSession()
+        {
+            return new MonetizationSession(CreatePlacementPolicies(), new NoOpMonetizationProvider());
+        }
+
+        private static MonetizationPlacementPolicy Rewarded(MonetizationPlacementId id, TimeSpan cooldown, int sessionCap)
+        {
+            return new MonetizationPlacementPolicy(id, MonetizationPlacementKind.Rewarded, cooldown, sessionCap);
+        }
+
+        private static MonetizationPlacementPolicy Interstitial(MonetizationPlacementId id)
+        {
+            return new MonetizationPlacementPolicy(
+                id,
+                MonetizationPlacementKind.Interstitial,
+                TimeSpan.FromSeconds(120),
+                sessionCap: 3,
+                blockBeforeFirstCompletedOrFailedRun: true,
+                blockDuringCombat: true,
+                blockWhenNoAdsEntitled: true,
+                cooldownGroup: InterstitialCooldownGroup);
+        }
+    }
+
     public class IdleAutoDefenseTemplateController : MonoBehaviour
     {
         private readonly SpawnRequest[] _spawnBuffer = new SpawnRequest[16];
@@ -180,8 +236,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject _projectilePrefab;
         private GameObject _root;
         private bool _terminalStateLogged;
+        private MonetizationSession _monetizationSession;
 
         public AutoDefenseRuntime Runtime => _runtime;
+        public MonetizationSession MonetizationSession
+        {
+            get => _monetizationSession ??= IdleAutoDefenseTemplateMonetization.CreateMockSession();
+            set => _monetizationSession = value;
+        }
+
         public string RuntimeStateName => RuntimeState.ToString();
         public int SpawnedCount { get; private set; }
         public int DirectOrCombatKillCount { get; private set; }
@@ -199,6 +262,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public long EncounterRewardCredits { get; private set; }
         public long EncounterRewardParts { get; private set; }
         public IdleProgressionResultCode LastOfflineRewardCode { get; private set; } = IdleProgressionResultCode.NoElapsedTime;
+        public bool ReviveOfferAccepted { get; private set; }
         public bool EncounterCompleted => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Completed;
         public bool EncounterFailed => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Failed;
         public string StatusSummary => "State=" + RuntimeState +
@@ -289,6 +353,90 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             OfflineRewardCredits = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value;
             OfflineRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
             return result;
+        }
+
+        public MonetizationAvailability ResolveMonetizationAvailability(
+            MonetizationPlacementId placementId,
+            MonetizationPlacementKind kind,
+            DateTimeOffset nowUtc)
+        {
+            return MonetizationSession.GetAvailability(placementId, kind, CreateMonetizationContext(nowUtc));
+        }
+
+        public MonetizationResult OfferDoubleOfflineReward(RewardClaimId claimId, DateTimeOffset nowUtc)
+        {
+            MonetizationResult result = MonetizationSession.ShowRewarded(
+                IdleAutoDefenseTemplateMonetization.DoubleOfflineReward,
+                claimId,
+                CreateMonetizationContext(nowUtc));
+            if (result.Succeeded)
+            {
+                OfflineRewardCredits += OfflineRewardCredits;
+                OfflineRewardParts += OfflineRewardParts;
+            }
+
+            return result;
+        }
+
+        public MonetizationResult OfferUpgradeDraftReroll(RewardClaimId claimId, DateTimeOffset nowUtc)
+        {
+            if (_runtime == null) Build();
+            MonetizationResult result = MonetizationSession.ShowRewarded(
+                IdleAutoDefenseTemplateMonetization.RerollUpgradeDraft,
+                claimId,
+                CreateMonetizationContext(nowUtc));
+            if (result.Succeeded && _upgradeCatalog != null)
+            {
+                _currentDraft = RunUpgradeDraftService.Generate(
+                    _upgradeCatalog,
+                    _upgradeState,
+                    new RunUpgradeDraftRequest(3, 20260623 + Math.Max(1, DraftTickCount)));
+            }
+
+            return result;
+        }
+
+        public MonetizationResult OfferReviveAfterFailure(RewardClaimId claimId, DateTimeOffset nowUtc)
+        {
+            MonetizationResult result = MonetizationSession.ShowRewarded(
+                IdleAutoDefenseTemplateMonetization.ReviveAfterFailure,
+                claimId,
+                CreateMonetizationContext(nowUtc));
+            if (result.Succeeded) ReviveOfferAccepted = true;
+            return result;
+        }
+
+        public MonetizationResult OfferDoubleRunReward(RewardClaimId claimId, DateTimeOffset nowUtc)
+        {
+            MonetizationResult result = MonetizationSession.ShowRewarded(
+                IdleAutoDefenseTemplateMonetization.DoubleRunReward,
+                claimId,
+                CreateMonetizationContext(nowUtc));
+            if (result.Succeeded)
+            {
+                EncounterRewardCredits += EncounterRewardCredits;
+                EncounterRewardParts += EncounterRewardParts;
+            }
+
+            return result;
+        }
+
+        public MonetizationResult OfferSmallCurrencyBonus(RewardClaimId claimId, DateTimeOffset nowUtc)
+        {
+            MonetizationResult result = MonetizationSession.ShowRewarded(
+                IdleAutoDefenseTemplateMonetization.SmallCurrencyBonus,
+                claimId,
+                CreateMonetizationContext(nowUtc));
+            if (result.Succeeded) EncounterRewardCredits += 5;
+            return result;
+        }
+
+        public MonetizationResult TryShowTransitionInterstitial(bool afterFailure, DateTimeOffset nowUtc)
+        {
+            MonetizationPlacementId placementId = afterFailure
+                ? IdleAutoDefenseTemplateMonetization.InterstitialAfterRunFailure
+                : IdleAutoDefenseTemplateMonetization.InterstitialAfterRunCompletion;
+            return MonetizationSession.ShowInterstitial(placementId, CreateMonetizationContext(nowUtc));
         }
 
         public void Step(int ticks, float deltaSeconds)
@@ -426,6 +574,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (_terminalStateLogged || _runtime == null || _runtime.State == AutoDefenseRuntimeState.Running) return;
             _terminalStateLogged = true;
             Debug.Log("[Idle Auto Defense Template] Run ended. " + StatusSummary);
+        }
+
+        private MonetizationFlowContext CreateMonetizationContext(DateTimeOffset nowUtc)
+        {
+            bool inCombat = _runtime != null && _runtime.State == AutoDefenseRuntimeState.Running;
+            int terminalRuns = EncounterCompleted || EncounterFailed ? 1 : 0;
+            return new MonetizationFlowContext(nowUtc, inCombat, terminalRuns);
         }
 
         private static void ApplyColor(GameObject instance, Color color)

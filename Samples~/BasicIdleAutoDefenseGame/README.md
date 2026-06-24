@@ -14,7 +14,7 @@ The scene contains a bootstrap object that creates:
 - one direct weapon mount
 - one projectile weapon mount
 - deterministic run upgrade drafts
-- save/load, offline reward, progression reward, sample save reset, and corrupted save recovery smoke paths
+- save/load, offline reward, mock monetization offers, progression reward, sample save reset, and corrupted save recovery smoke paths
 - a small on-screen status panel with save/reset buttons
 
 All visible gameplay objects are primitive placeholders. Replace them with real content in the `Prefabs` and `Content` folders when turning the template into a production game.
@@ -24,6 +24,13 @@ All visible gameplay objects are primitive placeholders. Replace them with real 
 ```text
 Basic Idle Auto Defense Game
 ├── Content
+│   ├── DefaultBalance
+│   ├── DefaultEnemies
+│   ├── DefaultWeapons
+│   ├── DefaultWaves
+│   ├── DefaultUpgrades
+│   ├── DefaultProgression
+│   ├── DefaultMonetization
 │   └── starter-content.json
 ├── Prefabs
 │   └── README.md

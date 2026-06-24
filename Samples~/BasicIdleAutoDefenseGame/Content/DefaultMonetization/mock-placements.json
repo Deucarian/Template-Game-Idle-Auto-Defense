@@ -1,0 +1,72 @@
+{
+  "provider": "mock",
+  "realSdksIncluded": false,
+  "rewardedPlacements": [
+    {
+      "id": "template.rewarded.double-run-reward",
+      "purpose": "Optional 2x run reward after win/fail reward application",
+      "cooldownSeconds": 10,
+      "sessionCap": 6
+    },
+    {
+      "id": "template.rewarded.revive-after-failure",
+      "purpose": "Optional revive offer after failure",
+      "cooldownSeconds": 30,
+      "sessionCap": 1
+    },
+    {
+      "id": "template.rewarded.reroll-upgrade-draft",
+      "purpose": "Optional run-upgrade draft reroll",
+      "cooldownSeconds": 20,
+      "sessionCap": 8
+    },
+    {
+      "id": "template.rewarded.double-offline-reward",
+      "purpose": "Optional 2x offline reward claim",
+      "cooldownSeconds": 10,
+      "sessionCap": 6
+    },
+    {
+      "id": "template.rewarded.small-currency-bonus",
+      "purpose": "Optional small credits bonus",
+      "cooldownSeconds": 20,
+      "sessionCap": 5
+    }
+  ],
+  "interstitialPlacements": [
+    {
+      "id": "template.interstitial.after-run-completion",
+      "purpose": "Transition-only interstitial after run completion",
+      "cooldownGroup": "template.interstitial.global",
+      "cooldownSeconds": 120,
+      "sessionCap": 3,
+      "blockedDuringCombat": true,
+      "blockedBeforeFirstTerminalRun": true,
+      "blockedByNoAdsEntitlement": true
+    },
+    {
+      "id": "template.interstitial.after-run-failure",
+      "purpose": "Transition-only interstitial after run failure",
+      "cooldownGroup": "template.interstitial.global",
+      "cooldownSeconds": 120,
+      "sessionCap": 3,
+      "blockedDuringCombat": true,
+      "blockedBeforeFirstTerminalRun": true,
+      "blockedByNoAdsEntitlement": true
+    }
+  ],
+  "iapPlaceholders": [
+    {
+      "id": "template.iap.no-forced-ads",
+      "purpose": "Placeholder entitlement that blocks forced interstitials"
+    },
+    {
+      "id": "template.iap.starter-pack",
+      "purpose": "Starter pack placeholder, no real billing"
+    },
+    {
+      "id": "template.iap.currency-pack",
+      "purpose": "Currency pack placeholder, no real billing"
+    }
+  ]
+}

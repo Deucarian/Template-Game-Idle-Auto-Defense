@@ -18,6 +18,7 @@ The pack mirrors the values used by `BasicIdleAutoDefenseGame` and `IdleAutoDefe
 | `DefaultWaves` | Starter encounter, wave, spawn groups, channels, and timing. |
 | `DefaultUpgrades` | Run upgrade IDs, effects, ranks, rarity, and draft settings. |
 | `DefaultProgression` | Currencies, rewards, idle/offline rates, and sample save DTO documents. |
+| `DefaultMonetization` | Mock rewarded, interstitial, and IAP placeholder placement IDs and pacing values. |
 
 ## Starter Values
 
@@ -29,6 +30,9 @@ The pack mirrors the values used by `BasicIdleAutoDefenseGame` and `IdleAutoDefe
 - Run upgrades: direct damage, projectile speed, objective repair, enemy pacing.
 - Encounter reward: 25 credits and 1 part.
 - Offline reward: 0.25 credits per second, 1 part every 5 minutes, capped at 8 hours.
+- Rewarded placements: double run reward, revive once after failure, reroll upgrade draft, 2x offline reward claim, and small optional currency bonus.
+- Interstitial placements: after run completion and after run failure, transition-only, never during combat, never before the first terminal run, global 120 second cooldown, and 3 per-session cap.
+- IAP placeholders: no forced ads entitlement, starter pack, and currency pack. These are placeholders only and do not include billing.
 - Save documents: profile, run resume, settings, with a profile migration smoke.
 
 These values are intentionally readable rather than commercially tuned. They make the starter scene run immediately and provide a coherent first place to edit.

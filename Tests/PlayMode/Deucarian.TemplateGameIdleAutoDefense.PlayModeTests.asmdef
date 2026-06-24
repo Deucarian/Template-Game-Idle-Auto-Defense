@@ -4,7 +4,8 @@
   "references": [
     "Deucarian.TemplateGameIdleAutoDefense",
     "Deucarian.AutoDefense",
-    "Deucarian.IdleProgression"
+    "Deucarian.IdleProgression",
+    "Deucarian.Monetization"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

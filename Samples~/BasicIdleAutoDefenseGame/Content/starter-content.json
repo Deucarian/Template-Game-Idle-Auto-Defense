@@ -7,7 +7,8 @@
     "weapons": "Content/DefaultWeapons/default-weapons.json",
     "waves": "Content/DefaultWaves/basic-encounter.json",
     "upgrades": "Content/DefaultUpgrades/common-run-upgrades.json",
-    "progression": "Content/DefaultProgression/currencies-rewards-saves.json"
+    "progression": "Content/DefaultProgression/currencies-rewards-saves.json",
+    "monetization": "Content/DefaultMonetization/mock-placements.json"
   },
   "objective": {
     "id": "template-core",

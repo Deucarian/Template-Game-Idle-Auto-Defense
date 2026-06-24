@@ -15,7 +15,8 @@
     "Deucarian.RunUpgrades",
     "Deucarian.IdleProgression",
     "Deucarian.Progression",
-    "Deucarian.Persistence"
+    "Deucarian.Persistence",
+    "Deucarian.Monetization"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

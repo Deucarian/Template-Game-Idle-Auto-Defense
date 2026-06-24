@@ -7,7 +7,8 @@
     "Deucarian.DefenseGames",
     "Deucarian.RunUpgrades",
     "Deucarian.IdleProgression",
-    "Deucarian.Progression"
+    "Deucarian.Progression",
+    "Deucarian.Monetization"
   ],
   "includePlatforms": [
     "Editor"

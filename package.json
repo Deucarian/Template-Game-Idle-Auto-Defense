@@ -17,7 +17,8 @@
     "tower-defense"
   ],
   "dependencies": {
-    "com.deucarian.auto-defense-suite": "0.1.0"
+    "com.deucarian.auto-defense-suite": "0.1.0",
+    "com.deucarian.monetization": "0.1.0"
   },
   "samples": [
     {

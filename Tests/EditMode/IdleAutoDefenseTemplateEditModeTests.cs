@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using Deucarian.AutoDefense;
 using Deucarian.IdleProgression;
+using Deucarian.Monetization;
 using Deucarian.Progression;
 using Deucarian.RunUpgrades;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 {
@@ -95,7 +97,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
 
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "Boot");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "resolve monetization availability");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultBalance");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultMonetization");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "override-guide.md"), "Copy `Samples~/BasicIdleAutoDefenseGame/Content`");
 
             string contentRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Content");
@@ -105,6 +109,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertDirectoryExists(Path.Combine(contentRoot, "DefaultWaves"));
             AssertDirectoryExists(Path.Combine(contentRoot, "DefaultUpgrades"));
             AssertDirectoryExists(Path.Combine(contentRoot, "DefaultProgression"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultMonetization"));
 
             AssertFileContains(Path.Combine(contentRoot, "DefaultBalance", "objective-and-loop.json"), "template-core");
             AssertFileContains(Path.Combine(contentRoot, "DefaultEnemies", "basic-idle-enemy.json"), "enemy.template.basic");
@@ -112,6 +117,142 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "DefaultWaves", "basic-encounter.json"), "wave.template.basic");
             AssertFileContains(Path.Combine(contentRoot, "DefaultUpgrades", "common-run-upgrades.json"), "upgrade.template.direct.damage");
             AssertFileContains(Path.Combine(contentRoot, "DefaultProgression", "currencies-rewards-saves.json"), "saveDocuments");
+            AssertFileContains(Path.Combine(contentRoot, "DefaultMonetization", "mock-placements.json"), "template.rewarded.double-offline-reward");
+        }
+
+        [Test]
+        public void TemplateOfflineDoubleRewardOfferUsesMockPlacement()
+        {
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                controller.SimulateOfflineReward(DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1));
+                long credits = controller.OfflineRewardCredits;
+                long parts = controller.OfflineRewardParts;
+                Assert.That(credits, Is.GreaterThan(0));
+                Assert.That(parts, Is.GreaterThan(0));
+
+                MonetizationResult result = controller.OfferDoubleOfflineReward(
+                    new RewardClaimId("template.test.offline.2x"),
+                    DateTimeOffset.UnixEpoch.AddHours(1));
+
+                Assert.AreEqual(MonetizationResultCode.Success, result.Code);
+                Assert.AreEqual(credits * 2, controller.OfflineRewardCredits);
+                Assert.AreEqual(parts * 2, controller.OfflineRewardParts);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void TemplateRerollOfferUsesMockPlacement()
+        {
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                MonetizationResult result = controller.OfferUpgradeDraftReroll(
+                    new RewardClaimId("template.test.reroll"),
+                    DateTimeOffset.UnixEpoch.AddMinutes(1));
+
+                Assert.AreEqual(MonetizationResultCode.Success, result.Code);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void TemplateReviveOfferUsesMockPlacement()
+        {
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                MonetizationResult result = controller.OfferReviveAfterFailure(
+                    new RewardClaimId("template.test.revive"),
+                    DateTimeOffset.UnixEpoch.AddMinutes(2));
+
+                Assert.AreEqual(MonetizationResultCode.Success, result.Code);
+                Assert.IsTrue(controller.ReviveOfferAccepted);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void TemplateDoubleRewardOfferUsesMockPlacement()
+        {
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                StepToTerminal(controller);
+                long credits = controller.EncounterRewardCredits;
+                long parts = controller.EncounterRewardParts;
+                Assert.That(credits, Is.GreaterThan(0));
+                Assert.That(parts, Is.GreaterThan(0));
+
+                MonetizationResult result = controller.OfferDoubleRunReward(
+                    new RewardClaimId("template.test.run.2x"),
+                    DateTimeOffset.UnixEpoch.AddMinutes(3));
+
+                Assert.AreEqual(MonetizationResultCode.Success, result.Code);
+                Assert.AreEqual(credits * 2, controller.EncounterRewardCredits);
+                Assert.AreEqual(parts * 2, controller.EncounterRewardParts);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void TemplateStillRunsWithNoOpProvider()
+        {
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                controller.MonetizationSession = IdleAutoDefenseTemplateMonetization.CreateNoOpSession();
+                StepToTerminal(controller);
+
+                MonetizationResult bonus = controller.OfferSmallCurrencyBonus(
+                    new RewardClaimId("template.test.noop.bonus"),
+                    DateTimeOffset.UnixEpoch.AddMinutes(4));
+
+                Assert.IsTrue(controller.EncounterCompleted || controller.EncounterFailed);
+                Assert.AreEqual(MonetizationResultCode.NoOp, bonus.Code);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void TemplateTransitionInterstitialUsesMockPlacementAndPacing()
+        {
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                StepToTerminal(controller);
+
+                MonetizationResult first = controller.TryShowTransitionInterstitial(
+                    afterFailure: false,
+                    DateTimeOffset.UnixEpoch.AddMinutes(5));
+                MonetizationResult second = controller.TryShowTransitionInterstitial(
+                    afterFailure: true,
+                    DateTimeOffset.UnixEpoch.AddMinutes(5).AddSeconds(30));
+
+                Assert.AreEqual(MonetizationResultCode.Success, first.Code);
+                Assert.AreEqual(MonetizationResultCode.CooldownActive, second.Code);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
         }
 
         private static void AssertDirectoryExists(string path)
@@ -123,6 +264,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             Assert.IsTrue(File.Exists(path), "Expected file to exist: " + path);
             StringAssert.Contains(expected, File.ReadAllText(path));
+        }
+
+        private static IdleAutoDefenseTemplateController CreateController()
+        {
+            GameObject host = new GameObject("idle-auto-defense-template-editmode");
+            return host.AddComponent<IdleAutoDefenseTemplateController>();
+        }
+
+        private static void StepToTerminal(IdleAutoDefenseTemplateController controller)
+        {
+            controller.Build();
+            for (int i = 0; i < 240; i++)
+                controller.Step(1, 0.05f);
+            Assert.IsTrue(controller.EncounterCompleted || controller.EncounterFailed);
+        }
+
+        private static void DestroyController(IdleAutoDefenseTemplateController controller)
+        {
+            if (controller != null)
+                UnityEngine.Object.DestroyImmediate(controller.gameObject);
         }
     }
 }

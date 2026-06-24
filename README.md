@@ -4,7 +4,7 @@ Package ID: `com.deucarian.template.game.idle-auto-defense`
 
 Version: `0.1.1`
 
-This package is a starter Unity game template for an idle auto-defense loop. It depends only on `com.deucarian.auto-defense-suite`; reusable gameplay systems stay in the suite packages, while this package owns starter-game glue, sample content, and developer-facing setup helpers.
+This package is a starter Unity game template for an idle auto-defense loop. It depends on `com.deucarian.auto-defense-suite` and `com.deucarian.monetization`; reusable gameplay and monetization abstractions stay in Deucarian packages, while this package owns starter-game glue, sample content, placement hooks, and developer-facing setup helpers.
 
 ## Quick Start
 
@@ -26,6 +26,7 @@ The starter scene shows a central core, perimeter spawn markers, a direct weapon
 - One direct weapon mount and one projectile weapon mount.
 - Deterministic upgrade drafts with at least three choices.
 - Offline reward calculation.
+- Mock/no-op rewarded and interstitial placement hooks with no real ad SDKs.
 - Progression currency reward application.
 - Save/load, missing-save defaults, corrupted-save recovery, and migration smoke coverage.
 - A sample-local save snapshot and reset flow.
@@ -43,6 +44,7 @@ After importing the sample, start here:
 - `Content/DefaultWaves`: starter encounter and wave groups.
 - `Content/DefaultUpgrades`: common run upgrades.
 - `Content/DefaultProgression`: currencies, rewards, offline rewards, and save DTO setup.
+- `Content/DefaultMonetization`: mock rewarded/interstitial placements and IAP placeholders.
 - `Scripts/BasicIdleAutoDefenseGameBootstrap.cs`: sample UI, sample save snapshot, and the first place to add project-specific scene glue.
 - `Prefabs/`: place your real core, enemy, weapon, and projectile prefabs here.
 - `Scenes/BasicIdleAutoDefenseGame.unity`: duplicate this scene before making production changes.
@@ -120,6 +122,7 @@ Basic Idle Auto Defense Game
 │   ├── DefaultWaves
 │   ├── DefaultUpgrades
 │   ├── DefaultProgression
+│   ├── DefaultMonetization
 │   └── starter-content.json
 ├── Prefabs
 │   └── README.md
@@ -147,5 +150,6 @@ Package tests live under `Tests/EditMode` and `Tests/PlayMode`. The sample also 
 
 ```text
 com.deucarian.template.game.idle-auto-defense
-└── com.deucarian.auto-defense-suite
+├── com.deucarian.auto-defense-suite
+└── com.deucarian.monetization
 ```
