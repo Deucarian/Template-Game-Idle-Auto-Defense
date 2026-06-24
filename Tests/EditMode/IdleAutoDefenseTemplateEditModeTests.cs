@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
 using Deucarian.Encounters;
 using Deucarian.IdleProgression;
@@ -29,6 +30,196 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsTrue(definition.Mounts[1].HasWeapon);
             Assert.AreEqual(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId, definition.Enemies[0].SpawnableId);
             Assert.AreEqual(BasicIdleAutoDefenseGame.BossEnemySpawnableId, definition.Enemies[5].SpawnableId);
+        }
+
+        [Test]
+        public void EnemyAndWaveRecipesCreateRuntimeDefinitions()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+
+            Assert.AreEqual(6, enemies.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value, enemies[0].Id);
+            Assert.AreEqual(EnemyRole.Fast, enemies[1].Role);
+            Assert.AreEqual(EnemyRole.Boss, enemies[5].Role);
+            Assert.AreEqual(6, BasicIdleAutoDefenseGame.CreateAutoDefenseEnemyDefinitions(enemies).Length);
+
+            Assert.AreEqual(2, waves.Length);
+            Assert.AreEqual("wave.template.first-orbit.opening", waves[0].Id);
+            Assert.AreEqual("wave.template.first-orbit.pressure", waves[1].Id);
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateEncounterWaves(waves).Length);
+            Assert.AreEqual(2, waves[1].Entries.Entries.Count);
+        }
+
+        [Test]
+        public void AttackRecipesCreateRuntimeDefinitionsAndProjectiles()
+        {
+            AttackDefinitionAsset[] recipes = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+
+            Assert.AreEqual(2, recipes.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseAttackId.Value, recipes[0].Id);
+            Assert.AreEqual(AttackRecipeDeliveryMode.Hitscan, recipes[0].Delivery.Mode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardAttackId.Value, recipes[1].Id);
+            Assert.AreEqual(AttackRecipeDeliveryMode.Projectile, recipes[1].Delivery.Mode);
+
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateAttackDefinitions(recipes).Length);
+            Assert.AreEqual(1, BasicIdleAutoDefenseGame.CreateProjectileDefinitions(recipes).Length);
+            Assert.AreEqual(0, recipes[1].CreateStatusDefinitions().Length);
+        }
+
+        [Test]
+        public void AssignedAttackRecipesFallBackWhenRequiredTemplateIdsAreMissing()
+        {
+            AttackDefinitionAsset customOnly = AttackDefinitionAsset.CreateTransient(
+                "attack.custom.only",
+                "Custom Only",
+                AttackRecipeDeliveryMode.Hitscan,
+                BasicIdleAutoDefenseGame.DamageType.Value,
+                3,
+                0,
+                5,
+                AttackRecipeTargetingMode.Nearest);
+
+            AttackDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(new[] { customOnly, null }, out int rejectedRecipeCount);
+
+            Assert.That(rejectedRecipeCount, Is.GreaterThan(0));
+            Assert.AreEqual(2, resolved.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseAttackId.Value, resolved[0].Id);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardAttackId.Value, resolved[1].Id);
+        }
+
+        [Test]
+        public void AssignedEnemyDefinitionsFallBackWhenRequiredTemplateIdsAreMissing()
+        {
+            EnemyDefinitionAsset customOnly = EnemyDefinitionAsset.CreateTransient(
+                "enemy.custom.only",
+                "Custom Only",
+                EnemyRole.Basic,
+                9f,
+                2f,
+                1,
+                3f,
+                BasicIdleAutoDefenseGame.DamageType.Value,
+                prefab: new GameObject("custom-enemy-prefab"));
+
+            try
+            {
+                EnemyDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(new[] { customOnly, null }, out int rejectedDefinitionCount);
+
+                Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+                Assert.AreEqual(6, resolved.Length);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value, resolved[0].Id);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.BossEnemySpawnableId.Value, resolved[5].Id);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(customOnly.Presentation.Prefab);
+            }
+        }
+
+        [Test]
+        public void AssignedWaveDefinitionsFallBackWhenEnemyReferencesAreMissing()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            EnemyDefinitionAsset missingEnemy = EnemyDefinitionAsset.CreateTransient(
+                "enemy.custom.missing",
+                "Missing",
+                EnemyRole.Basic,
+                5f,
+                2f,
+                1,
+                2f,
+                BasicIdleAutoDefenseGame.DamageType.Value);
+            WaveDefinitionAsset invalidWave = WaveDefinitionAsset.CreateTransient(
+                "wave.custom.invalid",
+                "Invalid",
+                0,
+                new[] { new WaveEntryRecipe(missingEnemy, 2, 1, 0, 10, "perimeter-north") });
+
+            WaveDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(new[] { invalidWave }, enemies, out int rejectedDefinitionCount);
+
+            Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+            Assert.AreEqual(2, resolved.Length);
+            Assert.AreEqual("wave.template.first-orbit.opening", resolved[0].Id);
+            Assert.AreEqual("wave.template.first-orbit.pressure", resolved[1].Id);
+        }
+
+        [Test]
+        public void ValidAssignedAuthoredContentResolvesWithoutFallback()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
+            WaveDefinitionAsset[] waves = CreateAssignedTemplateWaves(enemies);
+
+            try
+            {
+                AttackDefinitionAsset[] resolvedAttacks = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(attacks, out int rejectedRecipeCount);
+                EnemyDefinitionAsset[] resolvedEnemies = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(enemies, out int rejectedEnemyCount);
+                WaveDefinitionAsset[] resolvedWaves = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(waves, resolvedEnemies, out int rejectedWaveCount);
+
+                Assert.AreEqual(0, rejectedRecipeCount);
+                Assert.AreEqual(0, rejectedEnemyCount);
+                Assert.AreEqual(0, rejectedWaveCount);
+                Assert.AreEqual(2, resolvedAttacks.Length);
+                Assert.AreEqual(6, resolvedEnemies.Length);
+                Assert.AreEqual(2, resolvedWaves.Length);
+                Assert.AreSame(enemies[5], resolvedEnemies[5]);
+                Assert.AreSame(waves[1], resolvedWaves[1]);
+            }
+            finally
+            {
+                DestroyEnemyPrefabs(enemies);
+            }
+        }
+
+        [Test]
+        public void AssignedEnemyDefinitionsRejectDuplicatesAndFallbackWhenIncomplete()
+        {
+            EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
+            try
+            {
+                enemies[5].Configure(
+                    BasicIdleAutoDefenseGame.RunnerEnemySpawnableId.Value,
+                    "Duplicate Runner",
+                    null,
+                    EnemyRole.Boss,
+                    Array.Empty<string>(),
+                    enemies[5].Stats,
+                    enemies[5].Presentation);
+
+                EnemyDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(enemies, out int rejectedDefinitionCount);
+
+                Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+                Assert.AreEqual(6, resolved.Length);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.BossEnemySpawnableId.Value, resolved[5].Id);
+                Assert.AreNotSame(enemies[5], resolved[5]);
+            }
+            finally
+            {
+                DestroyEnemyPrefabs(enemies);
+            }
+        }
+
+        [Test]
+        public void AssignedWaveDefinitionsRejectDuplicateIds()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset first = WaveDefinitionAsset.CreateTransient(
+                "wave.custom.duplicate",
+                "Duplicate One",
+                0,
+                new[] { new WaveEntryRecipe(enemies[0], 2, 1, 0, 10, "perimeter-north") });
+            WaveDefinitionAsset second = WaveDefinitionAsset.CreateTransient(
+                "wave.custom.duplicate",
+                "Duplicate Two",
+                10,
+                new[] { new WaveEntryRecipe(enemies[1], 2, 1, 0, 10, "perimeter-east") });
+
+            WaveDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(new[] { first, second }, enemies, out int rejectedDefinitionCount);
+
+            Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+            Assert.AreEqual(1, resolved.Length);
+            Assert.AreSame(first, resolved[0]);
         }
 
         [Test]
@@ -266,8 +457,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         [Test]
         public void SetupWizardCopiesStarterToProjectOwnedFolderAndBlocksOverwrite()
         {
-            string tempRoot = "Assets/Temp/IdleAutoDefenseWizardTests";
-            string targetRoot = tempRoot + "/WizardSmoke" + Guid.NewGuid().ToString("N");
+            string tempRoot = "Assets/T";
+            string targetRoot = tempRoot + "/W" + Guid.NewGuid().ToString("N").Substring(0, 8);
             var request = new IdleAutoDefenseTemplateSetupRequest
             {
                 TargetRootAssetPath = targetRoot,
@@ -473,6 +664,55 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             finally
             {
                 DestroyController(controller);
+            }
+        }
+
+        private static EnemyDefinitionAsset[] CreateAssignedTemplateEnemiesWithPrefabs()
+        {
+            return new[]
+            {
+                EnemyDefinitionAsset.CreateTransient(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value, "Assigned Swarm Enemy", EnemyRole.Swarm, 7f, 2.8f, 1, 2f, BasicIdleAutoDefenseGame.DamageType.Value, 0.25f, new GameObject("assigned-swarm-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(BasicIdleAutoDefenseGame.RunnerEnemySpawnableId.Value, "Assigned Runner Enemy", EnemyRole.Fast, 6f, 4.0f, 1, 2f, BasicIdleAutoDefenseGame.DamageType.Value, 0.24f, new GameObject("assigned-runner-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(BasicIdleAutoDefenseGame.TankEnemySpawnableId.Value, "Assigned Tank Enemy", EnemyRole.Tank, 24f, 1.35f, 3, 5f, BasicIdleAutoDefenseGame.DamageType.Value, 0.42f, new GameObject("assigned-tank-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(BasicIdleAutoDefenseGame.ShieldedEnemySpawnableId.Value, "Assigned Shielded Enemy", EnemyRole.Basic, 18f, 1.8f, 2, 4f, BasicIdleAutoDefenseGame.DamageType.Value, 0.34f, new GameObject("assigned-shielded-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(BasicIdleAutoDefenseGame.EliteEnemySpawnableId.Value, "Assigned Elite Enemy", EnemyRole.Boss, 34f, 2.15f, 4, 7f, BasicIdleAutoDefenseGame.DamageType.Value, 0.36f, new GameObject("assigned-elite-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(BasicIdleAutoDefenseGame.BossEnemySpawnableId.Value, "Assigned Boss Enemy", EnemyRole.Boss, 96f, 0.95f, 8, 16f, BasicIdleAutoDefenseGame.DamageType.Value, 0.65f, new GameObject("assigned-boss-enemy-prefab"))
+            };
+        }
+
+        private static WaveDefinitionAsset[] CreateAssignedTemplateWaves(EnemyDefinitionAsset[] enemies)
+        {
+            return new[]
+            {
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.opening",
+                    "Assigned Opening",
+                    0,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[0], 2, 1, 0, 10, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 2, 1, 4, 10, "perimeter-east")
+                    }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.pressure",
+                    "Assigned Pressure",
+                    24,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[2], 1, 1, 0, 16, "perimeter-south"),
+                        new WaveEntryRecipe(enemies[3], 1, 1, 8, 16, "perimeter-west"),
+                        new WaveEntryRecipe(enemies[5], 1, 1, 16, 0, "perimeter-north")
+                    })
+            };
+        }
+
+        private static void DestroyEnemyPrefabs(EnemyDefinitionAsset[] enemies)
+        {
+            if (enemies == null) return;
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                if (enemies[i] != null && enemies[i].Presentation != null && enemies[i].Presentation.Prefab != null)
+                    UnityEngine.Object.DestroyImmediate(enemies[i].Presentation.Prefab);
             }
         }
 

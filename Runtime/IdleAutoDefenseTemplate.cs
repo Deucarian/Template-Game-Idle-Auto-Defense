@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Deucarian.Attacks;
+using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
 using Deucarian.Combat;
 using Deucarian.DefenseGames;
@@ -39,6 +40,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly WeaponDefinitionId ShardLauncherWeaponId = new WeaponDefinitionId("weapon.template.shard-launcher");
         public static readonly WeaponDefinitionId ArcEmitterWeaponId = new WeaponDefinitionId("weapon.template.arc-emitter");
         public static readonly WeaponDefinitionId OrbitalShotWeaponId = new WeaponDefinitionId("weapon.template.orbital-shot");
+        private static readonly string[] RequiredTemplateAttackIds =
+        {
+            PulseAttackId.Value,
+            ShardAttackId.Value
+        };
+        private static readonly string[] RequiredTemplateEnemyIds =
+        {
+            SwarmEnemySpawnableId.Value,
+            RunnerEnemySpawnableId.Value,
+            TankEnemySpawnableId.Value,
+            ShieldedEnemySpawnableId.Value,
+            EliteEnemySpawnableId.Value,
+            BossEnemySpawnableId.Value
+        };
         public static readonly CurrencyId Credits = new CurrencyId("currency.template.credits");
         public static readonly CurrencyId Parts = new CurrencyId("currency.template.parts");
         public static readonly TrackId AccountXp = new TrackId("track.template.account");
@@ -52,22 +67,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly ResearchNodeId ShardLoaderResearch = new ResearchNodeId("research.template.shard-loader");
         public static readonly ResearchNodeId OfflineRoutingResearch = new ResearchNodeId("research.template.offline-routing");
 
-        public static AutoDefenseDefinition CreateDefinition()
+        public static AutoDefenseDefinition CreateDefinition(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null)
         {
             var pulseMount = new AutoDefenseMountId("mount.template.pulse-cannon");
             var shardMount = new AutoDefenseMountId("mount.template.shard-launcher");
+            AutoDefenseEnemyDefinition[] enemies = enemyDefinitions == null
+                ? CreateDefaultAutoDefenseEnemyDefinitions()
+                : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
             return new AutoDefenseDefinition(
                 new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 42, DamageType, 0.45f, 4, 2),
                 AutoDefenseSpawnRingDefinition.FourWay(7f),
-                new[]
-                {
-                    Enemy(SwarmEnemySpawnableId, 7, 2.8f, 2, 0.25f),
-                    Enemy(RunnerEnemySpawnableId, 6, 4.0f, 2, 0.24f),
-                    Enemy(TankEnemySpawnableId, 24, 1.35f, 5, 0.42f),
-                    Enemy(ShieldedEnemySpawnableId, 18, 1.8f, 4, 0.34f),
-                    Enemy(EliteEnemySpawnableId, 34, 2.15f, 7, 0.36f),
-                    Enemy(BossEnemySpawnableId, 96, 0.95f, 16, 0.65f)
-                },
+                enemies,
                 new[]
                 {
                     new AutoDefenseMountDefinition(pulseMount, new Vector3(-1.6f, 0f, 0f), new WeaponSlotId("slot.template.pulse-cannon"), PulseCannonWeaponId),
@@ -80,9 +90,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 });
         }
 
-        public static EncounterDefinition CreateEncounterDefinition()
+        public static EncounterDefinition CreateEncounterDefinition(IReadOnlyList<WaveDefinitionAsset> waveDefinitions = null)
         {
-            return CreateFirstOrbitEncounterDefinition();
+            if (waveDefinitions == null || waveDefinitions.Count == 0)
+                return CreateFirstOrbitEncounterDefinition();
+            return new EncounterDefinition(
+                new EncounterId("encounter.template.first-orbit"),
+                null,
+                CreateEncounterWaves(waveDefinitions),
+                new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
+                seed: 20260623);
         }
 
         public static StageDefinition[] CreateStageDefinitions()
@@ -215,18 +232,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 seed: 20260626);
         }
 
-        public static CombatCatalog CreateCombatCatalog()
+        public static CombatCatalog CreateCombatCatalog(IReadOnlyList<AttackDefinitionAsset> attackRecipes = null, IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null)
         {
-            return new CombatCatalog(new[] { new DamageTypeDefinition(DamageType) });
+            attackRecipes ??= CreateAttackRecipes();
+            enemyDefinitions ??= CreateEnemyDefinitions();
+            var damageTypes = new List<DamageTypeDefinition>();
+            var damageIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddDamageType(damageTypes, damageIds, DamageType);
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = attackRecipes[i];
+                if (recipe == null || recipe.Mechanics == null || string.IsNullOrWhiteSpace(recipe.Mechanics.DamageTypeId)) continue;
+                AddDamageType(damageTypes, damageIds, new DamageTypeId(recipe.Mechanics.DamageTypeId));
+            }
+
+            for (int i = 0; i < enemyDefinitions.Count; i++)
+            {
+                EnemyDefinitionAsset enemy = enemyDefinitions[i];
+                if (enemy == null || enemy.Stats == null || string.IsNullOrWhiteSpace(enemy.Stats.DamageTypeId)) continue;
+                AddDamageType(damageTypes, damageIds, new DamageTypeId(enemy.Stats.DamageTypeId));
+            }
+
+            var statuses = new List<StatusEffectDefinition>();
+            var statusIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = attackRecipes[i];
+                if (recipe == null) continue;
+                StatusEffectDefinition[] definitions = recipe.CreateStatusDefinitions();
+                for (int j = 0; j < definitions.Length; j++)
+                    if (definitions[j] != null && statusIds.Add(definitions[j].Id.Value))
+                        statuses.Add(definitions[j]);
+            }
+
+            return new CombatCatalog(damageTypes, statuses);
         }
 
-        public static AttackRuntime CreateAttackRuntime(CombatCatalog catalog, AutoDefenseDefinition definition)
+        public static AttackRuntime CreateAttackRuntime(CombatCatalog catalog, AutoDefenseDefinition definition, IReadOnlyList<AttackDefinitionAsset> attackRecipes = null)
         {
-            var runtime = new AttackRuntime(catalog, new[]
-            {
-                new AttackDefinition(PulseAttackId, 0, DamageType, 9),
-                new AttackDefinition(ShardAttackId, 0, DamageType, 6)
-            });
+            var runtime = new AttackRuntime(catalog, CreateAttackDefinitions(attackRecipes ?? CreateAttackRecipes()));
             for (int i = 0; i < definition.WeaponModules.Count; i++)
                 runtime.RegisterSource(definition.WeaponModules[i].Source);
             return runtime;
@@ -242,7 +286,315 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public static ProjectileDefinition CreateProjectileDefinition()
         {
-            return new ProjectileDefinition(ShardProjectileId, ProjectileSpawnableId, DamageType, 6, 120, 8.5f, 1);
+            return CreateProjectileDefinitions()[0];
+        }
+
+        public static ProjectileDefinition[] CreateProjectileDefinitions(IReadOnlyList<AttackDefinitionAsset> attackRecipes = null)
+        {
+            attackRecipes ??= CreateAttackRecipes();
+            var definitions = new List<ProjectileDefinition>();
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = attackRecipes[i];
+                if (recipe == null || recipe.Delivery == null || recipe.Mechanics == null) continue;
+                if (recipe.Delivery.Mode != AttackRecipeDeliveryMode.Projectile) continue;
+                definitions.Add(new ProjectileDefinition(
+                    new ProjectileDefinitionId(recipe.Delivery.ProjectileDefinitionId),
+                    new WorldSpawnableId(recipe.Delivery.ProjectileSpawnableId),
+                    new DamageTypeId(recipe.Mechanics.DamageTypeId),
+                    recipe.Mechanics.DamageAmount,
+                    recipe.Delivery.ProjectileLifetimeTicks,
+                    recipe.Delivery.ProjectileSpeed,
+                    recipe.Delivery.MaxImpacts));
+            }
+
+            return definitions.ToArray();
+        }
+
+        public static EnemyDefinitionAsset[] CreateEnemyDefinitions()
+        {
+            return new[]
+            {
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Template Swarm Enemy", EnemyRole.Swarm, 7f, 2.8f, 1, 2f, DamageType.Value, 0.25f, tags: new[] { "template", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Template Runner Enemy", EnemyRole.Fast, 6f, 4.0f, 1, 2f, DamageType.Value, 0.24f, tags: new[] { "template", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Template Tank Enemy", EnemyRole.Tank, 24f, 1.35f, 3, 5f, DamageType.Value, 0.42f, tags: new[] { "template", "tank" }),
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Template Shielded Enemy", EnemyRole.Basic, 18f, 1.8f, 2, 4f, DamageType.Value, 0.34f, tags: new[] { "template", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Template Elite Enemy", EnemyRole.Boss, 34f, 2.15f, 4, 7f, DamageType.Value, 0.36f, tags: new[] { "template", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Template Boss Enemy", EnemyRole.Boss, 96f, 0.95f, 8, 16f, DamageType.Value, 0.65f, tags: new[] { "template", "boss" })
+            };
+        }
+
+        public static EnemyDefinitionAsset[] ResolveEnemyDefinitionsForTemplate(IReadOnlyList<EnemyDefinitionAsset> assignedDefinitions, out int rejectedDefinitionCount)
+        {
+            rejectedDefinitionCount = 0;
+            if (assignedDefinitions == null || assignedDefinitions.Count == 0)
+                return CreateEnemyDefinitions();
+
+            var definitions = new List<EnemyDefinitionAsset>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assignedDefinitions.Count; i++)
+            {
+                EnemyDefinitionAsset definition = assignedDefinitions[i];
+                if (definition == null)
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                ContentAuthoringValidationReport report = EnemyDefinitionValidator.Validate(definition, EnemyDefinitionValidationOptions.AssetCreation);
+                if (!report.IsValid)
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                string id = definition.Id.Trim();
+                if (!seen.Add(id))
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                definitions.Add(definition);
+            }
+
+            if (definitions.Count == 0)
+                return CreateEnemyDefinitions();
+
+            int missingRequired = CountMissingRequiredTemplateEnemyIds(definitions);
+            if (missingRequired > 0)
+            {
+                rejectedDefinitionCount += missingRequired;
+                return CreateEnemyDefinitions();
+            }
+
+            return definitions.ToArray();
+        }
+
+        public static AutoDefenseEnemyDefinition[] CreateAutoDefenseEnemyDefinitions(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions)
+        {
+            if (enemyDefinitions == null || enemyDefinitions.Count == 0) throw new ArgumentException("At least one enemy definition is required.", nameof(enemyDefinitions));
+            var definitions = new AutoDefenseEnemyDefinition[enemyDefinitions.Count];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < enemyDefinitions.Count; i++)
+            {
+                EnemyDefinitionAsset enemy = enemyDefinitions[i];
+                if (enemy == null) throw new ArgumentException("Enemy definition cannot be null.", nameof(enemyDefinitions));
+                ContentAuthoringValidationReport report = EnemyDefinitionValidator.Validate(enemy, EnemyDefinitionValidationOptions.RuntimeFriendly);
+                if (!report.IsValid) throw new ArgumentException("Enemy definition is invalid: " + GetFirstValidationError(report), nameof(enemyDefinitions));
+                if (!seen.Add(enemy.Id.Trim())) throw new ArgumentException("Duplicate enemy definition ID: " + enemy.Id, nameof(enemyDefinitions));
+                definitions[i] = new AutoDefenseEnemyDefinition(
+                    new WorldSpawnableId(enemy.Id),
+                    enemy.Stats.MaximumHealth,
+                    enemy.Stats.MoveSpeed,
+                    enemy.Stats.ContactDamage,
+                    new DamageTypeId(enemy.Stats.DamageTypeId),
+                    enemy.Stats.CollisionRadius);
+            }
+
+            return definitions;
+        }
+
+        public static WaveDefinitionAsset[] CreateWaveDefinitions()
+        {
+            EnemyDefinitionAsset[] enemies = CreateEnemyDefinitions();
+            return new[]
+            {
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.template.first-orbit.opening",
+                    "Template First Orbit Opening",
+                    0,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[0], 3, 1, 0, 20, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[0], 3, 1, 12, 20, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[0], 3, 1, 24, 20, "perimeter-south"),
+                        new WaveEntryRecipe(enemies[0], 3, 1, 36, 20, "perimeter-west")
+                    },
+                    new[] { "template", "first-orbit", "opening" }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.template.first-orbit.pressure",
+                    "Template First Orbit Pressure",
+                    36,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[1], 2, 1, 42, 18, "perimeter-east", 1),
+                        new WaveEntryRecipe(enemies[2], 1, 1, 78, 0, "perimeter-west", 2)
+                    },
+                    new[] { "template", "first-orbit", "pressure" })
+            };
+        }
+
+        public static WaveDefinitionAsset[] ResolveWaveDefinitionsForTemplate(IReadOnlyList<WaveDefinitionAsset> assignedDefinitions, IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions, out int rejectedDefinitionCount)
+        {
+            rejectedDefinitionCount = 0;
+            if (assignedDefinitions == null || assignedDefinitions.Count == 0)
+                return CreateWaveDefinitions();
+
+            var enemyIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (enemyDefinitions != null)
+                for (int i = 0; i < enemyDefinitions.Count; i++)
+                    if (enemyDefinitions[i] != null && !string.IsNullOrWhiteSpace(enemyDefinitions[i].Id))
+                        enemyIds.Add(enemyDefinitions[i].Id.Trim());
+
+            var definitions = new List<WaveDefinitionAsset>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assignedDefinitions.Count; i++)
+            {
+                WaveDefinitionAsset definition = assignedDefinitions[i];
+                if (definition == null)
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                ContentAuthoringValidationReport report = WaveDefinitionValidator.Validate(definition, WaveDefinitionValidationOptions.RuntimeFriendly);
+                if (!report.IsValid || !WaveReferencesKnownEnemies(definition, enemyIds))
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                string id = definition.Id.Trim();
+                if (!seen.Add(id))
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                definitions.Add(definition);
+            }
+
+            return definitions.Count == 0 ? CreateWaveDefinitions() : definitions.ToArray();
+        }
+
+        public static WaveDefinition[] CreateEncounterWaves(IReadOnlyList<WaveDefinitionAsset> waveDefinitions)
+        {
+            if (waveDefinitions == null || waveDefinitions.Count == 0) throw new ArgumentException("At least one wave definition is required.", nameof(waveDefinitions));
+            var waves = new WaveDefinition[waveDefinitions.Count];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < waveDefinitions.Count; i++)
+            {
+                WaveDefinitionAsset wave = waveDefinitions[i];
+                if (wave == null) throw new ArgumentException("Wave definition cannot be null.", nameof(waveDefinitions));
+                ContentAuthoringValidationReport report = WaveDefinitionValidator.Validate(wave, WaveDefinitionValidationOptions.RuntimeFriendly);
+                if (!report.IsValid) throw new ArgumentException("Wave definition is invalid: " + GetFirstValidationError(report), nameof(waveDefinitions));
+                if (!seen.Add(wave.Id.Trim())) throw new ArgumentException("Duplicate wave definition ID: " + wave.Id, nameof(waveDefinitions));
+
+                IReadOnlyList<WaveEntryRecipe> entries = wave.Entries.Entries;
+                var groups = new SpawnGroupDefinition[entries.Count];
+                for (int j = 0; j < entries.Count; j++)
+                {
+                    WaveEntryRecipe entry = entries[j];
+                    groups[j] = SpawnGroupDefinition.Fixed(
+                        new SpawnGroupId(wave.Id + ".group." + j.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                        new SpawnableId(entry.Enemy.Id),
+                        entry.Count,
+                        entry.BatchSize,
+                        entry.InitialDelayTicks,
+                        entry.IntervalTicks,
+                        new SpawnChannelId(entry.SpawnChannelId),
+                        entry.ScalingTier);
+                }
+
+                waves[i] = new WaveDefinition(new WaveId(wave.Id), wave.Schedule.StartTick, groups);
+            }
+
+            return waves;
+        }
+
+        public static AttackDefinitionAsset[] CreateAttackRecipes()
+        {
+            return new[]
+            {
+                AttackDefinitionAsset.CreateTransient(
+                    PulseAttackId.Value,
+                    "Template Pulse Cannon",
+                    AttackRecipeDeliveryMode.Hitscan,
+                    DamageType.Value,
+                    9,
+                    0,
+                    7,
+                    AttackRecipeTargetingMode.Nearest),
+                AttackDefinitionAsset.CreateTransient(
+                    ShardAttackId.Value,
+                    "Template Shard Launcher",
+                    AttackRecipeDeliveryMode.Projectile,
+                    DamageType.Value,
+                    6,
+                    0,
+                    13,
+                    AttackRecipeTargetingMode.Strongest,
+                    projectileDefinitionId: ShardProjectileId.Value,
+                    projectileSpawnableId: ProjectileSpawnableId.Value,
+                    projectileSpeed: 8.5f,
+                    projectileLifetimeTicks: 120,
+                    pierceCount: 1)
+            };
+        }
+
+        public static AttackDefinitionAsset[] ResolveAttackRecipesForTemplate(IReadOnlyList<AttackDefinitionAsset> assignedRecipes, out int rejectedRecipeCount)
+        {
+            rejectedRecipeCount = 0;
+            if (assignedRecipes == null || assignedRecipes.Count == 0)
+                return CreateAttackRecipes();
+
+            var recipes = new List<AttackDefinitionAsset>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assignedRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = assignedRecipes[i];
+                if (recipe == null)
+                {
+                    rejectedRecipeCount++;
+                    continue;
+                }
+
+                AttackRecipeValidationReport report = AttackRecipeValidator.Validate(recipe, AttackRecipeValidationOptions.RuntimeFriendly);
+                if (!report.IsValid)
+                {
+                    rejectedRecipeCount++;
+                    continue;
+                }
+
+                string id = recipe.Id.Trim();
+                if (!seen.Add(id))
+                {
+                    rejectedRecipeCount++;
+                    continue;
+                }
+
+                recipes.Add(recipe);
+            }
+
+            if (recipes.Count == 0)
+                return CreateAttackRecipes();
+
+            int missingRequired = CountMissingRequiredTemplateAttackIds(recipes);
+            if (missingRequired > 0)
+            {
+                rejectedRecipeCount += missingRequired;
+                return CreateAttackRecipes();
+            }
+
+            return recipes.ToArray();
+        }
+
+        public static AttackDefinition[] CreateAttackDefinitions(IReadOnlyList<AttackDefinitionAsset> attackRecipes)
+        {
+            if (attackRecipes == null || attackRecipes.Count == 0) throw new ArgumentException("At least one attack recipe is required.", nameof(attackRecipes));
+            var definitions = new AttackDefinition[attackRecipes.Count];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                if (attackRecipes[i] == null) throw new ArgumentException("Attack recipe cannot be null.", nameof(attackRecipes));
+                AttackRecipeValidationReport report = AttackRecipeValidator.Validate(attackRecipes[i], AttackRecipeValidationOptions.RuntimeFriendly);
+                if (!report.IsValid) throw new ArgumentException("Attack recipe is invalid: " + GetFirstValidationError(report), nameof(attackRecipes));
+                if (!seen.Add(attackRecipes[i].Id.Trim())) throw new ArgumentException("Duplicate attack recipe ID: " + attackRecipes[i].Id, nameof(attackRecipes));
+                definitions[i] = attackRecipes[i].ToRuntimeDefinition();
+            }
+
+            return definitions;
         }
 
         public static RunUpgradeCatalog CreateRunUpgradeCatalog()
@@ -340,6 +692,96 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new AttackSourceSnapshot(new AttackSourceId("source.template." + suffix), new CombatantId("template-core"));
         }
+
+        private static AutoDefenseEnemyDefinition[] CreateDefaultAutoDefenseEnemyDefinitions()
+        {
+            return new[]
+            {
+                Enemy(SwarmEnemySpawnableId, 7, 2.8f, 2, 0.25f),
+                Enemy(RunnerEnemySpawnableId, 6, 4.0f, 2, 0.24f),
+                Enemy(TankEnemySpawnableId, 24, 1.35f, 5, 0.42f),
+                Enemy(ShieldedEnemySpawnableId, 18, 1.8f, 4, 0.34f),
+                Enemy(EliteEnemySpawnableId, 34, 2.15f, 7, 0.36f),
+                Enemy(BossEnemySpawnableId, 96, 0.95f, 16, 0.65f)
+            };
+        }
+
+        private static void AddDamageType(List<DamageTypeDefinition> damageTypes, HashSet<string> seen, DamageTypeId id)
+        {
+            if (!id.IsEmpty && seen.Add(id.Value)) damageTypes.Add(new DamageTypeDefinition(id));
+        }
+
+        private static int CountMissingRequiredTemplateAttackIds(IReadOnlyList<AttackDefinitionAsset> recipes)
+        {
+            int missing = 0;
+            for (int i = 0; i < RequiredTemplateAttackIds.Length; i++)
+                if (!ContainsRecipeId(recipes, RequiredTemplateAttackIds[i]))
+                    missing++;
+            return missing;
+        }
+
+        private static int CountMissingRequiredTemplateEnemyIds(IReadOnlyList<EnemyDefinitionAsset> recipes)
+        {
+            int missing = 0;
+            for (int i = 0; i < RequiredTemplateEnemyIds.Length; i++)
+                if (!ContainsEnemyRecipeId(recipes, RequiredTemplateEnemyIds[i]))
+                    missing++;
+            return missing;
+        }
+
+        private static bool ContainsRecipeId(IReadOnlyList<AttackDefinitionAsset> recipes, string id)
+        {
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = recipes[i];
+                if (recipe != null && string.Equals(recipe.Id, id, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool ContainsEnemyRecipeId(IReadOnlyList<EnemyDefinitionAsset> recipes, string id)
+        {
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                EnemyDefinitionAsset recipe = recipes[i];
+                if (recipe != null && string.Equals(recipe.Id, id, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool WaveReferencesKnownEnemies(WaveDefinitionAsset wave, HashSet<string> enemyIds)
+        {
+            if (wave == null || wave.Entries == null) return false;
+            IReadOnlyList<WaveEntryRecipe> entries = wave.Entries.Entries;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                WaveEntryRecipe entry = entries[i];
+                if (entry == null || entry.Enemy == null || string.IsNullOrWhiteSpace(entry.Enemy.Id)) return false;
+                if (!enemyIds.Contains(entry.Enemy.Id.Trim())) return false;
+            }
+
+            return true;
+        }
+
+        private static string GetFirstValidationError(AttackRecipeValidationReport report)
+        {
+            for (int i = 0; i < report.Issues.Count; i++)
+                if (report.Issues[i].IsError)
+                    return report.Issues[i].Path + ": " + report.Issues[i].Message;
+            return "Unknown validation error.";
+        }
+
+        private static string GetFirstValidationError(ContentAuthoringValidationReport report)
+        {
+            for (int i = 0; i < report.Issues.Count; i++)
+                if (report.Issues[i].IsError)
+                    return report.Issues[i].Path + ": " + report.Issues[i].Message;
+            return "Unknown validation error.";
+        }
     }
 
     public static class IdleAutoDefenseTemplateMonetization
@@ -414,6 +856,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private ProgressionState _progressionState;
         private IdleProgressionDefinition _offlineDefinition;
         private bool _completionRewardApplied;
+        [SerializeField] private AttackDefinitionAsset[] _attackRecipes = Array.Empty<AttackDefinitionAsset>();
+        [SerializeField] private EnemyDefinitionAsset[] _enemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
+        [SerializeField] private WaveDefinitionAsset[] _waveDefinitions = Array.Empty<WaveDefinitionAsset>();
+        private AttackDefinitionAsset[] _resolvedAttackRecipes = Array.Empty<AttackDefinitionAsset>();
+        private EnemyDefinitionAsset[] _resolvedEnemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
+        private WaveDefinitionAsset[] _resolvedWaveDefinitions = Array.Empty<WaveDefinitionAsset>();
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
@@ -432,6 +880,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int DirectOrCombatKillCount { get; private set; }
         public int ProjectileLaunchCount { get; private set; }
         public int ProjectileAdapterKillCount { get; private set; }
+        public int InvalidAssignedRecipeCount { get; private set; }
+        public int InvalidAssignedEnemyCount { get; private set; }
+        public int InvalidAssignedWaveCount { get; private set; }
         public int ObjectiveReachCount { get; private set; }
         public int ObjectiveDamageEvents { get; private set; }
         public int DraftTickCount { get; private set; }
@@ -471,16 +922,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public void Build()
         {
-            Build(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+            Build(null);
         }
 
         public void Build(EncounterDefinition encounterDefinition)
         {
             if (_runtime != null) return;
             ResetRunStateCounters();
-            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
-            CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog();
-            AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition);
+            _resolvedAttackRecipes = ResolveAttackRecipes();
+            _resolvedEnemyDefinitions = ResolveEnemyDefinitions();
+            _resolvedWaveDefinitions = ResolveWaveDefinitions(_resolvedEnemyDefinitions);
+            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions);
+            CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes, _resolvedEnemyDefinitions);
+            AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition, _resolvedAttackRecipes);
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
 
             _root = new GameObject("Basic Idle Auto Defense Runtime");
@@ -500,25 +954,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             var poseResolver = new AutoDefensePerimeterPoseResolver(definition.Objective, definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
-                new SpawnableCatalog(CreateEnemySpawnables(definition, _enemyPrefab)),
+                new SpawnableCatalog(CreateEnemySpawnables(_resolvedEnemyDefinitions)),
                 poseResolver,
                 rootName: "TemplateIdleEnemies");
             _navigation = new WorldNavigationService();
-            _encounter = new EncounterRuntime(encounterDefinition ?? BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+            _encounter = new EncounterRuntime(encounterDefinition ?? BasicIdleAutoDefenseGame.CreateEncounterDefinition(_resolvedWaveDefinitions));
             _runtime = new AutoDefenseRuntime(definition, _enemySpawning, _navigation, weapons, catalog, _encounter, poses: poseResolver, candidateCapacity: 64);
 
             var projectilePoseResolver = new ChannelPoseResolver(new Dictionary<WorldSpawnChannelId, SpawnPose>
             {
                 { new WorldSpawnChannelId("projectile-origin"), new SpawnPose(definition.Objective.Position, Quaternion.identity) }
             });
+            ProjectileDefinition[] projectileDefinitions = BasicIdleAutoDefenseGame.CreateProjectileDefinitions(_resolvedAttackRecipes);
             _projectileSpawning = new WorldSpawnService(
-                new SpawnableCatalog(new[] { new SpawnableDefinition(BasicIdleAutoDefenseGame.ProjectileSpawnableId, new GameObjectPrefabProvider(_projectilePrefab), 4, 32) }),
+                new SpawnableCatalog(CreateProjectileSpawnables(projectileDefinitions)),
                 projectilePoseResolver,
                 rootName: "TemplateIdleProjectiles");
             _projectileNavigation = new WorldNavigationService();
             _projectiles = new ProjectileRuntime(
                 catalog,
-                new[] { BasicIdleAutoDefenseGame.CreateProjectileDefinition() },
+                projectileDefinitions,
                 new WorldSpawnProjectileSpawner(_projectileSpawning, new WorldSpawnChannelId("projectile-origin")),
                 new WorldNavigationProjectileNavigator(_projectileNavigation));
             _upgradeCatalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog();
@@ -771,12 +1226,89 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EncounterRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
         }
 
+        private AttackDefinitionAsset[] ResolveAttackRecipes()
+        {
+            AttackDefinitionAsset[] recipes = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(_attackRecipes, out int rejectedRecipeCount);
+            InvalidAssignedRecipeCount = rejectedRecipeCount;
+            if (InvalidAssignedRecipeCount > 0)
+            {
+                Debug.LogWarning(
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or incomplete assigned attack recipe entries. The starter weapons require attack.template.pulse-cannon and attack.template.shard-launcher; missing required recipes fall back to built-in transient recipes.",
+                    this);
+            }
+
+            return recipes;
+        }
+
+        private EnemyDefinitionAsset[] ResolveEnemyDefinitions()
+        {
+            EnemyDefinitionAsset[] definitions = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(_enemyDefinitions, out int rejectedDefinitionCount);
+            InvalidAssignedEnemyCount = rejectedDefinitionCount;
+            if (InvalidAssignedEnemyCount > 0)
+            {
+                Debug.LogWarning(
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, prefabless, or incomplete assigned enemy definition entries. The starter waves require swarm, runner, tank, shielded, elite, and boss enemy IDs; missing required enemies fall back to built-in transient enemies.",
+                    this);
+            }
+
+            return definitions;
+        }
+
+        private WaveDefinitionAsset[] ResolveWaveDefinitions(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions)
+        {
+            WaveDefinitionAsset[] definitions = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(_waveDefinitions, enemyDefinitions, out int rejectedDefinitionCount);
+            InvalidAssignedWaveCount = rejectedDefinitionCount;
+            if (InvalidAssignedWaveCount > 0)
+            {
+                Debug.LogWarning(
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or enemy-mismatched assigned wave definition entries. Missing or invalid waves fall back to built-in first-orbit transient waves.",
+                    this);
+            }
+
+            return definitions;
+        }
+
+        private SpawnableDefinition[] CreateProjectileSpawnables(IReadOnlyList<ProjectileDefinition> projectileDefinitions)
+        {
+            var spawnables = new List<SpawnableDefinition>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < projectileDefinitions.Count; i++)
+            {
+                ProjectileDefinition definition = projectileDefinitions[i];
+                if (definition == null || !seen.Add(definition.SpawnableId.Value)) continue;
+                spawnables.Add(new SpawnableDefinition(definition.SpawnableId, new GameObjectPrefabProvider(_projectilePrefab), 4, 32));
+            }
+
+            return spawnables.ToArray();
+        }
+
+        private SpawnableDefinition[] CreateEnemySpawnables(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions)
+        {
+            var spawnables = new List<SpawnableDefinition>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < enemyDefinitions.Count; i++)
+            {
+                EnemyDefinitionAsset definition = enemyDefinitions[i];
+                if (definition == null || string.IsNullOrWhiteSpace(definition.Id) || !seen.Add(definition.Id)) continue;
+                spawnables.Add(new SpawnableDefinition(new WorldSpawnableId(definition.Id), new GameObjectPrefabProvider(GetEnemyPrefab(definition)), 4, 64));
+            }
+
+            return spawnables.ToArray();
+        }
+
         private static SpawnableDefinition[] CreateEnemySpawnables(AutoDefenseDefinition definition, GameObject prefab)
         {
             var spawnables = new SpawnableDefinition[definition.Enemies.Count];
             for (int i = 0; i < definition.Enemies.Count; i++)
                 spawnables[i] = new SpawnableDefinition(definition.Enemies[i].SpawnableId, new GameObjectPrefabProvider(prefab), 4, 64);
             return spawnables;
+        }
+
+        private GameObject GetEnemyPrefab(EnemyDefinitionAsset enemy)
+        {
+            if (enemy != null && enemy.Presentation != null && enemy.Presentation.Prefab != null)
+                return enemy.Presentation.Prefab;
+            return _enemyPrefab;
         }
 
         private long CalculateOfflineBonusCredits(IdleProgressionResult result)
@@ -853,6 +1385,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DirectOrCombatKillCount = 0;
             ProjectileLaunchCount = 0;
             ProjectileAdapterKillCount = 0;
+            InvalidAssignedRecipeCount = 0;
+            InvalidAssignedEnemyCount = 0;
+            InvalidAssignedWaveCount = 0;
             ObjectiveReachCount = 0;
             ObjectiveDamageEvents = 0;
             DraftTickCount = 0;

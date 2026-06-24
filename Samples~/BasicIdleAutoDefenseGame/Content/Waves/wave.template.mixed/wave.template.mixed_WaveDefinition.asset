@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fa87710cdb441ed8533723f70869576, type: 3}
+  m_Name: wave.template.mixed_WaveDefinition
+  m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveDefinitionAsset
+  _id: wave.template.mixed
+  _displayName: Template Mixed Wave
+  _tags:
+  - template
+  - mixed
+  _schedule: {fileID: 11400000, guid: 420cea35d4a3225429f5e1e3f7b7ece6, type: 2}
+  _entries: {fileID: 11400000, guid: 0254416528c84aa459aa5f770054f670, type: 2}
+  _balancingNotes:
