@@ -1,0 +1,91 @@
+{
+  "stages": [
+    {
+      "id": "stage.template.first-orbit",
+      "displayName": "First Orbit",
+      "encounterId": "encounter.template.first-orbit",
+      "rewardReference": "reward.template.first-orbit",
+      "enemyIds": [
+        "enemy.template.swarm",
+        "enemy.template.runner",
+        "enemy.template.tank"
+      ],
+      "weaponIds": [
+        "weapon.template.pulse-cannon",
+        "weapon.template.shard-launcher"
+      ],
+      "upgradeIds": [
+        "upgrade.template.damage-up",
+        "upgrade.template.projectile-speed-up",
+        "upgrade.template.objective-repair",
+        "upgrade.template.offline-gain-up"
+      ]
+    },
+    {
+      "id": "stage.template.pressure-ring",
+      "displayName": "Pressure Ring",
+      "encounterId": "encounter.template.pressure-ring",
+      "rewardReference": "reward.template.pressure-ring",
+      "enemyIds": [
+        "enemy.template.runner",
+        "enemy.template.tank",
+        "enemy.template.shielded",
+        "enemy.template.elite",
+        "enemy.template.swarm"
+      ],
+      "weaponIds": [
+        "weapon.template.pulse-cannon",
+        "weapon.template.shard-launcher"
+      ],
+      "upgradeIds": [
+        "upgrade.template.fire-rate-up",
+        "upgrade.template.projectile-count-up",
+        "upgrade.template.objective-max-health-up",
+        "upgrade.template.enemy-reward-up"
+      ]
+    },
+    {
+      "id": "stage.template.boss-pulse",
+      "displayName": "Boss Pulse",
+      "encounterId": "encounter.template.boss-pulse",
+      "rewardReference": "reward.template.boss-pulse",
+      "enemyIds": [
+        "enemy.template.runner",
+        "enemy.template.shielded",
+        "enemy.template.tank",
+        "enemy.template.elite",
+        "enemy.template.boss"
+      ],
+      "weaponIds": [
+        "weapon.template.pulse-cannon",
+        "weapon.template.shard-launcher"
+      ],
+      "upgradeIds": [
+        "upgrade.template.direct-specialization",
+        "upgrade.template.projectile-specialization",
+        "upgrade.template.crit-chance-intent",
+        "upgrade.template.crit-damage-intent"
+      ]
+    },
+    {
+      "id": "stage.template.endless-placeholder",
+      "displayName": "Endless Mode Placeholder",
+      "encounterId": "encounter.template.endless-placeholder",
+      "rewardReference": "reward.template.endless-placeholder",
+      "endlessPlaceholder": true,
+      "enemyIds": [
+        "enemy.template.swarm",
+        "enemy.template.runner"
+      ],
+      "weaponIds": [
+        "weapon.template.pulse-cannon",
+        "weapon.template.shard-launcher"
+      ],
+      "upgradeIds": [
+        "upgrade.template.reroll-bonus",
+        "upgrade.template.enemy-reward-up",
+        "upgrade.template.offline-gain-up"
+      ]
+    }
+  ]
+}

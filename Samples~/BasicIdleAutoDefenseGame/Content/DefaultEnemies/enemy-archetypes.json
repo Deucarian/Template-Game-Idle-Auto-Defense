@@ -1,0 +1,94 @@
+{
+  "enemies": [
+    {
+      "id": "enemy.template.swarm",
+      "archetype": "Swarm",
+      "spawnableId": "enemy.template.swarm",
+      "health": 7,
+      "moveSpeed": 2.8,
+      "contactDamage": 2,
+      "contactRadius": 0.25,
+      "damageType": "damage.template.basic",
+      "previewPrimitive": "Capsule",
+      "pool": {
+        "preload": 4,
+        "capacity": 64
+      }
+    },
+    {
+      "id": "enemy.template.runner",
+      "archetype": "Runner",
+      "spawnableId": "enemy.template.runner",
+      "health": 6,
+      "moveSpeed": 4,
+      "contactDamage": 2,
+      "contactRadius": 0.24,
+      "damageType": "damage.template.basic",
+      "previewPrimitive": "Capsule",
+      "pool": {
+        "preload": 4,
+        "capacity": 64
+      }
+    },
+    {
+      "id": "enemy.template.tank",
+      "archetype": "Tank",
+      "spawnableId": "enemy.template.tank",
+      "health": 24,
+      "moveSpeed": 1.35,
+      "contactDamage": 5,
+      "contactRadius": 0.42,
+      "damageType": "damage.template.basic",
+      "previewPrimitive": "Cube",
+      "pool": {
+        "preload": 4,
+        "capacity": 64
+      }
+    },
+    {
+      "id": "enemy.template.shielded",
+      "archetype": "Shielded",
+      "spawnableId": "enemy.template.shielded",
+      "health": 18,
+      "moveSpeed": 1.8,
+      "contactDamage": 4,
+      "contactRadius": 0.34,
+      "damageType": "damage.template.basic",
+      "previewPrimitive": "Capsule",
+      "pool": {
+        "preload": 4,
+        "capacity": 64
+      }
+    },
+    {
+      "id": "enemy.template.elite",
+      "archetype": "Elite",
+      "spawnableId": "enemy.template.elite",
+      "health": 34,
+      "moveSpeed": 2.15,
+      "contactDamage": 7,
+      "contactRadius": 0.36,
+      "damageType": "damage.template.basic",
+      "previewPrimitive": "Capsule",
+      "pool": {
+        "preload": 4,
+        "capacity": 64
+      }
+    },
+    {
+      "id": "enemy.template.boss",
+      "archetype": "Boss",
+      "spawnableId": "enemy.template.boss",
+      "health": 96,
+      "moveSpeed": 0.95,
+      "contactDamage": 16,
+      "contactRadius": 0.65,
+      "damageType": "damage.template.basic",
+      "previewPrimitive": "Cube",
+      "pool": {
+        "preload": 1,
+        "capacity": 8
+      }
+    }
+  ]
+}

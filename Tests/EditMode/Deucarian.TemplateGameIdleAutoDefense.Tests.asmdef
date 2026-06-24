@@ -4,7 +4,9 @@
   "references": [
     "Deucarian.TemplateGameIdleAutoDefense",
     "Deucarian.AutoDefense",
+    "Deucarian.Encounters",
     "Deucarian.DefenseGames",
+    "Deucarian.WorldSpawning",
     "Deucarian.RunUpgrades",
     "Deucarian.IdleProgression",
     "Deucarian.Progression",

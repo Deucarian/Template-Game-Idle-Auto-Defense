@@ -5,19 +5,23 @@
 The default pack is split by override area:
 
 - `DefaultBalance` owns the central objective and loop-level values.
-- `DefaultEnemies` owns starter enemy definitions.
-- `DefaultWeapons` owns direct/projectile weapons, attacks, and projectile settings.
-- `DefaultWaves` owns the starter encounter and wave groups.
-- `DefaultUpgrades` owns draft cadence and common run upgrades.
-- `DefaultProgression` owns currencies, rewards, offline rewards, and save DTO setup.
+- `DefaultStages` owns First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder stage routing.
+- `DefaultEnemies` owns Swarm, Runner, Tank, Shielded, Elite, and Boss archetypes.
+- `DefaultWeapons` owns supported Pulse Cannon and Shard Launcher modules plus future Arc Emitter and Orbital Shot intent.
+- `DefaultWaves` owns staged encounter and wave groups.
+- `DefaultUpgrades` owns draft cadence and the 14-upgrade starter catalog.
+- `DefaultProgression` owns currencies, rewards, account XP, unlocks, research-like defaults, offline rewards, and save DTO setup.
 - `DefaultMonetization` owns mock rewarded, interstitial, and IAP placeholder placement IDs.
 
 Edit this file first when experimenting with:
 
 - objective health, lives, and contact radius
+- stage names, encounter IDs, unlock order, and reward references
 - spawn ring radius and channels
-- direct and projectile weapon IDs
+- enemy archetype IDs and values
+- Pulse Cannon and Shard Launcher IDs
 - upgrade IDs
+- account XP, unlocks, and research node IDs
 - offline reward caps and rates
 - rewarded/interstitial placement IDs, cooldowns, session caps, and no-ads placeholders
 

@@ -11,8 +11,9 @@ The scene contains a bootstrap object that creates:
 - a central core objective
 - four visible perimeter spawn markers
 - one visible enemy placeholder preview
-- one direct weapon mount
-- one projectile weapon mount
+- one Pulse Cannon direct weapon mount
+- one Shard Launcher projectile weapon mount
+- First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder content definitions
 - deterministic run upgrade drafts
 - save/load, offline reward, mock monetization offers, progression reward, sample save reset, and corrupted save recovery smoke paths
 - a small on-screen status panel with save/reset buttons
@@ -25,6 +26,7 @@ All visible gameplay objects are primitive placeholders. Replace them with real 
 Basic Idle Auto Defense Game
 ├── Content
 │   ├── DefaultBalance
+│   ├── DefaultStages
 │   ├── DefaultEnemies
 │   ├── DefaultWeapons
 │   ├── DefaultWaves
@@ -46,6 +48,6 @@ Basic Idle Auto Defense Game
 
 1. Duplicate this sample folder outside `Assets/Samples`.
 2. Rename the scene and assembly definition.
-3. Replace IDs and tuning values in `Content/starter-content.json`.
+3. Replace IDs and tuning values in `Content/starter-content.json` plus the focused `Default*` files.
 4. Replace the generated placeholder primitives with prefabs under `Prefabs`.
 5. Move copied starter code into your own namespace before deleting the template package.

@@ -10,7 +10,7 @@ Boot
 -> resolve monetization availability
 -> apply offline reward
 -> optionally offer rewarded 2x offline reward
--> start run
+-> select/start stage run
 -> spawn waves
 -> auto weapons fire
 -> upgrade draft moments
@@ -26,7 +26,7 @@ Boot
 
 ## Runtime Ownership
 
-`IdleAutoDefenseTemplateController` is the canonical starter orchestration. It builds a central objective, perimeter spawns, enemy and projectile spawning, direct and projectile weapon modules, run upgrades, encounter rewards, offline rewards, mock/no-op monetization placements, and sample save/reset behavior.
+`IdleAutoDefenseTemplateController` is the canonical starter orchestration. It builds a central objective, perimeter spawns, enemy and projectile spawning, direct and projectile weapon modules, staged encounters, run upgrades, encounter rewards, offline rewards, mock/no-op monetization placements, and sample save/reset behavior.
 
 The template uses `com.deucarian.monetization` for placement IDs, rewarded and interstitial abstractions, mock/no-op providers, pacing gates, and no-ads entitlement checks. No real ad SDK, IAP billing SDK, analytics SDK, store config, or privacy policy generation is included.
 
@@ -45,18 +45,18 @@ The reusable packages stay generic:
 | Resolve monetization availability | Create mock/no-op rewarded and interstitial sessions from template placement policies. | Swap providers through a future product integration package; keep placement IDs product-owned when shipping. |
 | Apply offline reward | Use the default idle reward definition. | Tune reward rates, caps, and currencies. |
 | Optional rewarded 2x offline reward | Offer `template.rewarded.double-offline-reward` after the offline result is known. | Change the offer copy, reward multiplier, claim identity, and product placement ID. |
-| Start run | Start a deterministic starter encounter. | Swap encounter IDs, waves, and enemy groups. |
-| Spawn waves | Emit four perimeter groups. | Add channels, patterns, enemy types, and wave timing. |
-| Auto weapons fire | Use one direct weapon and one projectile weapon. | Tune attacks, projectile behavior, mounts, and visual prefabs. |
-| Run upgrade draft moments | Draft common upgrades every fixed tick interval. | Replace upgrade IDs, rarity, effects, and draft cadence. |
+| Select/start stage run | Start First Orbit by default, with Pressure Ring, Boss Pulse, and Endless placeholder definitions available for products to route. | Swap stage IDs, encounter IDs, unlock order, waves, and enemy groups. |
+| Spawn waves | Emit staged four-perimeter wave groups. | Add channels, patterns, enemy types, and wave timing. |
+| Auto weapons fire | Use Pulse Cannon as the direct weapon and Shard Launcher as the projectile weapon; Arc Emitter and Orbital Shot are data-only future intents. | Tune attacks, projectile behavior, mounts, visual prefabs, and future module availability. |
+| Run upgrade draft moments | Draft a 14-upgrade catalog with damage, survival, reward, offline, reroll, crit-intent, and specialization choices. | Replace upgrade IDs, rarity, effects, target IDs, and draft cadence. |
 | Optional rewarded reroll | Offer `template.rewarded.reroll-upgrade-draft` at draft moments. | Tune reroll limits, draft sources, and placement ID. |
 | Win/fail | Finish when the encounter/runtime reaches terminal state. | Add product-specific fail rules only when needed. |
 | Optional rewarded revive | Offer `template.rewarded.revive-after-failure` only after failure. | Add product revive rules and visual state restoration. |
-| Apply rewards | Grant credits and parts. | Change currencies, amounts, XP, unlocks, and operations. |
+| Apply rewards | Grant credits, parts, account XP, stage unlocks, and module unlocks. | Change currencies, amounts, XP, unlocks, and operations. |
 | Optional rewarded double reward | Offer `template.rewarded.double-run-reward` after rewards are known. | Tune multiplier and claim identity. |
 | Optional interstitial at transition | Show completion/failure interstitials only outside combat, after the first terminal run, under cooldown/session caps, and blocked by no-ads entitlement. | Replace with product pacing and real provider adapters later. |
 | Save | Persist sample snapshot and composition smoke DTOs. | Store real product profile/run/settings documents. |
-| Restart/return | Keep the scene immediately replayable. | Route into menus, maps, or meta progression later. |
+| Restart/return | Keep the scene immediately replayable and preserve progression state across `RestartRun`. | Route into menus, maps, or meta progression later. |
 
 ## Guardrail
 

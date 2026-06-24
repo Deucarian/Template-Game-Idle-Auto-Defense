@@ -4,6 +4,7 @@
   "references": [
     "Deucarian.TemplateGameIdleAutoDefense",
     "Deucarian.AutoDefense",
+    "Deucarian.Encounters",
     "Deucarian.IdleProgression",
     "Deucarian.Monetization"
   ],

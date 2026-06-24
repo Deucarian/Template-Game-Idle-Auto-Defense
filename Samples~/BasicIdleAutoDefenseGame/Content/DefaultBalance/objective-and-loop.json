@@ -3,22 +3,27 @@
   "canonicalFlow": [
     "boot",
     "load-profile-save",
+    "resolve-monetization-availability",
     "apply-offline-reward",
-    "show-run-state",
+    "offer-rewarded-offline-2x",
     "start-run",
     "spawn-waves",
     "auto-weapons-fire",
     "draft-run-upgrades",
+    "offer-rewarded-reroll",
     "win-or-fail",
+    "offer-rewarded-revive-on-failure",
     "apply-rewards",
+    "offer-rewarded-double-run-reward",
+    "show-transition-interstitial-if-pacing-allows",
     "save",
     "restart-or-return"
   ],
   "objective": {
     "id": "template-core",
     "position": [0, 0, 0],
-    "maximumHealth": 28,
-    "lives": 3,
+    "maximumHealth": 42,
+    "lives": 4,
     "contactRadius": 0.45,
     "previewPrimitive": "Cube"
   },
@@ -35,6 +40,13 @@
     "deterministicSeed": 20260623,
     "upgradeDraftEveryTicks": 30,
     "upgradeChoicesPerDraft": 3,
-    "candidateCapacity": 64
+    "candidateCapacity": 64,
+    "defaultStageId": "stage.template.first-orbit",
+    "firstMeaningfulSessionStages": [
+      "stage.template.first-orbit",
+      "stage.template.pressure-ring",
+      "stage.template.boss-pulse"
+    ],
+    "endlessPlaceholderStageId": "stage.template.endless-placeholder"
   }
 }

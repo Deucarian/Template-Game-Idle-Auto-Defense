@@ -16,18 +16,19 @@ This package is a starter Unity game template for an idle auto-defense loop. It 
 6. Run `Tools > Deucarian > Templates > Idle Auto Defense > Open Starter Scene`.
 7. Press Play.
 
-The starter scene shows a central core, perimeter spawn markers, a direct weapon mount, a projectile weapon mount, a placeholder enemy preview, runtime enemies, projectile launches, and a small status panel.
+The starter scene shows a central core, perimeter spawn markers, Pulse Cannon and Shard Launcher mounts, a placeholder enemy preview, runtime enemies, projectile launches, staged encounters, and a small status panel.
 
 ## What This Template Includes
 
 - Central objective with health, lives, contact damage, completion, and failure paths.
 - Four perimeter spawn channels.
-- One placeholder enemy archetype.
-- One direct weapon mount and one projectile weapon mount.
-- Deterministic upgrade drafts with at least three choices.
+- First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder stage definitions.
+- Six placeholder enemy archetypes: Swarm, Runner, Tank, Shielded, Elite, and Boss.
+- Pulse Cannon direct module and Shard Launcher projectile module, with Arc Emitter and Orbital Shot kept as future data-only intent.
+- Deterministic upgrade drafts with at least three choices from a 14-upgrade starter catalog.
 - Offline reward calculation.
 - Mock/no-op rewarded and interstitial placement hooks with no real ad SDKs.
-- Progression currency reward application.
+- Progression currency, account XP, stage/module unlock, and sample research reward application.
 - Save/load, missing-save defaults, corrupted-save recovery, and migration smoke coverage.
 - A sample-local save snapshot and reset flow.
 - A documented canonical game flow and explicit default content/balance pack.
@@ -37,13 +38,14 @@ The starter scene shows a central core, perimeter spawn markers, a direct weapon
 
 After importing the sample, start here:
 
-- `Content/starter-content.json`: human-readable constants for the core, spawn ring, weapons, upgrades, and offline rewards.
+- `Content/starter-content.json`: human-readable constants for the core, spawn ring, stages, enemies, weapons, upgrades, and offline rewards.
 - `Content/DefaultBalance`: objective, spawn ring, run loop, and draft cadence values.
-- `Content/DefaultEnemies`: starter enemy definitions.
-- `Content/DefaultWeapons`: direct/projectile weapons, attacks, and projectile settings.
-- `Content/DefaultWaves`: starter encounter and wave groups.
-- `Content/DefaultUpgrades`: common run upgrades.
-- `Content/DefaultProgression`: currencies, rewards, offline rewards, and save DTO setup.
+- `Content/DefaultStages`: stage routing, stage rewards, and stage-scoped content references.
+- `Content/DefaultEnemies`: Swarm, Runner, Tank, Shielded, Elite, and Boss archetypes.
+- `Content/DefaultWeapons`: Pulse Cannon, Shard Launcher, future Arc Emitter intent, and future Orbital Shot intent.
+- `Content/DefaultWaves`: First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder wave groups.
+- `Content/DefaultUpgrades`: 14 run upgrades covering damage, survival, reward, offline, reroll, crit intent, and specialization choices.
+- `Content/DefaultProgression`: currencies, rewards, account XP, unlocks, research-like defaults, offline rewards, and save DTO setup.
 - `Content/DefaultMonetization`: mock rewarded/interstitial placements and IAP placeholders.
 - `Scripts/BasicIdleAutoDefenseGameBootstrap.cs`: sample UI, sample save snapshot, and the first place to add project-specific scene glue.
 - `Prefabs/`: place your real core, enemy, weapon, and projectile prefabs here.
@@ -55,26 +57,26 @@ The template owns the default full loop from boot through save/restart. Product 
 
 1. Add your enemy prefab under the imported sample's `Prefabs/Enemies` folder.
 2. Replace the generated enemy placeholder with your prefab provider in your copied game code.
-3. Update `starter-content.json` enemy IDs, health, speed, and contact damage.
+3. Update `starter-content.json` and `DefaultEnemies/enemy-archetypes.json` enemy IDs, health, speed, and contact damage.
 4. Keep one simple placeholder enemy in the scene while tuning so Play Mode remains easy to inspect.
 
 ## Replace Weapons
 
 The template includes two weapon modes:
 
-- Direct weapon: instant damage through the Attack package.
-- Projectile weapon: launches a visible projectile through the Projectiles package.
+- Pulse Cannon: instant single-target damage through the Attack package.
+- Shard Launcher: launches a visible projectile through the Projectiles package.
 
 To customize them:
 
 1. Add weapon mount prefabs under `Prefabs/Weapons`.
 2. Change weapon IDs and fire modes in your copied definition code.
-3. Update the matching entries in `starter-content.json`.
+3. Update the matching entries in `starter-content.json` and `DefaultWeapons/default-weapons.json`.
 4. Keep one direct and one projectile example until your replacement weapons are both validated.
 
 ## Tune Waves
 
-Wave pacing is defined in `BasicIdleAutoDefenseGame.CreateEncounterDefinition()`.
+Wave pacing is defined in `BasicIdleAutoDefenseGame.CreateEncounterDefinitions()` and mirrored in `Content/DefaultWaves/stages-and-encounters.json`.
 
 Useful values to tune first:
 
@@ -117,6 +119,7 @@ The in-game status panel also has a `Reset Save` button.
 Basic Idle Auto Defense Game
 ├── Content
 │   ├── DefaultBalance
+│   ├── DefaultStages
 │   ├── DefaultEnemies
 │   ├── DefaultWeapons
 │   ├── DefaultWaves

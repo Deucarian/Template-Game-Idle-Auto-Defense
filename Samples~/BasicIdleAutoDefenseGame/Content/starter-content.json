@@ -3,17 +3,18 @@
     "flowDocumentation": "Documentation~/canonical-game-flow.md",
     "overrideGuide": "Documentation~/override-guide.md",
     "balance": "Content/DefaultBalance/objective-and-loop.json",
-    "enemies": "Content/DefaultEnemies/basic-idle-enemy.json",
+    "stages": "Content/DefaultStages/stages.json",
+    "enemies": "Content/DefaultEnemies/enemy-archetypes.json",
     "weapons": "Content/DefaultWeapons/default-weapons.json",
-    "waves": "Content/DefaultWaves/basic-encounter.json",
+    "waves": "Content/DefaultWaves/stages-and-encounters.json",
     "upgrades": "Content/DefaultUpgrades/common-run-upgrades.json",
     "progression": "Content/DefaultProgression/currencies-rewards-saves.json",
     "monetization": "Content/DefaultMonetization/mock-placements.json"
   },
   "objective": {
     "id": "template-core",
-    "maximumHealth": 28,
-    "lives": 3,
+    "maximumHealth": 42,
+    "lives": 4,
     "contactRadius": 0.45
   },
   "spawnRing": {
@@ -25,25 +26,59 @@
       "perimeter-west"
     ]
   },
+  "stages": [
+    "stage.template.first-orbit",
+    "stage.template.pressure-ring",
+    "stage.template.boss-pulse",
+    "stage.template.endless-placeholder"
+  ],
+  "enemies": [
+    "enemy.template.swarm",
+    "enemy.template.runner",
+    "enemy.template.tank",
+    "enemy.template.shielded",
+    "enemy.template.elite",
+    "enemy.template.boss"
+  ],
   "weapons": [
     {
-      "id": "weapon.template.direct",
+      "id": "weapon.template.pulse-cannon",
       "mode": "direct"
     },
     {
-      "id": "weapon.template.projectile",
+      "id": "weapon.template.shard-launcher",
       "mode": "projectile"
+    },
+    {
+      "id": "weapon.template.arc-emitter",
+      "mode": "chain-beam-placeholder",
+      "supportedInRuntime": false
+    },
+    {
+      "id": "weapon.template.orbital-shot",
+      "mode": "delayed-area-placeholder",
+      "supportedInRuntime": false
     }
   ],
   "upgrades": [
-    "upgrade.template.direct.damage",
-    "upgrade.template.projectile.speed",
-    "upgrade.template.objective.repair",
-    "upgrade.template.enemy.pacing"
+    "upgrade.template.damage-up",
+    "upgrade.template.fire-rate-up",
+    "upgrade.template.projectile-count-up",
+    "upgrade.template.projectile-speed-up",
+    "upgrade.template.objective-max-health-up",
+    "upgrade.template.objective-repair",
+    "upgrade.template.shield-restore-intent",
+    "upgrade.template.enemy-reward-up",
+    "upgrade.template.offline-gain-up",
+    "upgrade.template.reroll-bonus",
+    "upgrade.template.crit-chance-intent",
+    "upgrade.template.crit-damage-intent",
+    "upgrade.template.direct-specialization",
+    "upgrade.template.projectile-specialization"
   ],
   "offlineReward": {
     "maxHours": 8,
-    "creditsPerSecond": 0.25,
-    "partsEveryMinutes": 5
+    "creditsPerSecond": 0.35,
+    "partsEveryMinutes": 4
   }
 }

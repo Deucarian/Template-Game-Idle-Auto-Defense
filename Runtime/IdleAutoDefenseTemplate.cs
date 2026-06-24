@@ -22,36 +22,92 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     public static class BasicIdleAutoDefenseGame
     {
         public static readonly DamageTypeId DamageType = new DamageTypeId("damage.template.basic");
-        public static readonly AttackDefinitionId AttackId = new AttackDefinitionId("attack.template.basic");
-        public static readonly ProjectileDefinitionId ProjectileId = new ProjectileDefinitionId("projectile.template.basic");
-        public static readonly WorldSpawnableId EnemySpawnableId = new WorldSpawnableId("enemy.template.basic");
-        public static readonly WorldSpawnableId ProjectileSpawnableId = new WorldSpawnableId("projectile.template.basic");
+        public static readonly AttackDefinitionId PulseAttackId = new AttackDefinitionId("attack.template.pulse-cannon");
+        public static readonly AttackDefinitionId ShardAttackId = new AttackDefinitionId("attack.template.shard-launcher");
+        public static readonly AttackDefinitionId AttackId = PulseAttackId;
+        public static readonly ProjectileDefinitionId ShardProjectileId = new ProjectileDefinitionId("projectile.template.shard");
+        public static readonly ProjectileDefinitionId ProjectileId = ShardProjectileId;
+        public static readonly WorldSpawnableId SwarmEnemySpawnableId = new WorldSpawnableId("enemy.template.swarm");
+        public static readonly WorldSpawnableId RunnerEnemySpawnableId = new WorldSpawnableId("enemy.template.runner");
+        public static readonly WorldSpawnableId TankEnemySpawnableId = new WorldSpawnableId("enemy.template.tank");
+        public static readonly WorldSpawnableId ShieldedEnemySpawnableId = new WorldSpawnableId("enemy.template.shielded");
+        public static readonly WorldSpawnableId EliteEnemySpawnableId = new WorldSpawnableId("enemy.template.elite");
+        public static readonly WorldSpawnableId BossEnemySpawnableId = new WorldSpawnableId("enemy.template.boss");
+        public static readonly WorldSpawnableId EnemySpawnableId = SwarmEnemySpawnableId;
+        public static readonly WorldSpawnableId ProjectileSpawnableId = new WorldSpawnableId("projectile.template.shard");
+        public static readonly WeaponDefinitionId PulseCannonWeaponId = new WeaponDefinitionId("weapon.template.pulse-cannon");
+        public static readonly WeaponDefinitionId ShardLauncherWeaponId = new WeaponDefinitionId("weapon.template.shard-launcher");
+        public static readonly WeaponDefinitionId ArcEmitterWeaponId = new WeaponDefinitionId("weapon.template.arc-emitter");
+        public static readonly WeaponDefinitionId OrbitalShotWeaponId = new WeaponDefinitionId("weapon.template.orbital-shot");
         public static readonly CurrencyId Credits = new CurrencyId("currency.template.credits");
         public static readonly CurrencyId Parts = new CurrencyId("currency.template.parts");
+        public static readonly TrackId AccountXp = new TrackId("track.template.account");
+        public static readonly UnlockId StarterUnlock = new UnlockId("unlock.template.starter");
+        public static readonly UnlockId Stage2Unlock = new UnlockId("unlock.template.stage.pressure-ring");
+        public static readonly UnlockId Stage3Unlock = new UnlockId("unlock.template.stage.boss-pulse");
+        public static readonly UnlockId PulseCannonUnlock = new UnlockId("unlock.template.module.pulse-cannon");
+        public static readonly UnlockId ShardLauncherUnlock = new UnlockId("unlock.template.module.shard-launcher");
+        public static readonly ResearchNodeId CorePlatingResearch = new ResearchNodeId("research.template.core-plating");
+        public static readonly ResearchNodeId PulseCapacitorResearch = new ResearchNodeId("research.template.pulse-capacitor");
+        public static readonly ResearchNodeId ShardLoaderResearch = new ResearchNodeId("research.template.shard-loader");
+        public static readonly ResearchNodeId OfflineRoutingResearch = new ResearchNodeId("research.template.offline-routing");
 
         public static AutoDefenseDefinition CreateDefinition()
         {
-            var directWeaponId = new WeaponDefinitionId("weapon.template.direct");
-            var projectileWeaponId = new WeaponDefinitionId("weapon.template.projectile");
-            var directMount = new AutoDefenseMountId("mount.template.direct");
-            var projectileMount = new AutoDefenseMountId("mount.template.projectile");
+            var pulseMount = new AutoDefenseMountId("mount.template.pulse-cannon");
+            var shardMount = new AutoDefenseMountId("mount.template.shard-launcher");
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 28, DamageType, 0.45f, 3, 3),
+                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 42, DamageType, 0.45f, 4, 2),
                 AutoDefenseSpawnRingDefinition.FourWay(7f),
-                new[] { new AutoDefenseEnemyDefinition(EnemySpawnableId, 8, 2.2f, 3, DamageType, 0.3f) },
                 new[]
                 {
-                    new AutoDefenseMountDefinition(directMount, new Vector3(-1.4f, 0f, 0f), new WeaponSlotId("slot.template.direct"), directWeaponId),
-                    new AutoDefenseMountDefinition(projectileMount, new Vector3(1.4f, 0f, 0f), new WeaponSlotId("slot.template.projectile"), projectileWeaponId)
+                    Enemy(SwarmEnemySpawnableId, 7, 2.8f, 2, 0.25f),
+                    Enemy(RunnerEnemySpawnableId, 6, 4.0f, 2, 0.24f),
+                    Enemy(TankEnemySpawnableId, 24, 1.35f, 5, 0.42f),
+                    Enemy(ShieldedEnemySpawnableId, 18, 1.8f, 4, 0.34f),
+                    Enemy(EliteEnemySpawnableId, 34, 2.15f, 7, 0.36f),
+                    Enemy(BossEnemySpawnableId, 96, 0.95f, 16, 0.65f)
                 },
                 new[]
                 {
-                    new AutoDefenseWeaponModuleDefinition(directMount, new WeaponDefinition(directWeaponId, WeaponFireMode.DirectAttack, AttackId, 15), Source("direct")),
-                    new AutoDefenseWeaponModuleDefinition(projectileMount, new WeaponDefinition(projectileWeaponId, WeaponFireMode.Projectile, AttackId, 5, ProjectileId), Source("projectile"))
+                    new AutoDefenseMountDefinition(pulseMount, new Vector3(-1.6f, 0f, 0f), new WeaponSlotId("slot.template.pulse-cannon"), PulseCannonWeaponId),
+                    new AutoDefenseMountDefinition(shardMount, new Vector3(1.6f, 0f, 0f), new WeaponSlotId("slot.template.shard-launcher"), ShardLauncherWeaponId)
+                },
+                new[]
+                {
+                    new AutoDefenseWeaponModuleDefinition(pulseMount, new WeaponDefinition(PulseCannonWeaponId, WeaponFireMode.DirectAttack, PulseAttackId, 7), Source("pulse-cannon")),
+                    new AutoDefenseWeaponModuleDefinition(shardMount, new WeaponDefinition(ShardLauncherWeaponId, WeaponFireMode.Projectile, ShardAttackId, 13, ShardProjectileId, burstCount: 1), Source("shard-launcher"))
                 });
         }
 
         public static EncounterDefinition CreateEncounterDefinition()
+        {
+            return CreateFirstOrbitEncounterDefinition();
+        }
+
+        public static StageDefinition[] CreateStageDefinitions()
+        {
+            return new[]
+            {
+                new StageDefinition(new StageId("stage.template.first-orbit"), new EncounterId("encounter.template.first-orbit"), new[] { new RewardReferenceId("reward.template.first-orbit") }),
+                new StageDefinition(new StageId("stage.template.pressure-ring"), new EncounterId("encounter.template.pressure-ring"), new[] { new RewardReferenceId("reward.template.pressure-ring") }),
+                new StageDefinition(new StageId("stage.template.boss-pulse"), new EncounterId("encounter.template.boss-pulse"), new[] { new RewardReferenceId("reward.template.boss-pulse") }),
+                new StageDefinition(new StageId("stage.template.endless-placeholder"), new EncounterId("encounter.template.endless-placeholder"), new[] { new RewardReferenceId("reward.template.endless-placeholder") })
+            };
+        }
+
+        public static EncounterDefinition[] CreateEncounterDefinitions()
+        {
+            return new[]
+            {
+                CreateFirstOrbitEncounterDefinition(),
+                CreatePressureRingEncounterDefinition(),
+                CreateBossPulseEncounterDefinition(),
+                CreateEndlessPlaceholderEncounterDefinition()
+            };
+        }
+
+        public static EncounterDefinition CreateFirstOrbitEncounterDefinition()
         {
             var channels = new[]
             {
@@ -60,25 +116,103 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 "perimeter-south",
                 "perimeter-west"
             };
-            var groups = new SpawnGroupDefinition[channels.Length];
+            var groups = new List<SpawnGroupDefinition>();
             for (int i = 0; i < channels.Length; i++)
             {
-                groups[i] = SpawnGroupDefinition.Fixed(
-                    new SpawnGroupId("group.template." + channels[i]),
-                    new SpawnableId(EnemySpawnableId.Value),
-                    2,
+                groups.Add(SpawnGroupDefinition.Fixed(
+                    new SpawnGroupId("group.template.first-orbit.swarm." + channels[i]),
+                    new SpawnableId(SwarmEnemySpawnableId.Value),
+                    3,
                     1,
                     i * 12,
-                    24,
-                    new SpawnChannelId(channels[i]));
+                    20,
+                    new SpawnChannelId(channels[i])));
             }
 
+            groups.Add(SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.first-orbit.runner-east"), new SpawnableId(RunnerEnemySpawnableId.Value), 2, 1, 42, 18, new SpawnChannelId("perimeter-east")));
+            groups.Add(SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.first-orbit.tank-west"), new SpawnableId(TankEnemySpawnableId.Value), 1, 1, 78, 0, new SpawnChannelId("perimeter-west")));
+
             return new EncounterDefinition(
-                new EncounterId("basic-idle-auto-defense-template"),
+                new EncounterId("encounter.template.first-orbit"),
                 null,
-                new[] { new WaveDefinition(new WaveId("wave.template.basic"), 0, groups) },
+                new[]
+                {
+                    new WaveDefinition(new WaveId("wave.template.first-orbit.opening"), 0, groups.GetRange(0, 4)),
+                    new WaveDefinition(new WaveId("wave.template.first-orbit.pressure"), 36, groups.GetRange(4, 2))
+                },
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
                 seed: 20260623);
+        }
+
+        public static EncounterDefinition CreatePressureRingEncounterDefinition()
+        {
+            return new EncounterDefinition(
+                new EncounterId("encounter.template.pressure-ring"),
+                null,
+                new[]
+                {
+                    new WaveDefinition(new WaveId("wave.template.pressure-ring.runners"), 0, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.runner-north"), new SpawnableId(RunnerEnemySpawnableId.Value), 4, 1, 0, 12, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.runner-south"), new SpawnableId(RunnerEnemySpawnableId.Value), 4, 1, 8, 12, new SpawnChannelId("perimeter-south"))
+                    }),
+                    new WaveDefinition(new WaveId("wave.template.pressure-ring.armor"), 48, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.shielded-east"), new SpawnableId(ShieldedEnemySpawnableId.Value), 3, 1, 0, 20, new SpawnChannelId("perimeter-east")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.tank-west"), new SpawnableId(TankEnemySpawnableId.Value), 2, 1, 18, 28, new SpawnChannelId("perimeter-west"))
+                    }),
+                    new WaveDefinition(new WaveId("wave.template.pressure-ring.elite"), 108, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.elite-north"), new SpawnableId(EliteEnemySpawnableId.Value), 1, 1, 0, 0, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.swarm-all"), new SpawnableId(SwarmEnemySpawnableId.Value), 8, 2, 8, 18, new SpawnChannelId("perimeter-south"))
+                    })
+                },
+                new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
+                seed: 20260624);
+        }
+
+        public static EncounterDefinition CreateBossPulseEncounterDefinition()
+        {
+            return new EncounterDefinition(
+                new EncounterId("encounter.template.boss-pulse"),
+                null,
+                new[]
+                {
+                    new WaveDefinition(new WaveId("wave.template.boss-pulse.breakers"), 0, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.runner-burst-north"), new SpawnableId(RunnerEnemySpawnableId.Value), 8, 4, 0, 8, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.runner-burst-east"), new SpawnableId(RunnerEnemySpawnableId.Value), 8, 4, 0, 8, new SpawnChannelId("perimeter-east"))
+                    }),
+                    new WaveDefinition(new WaveId("wave.template.boss-pulse.guard"), 28, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.shielded-ring"), new SpawnableId(ShieldedEnemySpawnableId.Value), 4, 2, 0, 18, new SpawnChannelId("perimeter-west")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.tank-ring"), new SpawnableId(TankEnemySpawnableId.Value), 3, 1, 12, 24, new SpawnChannelId("perimeter-south"))
+                    }),
+                    new WaveDefinition(new WaveId("wave.template.boss-pulse.boss"), 80, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.elite"), new SpawnableId(EliteEnemySpawnableId.Value), 2, 1, 0, 18, new SpawnChannelId("perimeter-east")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.boss"), new SpawnableId(BossEnemySpawnableId.Value), 1, 1, 18, 0, new SpawnChannelId("perimeter-north"))
+                    })
+                },
+                new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
+                seed: 20260625);
+        }
+
+        public static EncounterDefinition CreateEndlessPlaceholderEncounterDefinition()
+        {
+            return new EncounterDefinition(
+                new EncounterId("encounter.template.endless-placeholder"),
+                null,
+                new[]
+                {
+                    new WaveDefinition(new WaveId("wave.template.endless-placeholder.loop-seed"), 0, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.endless-placeholder.swarm"), new SpawnableId(SwarmEnemySpawnableId.Value), 4, 1, 0, 16, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.endless-placeholder.runner"), new SpawnableId(RunnerEnemySpawnableId.Value), 2, 1, 24, 20, new SpawnChannelId("perimeter-east"))
+                    })
+                },
+                new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
+                seed: 20260626);
         }
 
         public static CombatCatalog CreateCombatCatalog()
@@ -88,7 +222,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public static AttackRuntime CreateAttackRuntime(CombatCatalog catalog, AutoDefenseDefinition definition)
         {
-            var runtime = new AttackRuntime(catalog, new[] { new AttackDefinition(AttackId, 0, DamageType, 8) });
+            var runtime = new AttackRuntime(catalog, new[]
+            {
+                new AttackDefinition(PulseAttackId, 0, DamageType, 9),
+                new AttackDefinition(ShardAttackId, 0, DamageType, 6)
+            });
             for (int i = 0; i < definition.WeaponModules.Count; i++)
                 runtime.RegisterSource(definition.WeaponModules[i].Source);
             return runtime;
@@ -104,17 +242,27 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public static ProjectileDefinition CreateProjectileDefinition()
         {
-            return new ProjectileDefinition(ProjectileId, ProjectileSpawnableId, DamageType, 6, 120, 8f, 1);
+            return new ProjectileDefinition(ShardProjectileId, ProjectileSpawnableId, DamageType, 6, 120, 8.5f, 1);
         }
 
         public static RunUpgradeCatalog CreateRunUpgradeCatalog()
         {
             return new RunUpgradeCatalog(new[]
             {
-                Upgrade("upgrade.template.direct.damage", "template.direct.damage_bonus", "weapon.template.direct", 1),
-                Upgrade("upgrade.template.projectile.speed", "template.projectile.speed_multiplier", "projectile.template.basic", 0.5),
-                Upgrade("upgrade.template.objective.repair", "template.objective.heal", "objective.template-core", 2),
-                Upgrade("upgrade.template.enemy.pacing", "template.enemy.spawn_delay_ticks", "encounter.template.basic", 6)
+                Upgrade("upgrade.template.damage-up", "template.direct.damage_bonus", PulseCannonWeaponId.Value, 1.5, RunUpgradeRarity.Common, 6, 5),
+                Upgrade("upgrade.template.fire-rate-up", "template.weapon.fire_rate_intent", PulseCannonWeaponId.Value, 1, RunUpgradeRarity.Common, 5, 3),
+                Upgrade("upgrade.template.projectile-count-up", "template.projectile.volley_intent", ShardLauncherWeaponId.Value, 1, RunUpgradeRarity.Uncommon, 3, 2),
+                Upgrade("upgrade.template.projectile-speed-up", "template.projectile.speed_multiplier", ShardProjectileId.Value, 0.35, RunUpgradeRarity.Common, 5, 4),
+                Upgrade("upgrade.template.objective-max-health-up", "template.objective.max_health", "objective.template-core", 6, RunUpgradeRarity.Uncommon, 3, 3),
+                Upgrade("upgrade.template.objective-repair", "template.objective.heal", "objective.template-core", 5, RunUpgradeRarity.Common, 5, 4),
+                Upgrade("upgrade.template.shield-restore-intent", "template.objective.shield_restore_intent", "objective.template-core", 4, RunUpgradeRarity.Uncommon, 2, 2),
+                Upgrade("upgrade.template.enemy-reward-up", "template.reward.credits_multiplier", "reward.template.run", 0.15, RunUpgradeRarity.Uncommon, 3, 3),
+                Upgrade("upgrade.template.offline-gain-up", "template.offline.credits_multiplier", "offline.template.credits", 0.10, RunUpgradeRarity.Common, 4, 3),
+                Upgrade("upgrade.template.reroll-bonus", "template.reroll.bonus_intent", "monetization.template.reroll", 1, RunUpgradeRarity.Rare, 2, 1),
+                Upgrade("upgrade.template.crit-chance-intent", "template.attack.crit_chance_intent", PulseCannonWeaponId.Value, 0.05, RunUpgradeRarity.Rare, 2, 2),
+                Upgrade("upgrade.template.crit-damage-intent", "template.attack.crit_damage_intent", PulseCannonWeaponId.Value, 0.20, RunUpgradeRarity.Rare, 2, 2),
+                Upgrade("upgrade.template.direct-specialization", "template.direct.damage_bonus", PulseCannonWeaponId.Value, 3, RunUpgradeRarity.Epic, 1, 1, new[] { new RunUpgradeId("upgrade.template.damage-up") }),
+                Upgrade("upgrade.template.projectile-specialization", "template.projectile.speed_multiplier", ShardProjectileId.Value, 0.75, RunUpgradeRarity.Epic, 1, 1, new[] { new RunUpgradeId("upgrade.template.projectile-speed-up") })
             });
         }
 
@@ -122,36 +270,70 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new IdleProgressionDefinition(
                 TimeSpan.FromHours(8),
-                new[] { new IdleProductionRate(Credits, 0.25d) },
-                new[] { new IdleCycleReward(Parts, new ProgressionAmount(1), TimeSpan.FromMinutes(5)) });
+                new[] { new IdleProductionRate(Credits, 0.35d) },
+                new[] { new IdleCycleReward(Parts, new ProgressionAmount(1), TimeSpan.FromMinutes(4)) });
         }
 
         public static ProgressionCatalog CreateProgressionCatalog()
         {
-            return new ProgressionCatalog(new[]
-            {
-                new CurrencyDefinition(Credits, new ProgressionAmount(100_000)),
-                new CurrencyDefinition(Parts, new ProgressionAmount(10_000))
-            });
+            return new ProgressionCatalog(
+                new[]
+                {
+                    new CurrencyDefinition(Credits, new ProgressionAmount(250_000)),
+                    new CurrencyDefinition(Parts, new ProgressionAmount(25_000))
+                },
+                new[]
+                {
+                    new ProgressionTrackDefinition(AccountXp, 0, new[] { new ProgressionAmount(100), new ProgressionAmount(250), new ProgressionAmount(500), new ProgressionAmount(900) })
+                },
+                new[]
+                {
+                    new ResearchNodeDefinition(CorePlatingResearch, 3, new[] { Debit(Credits, 25), Debit(Credits, 75), Debit(Credits, 160) }),
+                    new ResearchNodeDefinition(PulseCapacitorResearch, 2, new[] { Debit(Parts, 2), Debit(Parts, 5) }, requiredUnlocks: new[] { PulseCannonUnlock }),
+                    new ResearchNodeDefinition(ShardLoaderResearch, 2, new[] { Debit(Parts, 2), Debit(Parts, 5) }, requiredUnlocks: new[] { ShardLauncherUnlock }),
+                    new ResearchNodeDefinition(OfflineRoutingResearch, 2, new[] { Debit(Credits, 40), Debit(Credits, 120) }, new[] { new ResearchPrerequisite(CorePlatingResearch, 1) })
+                });
         }
 
         public static RewardBundle CreateEncounterCompletionReward()
         {
-            return new RewardBundle(new[]
-            {
-                new CurrencyLine(Credits, new ProgressionAmount(25), true),
-                new CurrencyLine(Parts, new ProgressionAmount(1), true)
-            });
+            return new RewardBundle(
+                new[]
+                {
+                    new CurrencyLine(Credits, new ProgressionAmount(60), true),
+                    new CurrencyLine(Parts, new ProgressionAmount(3), true)
+                },
+                new[] { new XpGrant(AccountXp, new ProgressionAmount(35)) },
+                new[] { StarterUnlock, Stage2Unlock, PulseCannonUnlock, ShardLauncherUnlock });
         }
 
-        private static RunUpgradeDefinition Upgrade(string id, string effect, string target, double amount)
+        private static AutoDefenseEnemyDefinition Enemy(WorldSpawnableId id, double health, float speed, double contactDamage, float radius)
+        {
+            return new AutoDefenseEnemyDefinition(id, health, speed, contactDamage, DamageType, radius);
+        }
+
+        private static RunUpgradeDefinition Upgrade(
+            string id,
+            string effect,
+            string target,
+            double amount,
+            RunUpgradeRarity rarity,
+            int weight,
+            int maxRank,
+            IReadOnlyList<RunUpgradeId> prerequisites = null)
         {
             return new RunUpgradeDefinition(
                 new RunUpgradeId(id),
-                RunUpgradeRarity.Common,
-                1,
-                3,
-                new[] { new RunUpgradeEffectDescriptor(new RunUpgradeEffectId(effect), new RunUpgradeTargetId(target), amount) });
+                rarity,
+                weight,
+                maxRank,
+                new[] { new RunUpgradeEffectDescriptor(new RunUpgradeEffectId(effect), new RunUpgradeTargetId(target), amount) },
+                prerequisites);
+        }
+
+        private static CurrencyLine Debit(CurrencyId currencyId, long amount)
+        {
+            return new CurrencyLine(currencyId, new ProgressionAmount(amount), false);
         }
 
         private static AttackSourceSnapshot Source(string suffix)
@@ -257,6 +439,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public double DirectDamageBonus { get; private set; }
         public double ProjectileSpeedMultiplier { get; private set; } = 1d;
         public int EnemySpawnDelayTicks { get; private set; }
+        public double RewardCreditMultiplierBonus { get; private set; }
+        public double OfflineRewardMultiplierBonus { get; private set; }
+        public int UnsupportedUpgradeIntentCount { get; private set; }
         public long OfflineRewardCredits { get; private set; }
         public long OfflineRewardParts { get; private set; }
         public long EncounterRewardCredits { get; private set; }
@@ -286,7 +471,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public void Build()
         {
+            Build(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+        }
+
+        public void Build(EncounterDefinition encounterDefinition)
+        {
             if (_runtime != null) return;
+            ResetRunStateCounters();
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
             CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog();
             AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition);
@@ -297,9 +488,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateSpawnMarkers(definition.SpawnRing.Radius);
             for (int i = 0; i < definition.Mounts.Count; i++)
             {
-                string mountName = definition.Mounts[i].Id.Value.Contains("direct")
-                    ? "Direct Weapon Mount - Close Range"
-                    : "Projectile Weapon Mount - Launcher";
+                string mountName = definition.Mounts[i].Id.Value.Contains("pulse")
+                    ? "Pulse Cannon Mount - Direct Single Target"
+                    : "Shard Launcher Mount - Projectile";
                 CreatePrimitive(mountName, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
             }
             CreatePrimitive("Enemy Placeholder Preview - Replace Me", PrimitiveType.Capsule, new Vector3(0f, 0f, -3.25f), new Vector3(0.45f, 0.9f, 0.45f), Color.red);
@@ -309,11 +500,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             var poseResolver = new AutoDefensePerimeterPoseResolver(definition.Objective, definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
-                new SpawnableCatalog(new[] { new SpawnableDefinition(BasicIdleAutoDefenseGame.EnemySpawnableId, new GameObjectPrefabProvider(_enemyPrefab), 8, 32) }),
+                new SpawnableCatalog(CreateEnemySpawnables(definition, _enemyPrefab)),
                 poseResolver,
                 rootName: "TemplateIdleEnemies");
             _navigation = new WorldNavigationService();
-            _encounter = new EncounterRuntime(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+            _encounter = new EncounterRuntime(encounterDefinition ?? BasicIdleAutoDefenseGame.CreateEncounterDefinition());
             _runtime = new AutoDefenseRuntime(definition, _enemySpawning, _navigation, weapons, catalog, _encounter, poses: poseResolver, candidateCapacity: 64);
 
             var projectilePoseResolver = new ChannelPoseResolver(new Dictionary<WorldSpawnChannelId, SpawnPose>
@@ -332,12 +523,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 new WorldNavigationProjectileNavigator(_projectileNavigation));
             _upgradeCatalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog();
             _upgradeState = new RunUpgradeState();
-            _progressionCatalog = BasicIdleAutoDefenseGame.CreateProgressionCatalog();
-            _progressionState = new ProgressionState();
+            _progressionCatalog ??= BasicIdleAutoDefenseGame.CreateProgressionCatalog();
+            _progressionState ??= new ProgressionState();
             _offlineDefinition = BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition();
 
             _runtime.Start();
             Debug.Log("[Idle Auto Defense Template] Starter scene built. Open the Game view to watch the core, spawn markers, weapon mounts, and placeholder enemies.");
+        }
+
+        public void RestartRun()
+        {
+            RestartRun(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+        }
+
+        public void RestartRun(EncounterDefinition encounterDefinition)
+        {
+            DisposeRuntimeObjects();
+            _runtime = null;
+            _encounter = null;
+            _projectiles = null;
+            _navigation = null;
+            _projectileNavigation = null;
+            _upgradeCatalog = null;
+            _upgradeState = null;
+            _currentDraft = null;
+            Build(encounterDefinition);
         }
 
         public IdleProgressionResult SimulateOfflineReward(DateTimeOffset lastSeenUtc, DateTimeOffset nowUtc)
@@ -348,6 +558,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (result.Reward.CurrencyLines.Count > 0)
             {
                 _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("template.offline." + nowUtc.UtcTicks), result.Reward);
+            }
+
+            long bonusCredits = CalculateOfflineBonusCredits(result);
+            if (bonusCredits > 0)
+            {
+                _progressionState.ApplyReward(
+                    _progressionCatalog,
+                    new ProgressionOperationId("template.offline.bonus." + nowUtc.UtcTicks),
+                    new RewardBundle(new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(bonusCredits), true) }));
             }
 
             OfflineRewardCredits = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value;
@@ -494,7 +713,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (effect.EffectId.Value == "template.direct.damage_bonus") DirectDamageBonus += effect.Amount;
                 else if (effect.EffectId.Value == "template.projectile.speed_multiplier") ProjectileSpeedMultiplier += effect.Amount;
                 else if (effect.EffectId.Value == "template.objective.heal") _runtime.Objective.Health.Heal(effect.Amount);
+                else if (effect.EffectId.Value == "template.objective.max_health") _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + effect.Amount, MaximumChangePolicy.FillToMaximum);
                 else if (effect.EffectId.Value == "template.enemy.spawn_delay_ticks") EnemySpawnDelayTicks += (int)effect.Amount;
+                else if (effect.EffectId.Value == "template.reward.credits_multiplier") RewardCreditMultiplierBonus += effect.Amount;
+                else if (effect.EffectId.Value == "template.offline.credits_multiplier") OfflineRewardMultiplierBonus += effect.Amount;
+                else UnsupportedUpgradeIntentCount++;
             }
         }
 
@@ -534,9 +757,39 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (_completionRewardApplied || _progressionState == null || _runtime.State == AutoDefenseRuntimeState.Running) return;
             ProgressionResult result = _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("template.encounter.terminal.1"), BasicIdleAutoDefenseGame.CreateEncounterCompletionReward());
             if (!result.Succeeded) return;
+            long bonusCredits = (long)Math.Ceiling(60d * RewardCreditMultiplierBonus);
+            if (bonusCredits > 0)
+            {
+                _progressionState.ApplyReward(
+                    _progressionCatalog,
+                    new ProgressionOperationId("template.encounter.terminal.1.reward-bonus"),
+                    new RewardBundle(new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(bonusCredits), true) }));
+            }
+
             _completionRewardApplied = true;
             EncounterRewardCredits = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value;
             EncounterRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
+        }
+
+        private static SpawnableDefinition[] CreateEnemySpawnables(AutoDefenseDefinition definition, GameObject prefab)
+        {
+            var spawnables = new SpawnableDefinition[definition.Enemies.Count];
+            for (int i = 0; i < definition.Enemies.Count; i++)
+                spawnables[i] = new SpawnableDefinition(definition.Enemies[i].SpawnableId, new GameObjectPrefabProvider(prefab), 4, 64);
+            return spawnables;
+        }
+
+        private long CalculateOfflineBonusCredits(IdleProgressionResult result)
+        {
+            if (OfflineRewardMultiplierBonus <= 0d || result == null || result.Reward == null) return 0;
+            for (int i = 0; i < result.Reward.CurrencyLines.Count; i++)
+            {
+                CurrencyLine line = result.Reward.CurrencyLines[i];
+                if (line.CurrencyId.Equals(BasicIdleAutoDefenseGame.Credits))
+                    return (long)Math.Ceiling(line.Amount.Value * OfflineRewardMultiplierBonus);
+            }
+
+            return 0;
         }
 
         private GameObject CreatePrefab(string name, PrimitiveType primitiveType, Color color)
@@ -591,11 +844,51 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private void OnDestroy()
         {
+            DisposeRuntimeObjects();
+        }
+
+        private void ResetRunStateCounters()
+        {
+            SpawnedCount = 0;
+            DirectOrCombatKillCount = 0;
+            ProjectileLaunchCount = 0;
+            ProjectileAdapterKillCount = 0;
+            ObjectiveReachCount = 0;
+            ObjectiveDamageEvents = 0;
+            DraftTickCount = 0;
+            SelectedUpgradeCount = 0;
+            DirectDamageBonus = 0d;
+            ProjectileSpeedMultiplier = 1d;
+            EnemySpawnDelayTicks = 0;
+            RewardCreditMultiplierBonus = 0d;
+            OfflineRewardMultiplierBonus = 0d;
+            UnsupportedUpgradeIntentCount = 0;
+            EncounterRewardCredits = 0;
+            EncounterRewardParts = 0;
+            ReviveOfferAccepted = false;
+            _completionRewardApplied = false;
+            _terminalStateLogged = false;
+        }
+
+        private void DisposeRuntimeObjects()
+        {
             _enemySpawning?.Dispose();
             _projectileSpawning?.Dispose();
-            if (_enemyPrefab != null) Destroy(_enemyPrefab);
-            if (_projectilePrefab != null) Destroy(_projectilePrefab);
-            if (_root != null) Destroy(_root);
+            DestroyTemplateObject(_enemyPrefab);
+            DestroyTemplateObject(_projectilePrefab);
+            DestroyTemplateObject(_root);
+            _enemySpawning = null;
+            _projectileSpawning = null;
+            _enemyPrefab = null;
+            _projectilePrefab = null;
+            _root = null;
+        }
+
+        private static void DestroyTemplateObject(UnityEngine.Object instance)
+        {
+            if (instance == null) return;
+            if (Application.isPlaying) Destroy(instance);
+            else DestroyImmediate(instance);
         }
     }
 
@@ -638,7 +931,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             LoadResult<ProfileDto> profileLoad = await service.LoadAsync(profileDefinition, slot, CancellationToken.None);
 
             var upgradeState = new RunUpgradeState();
-            upgradeState.Select(upgradeCatalog, new RunUpgradeId("upgrade.template.direct.damage"));
+            upgradeState.Select(upgradeCatalog, new RunUpgradeId("upgrade.template.damage-up"));
             RunUpgradeSnapshot upgradeSnapshot = upgradeState.CreateSnapshot();
             var run = RunResumeDto.FromSnapshot("run.template.1", 42, upgradeSnapshot, lastSeen.UtcTicks);
             WriteResult runSave = await service.SaveAsync(runDefinition, run, slot, CancellationToken.None);
@@ -649,10 +942,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             WriteResult settingsSave = await service.SaveAsync(settingsDefinition, settings, slot, CancellationToken.None);
             LoadResult<SettingsDto> settingsLoad = await service.LoadAsync(settingsDefinition, slot, CancellationToken.None);
 
-            RewardBundle runReward = new RewardBundle(
-                new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(25), true) },
-                new[] { new XpGrant(AccountXp, new ProgressionAmount(10)) },
-                new[] { StarterUnlock });
+            RewardBundle runReward = BasicIdleAutoDefenseGame.CreateEncounterCompletionReward();
             ProgressionResult runRewardResult = progressionState.ApplyReward(progressionCatalog, new ProgressionOperationId("template.run.complete.1"), runReward);
 
             IdleProgressionResult offline = IdleProgressionCalculator.Calculate(
@@ -676,10 +966,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 RunSavedAndLoaded = runSave.Succeeded && runLoad.Succeeded && runLoad.Document.Tick == 42,
                 SettingsSavedAndLoaded = settingsSave.Succeeded && settingsLoad.Succeeded && settingsLoad.Document.ReducedMotion,
                 RunRewardApplied = runRewardResult.Succeeded &&
-                    progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value >= 25 &&
-                    progressionState.GetTrackTotal(AccountXp).Value == 10 &&
-                    progressionState.IsUnlocked(StarterUnlock),
-                RunUpgradeSnapshotRestored = restoredUpgradeState.GetRank(new RunUpgradeId("upgrade.template.direct.damage")) == 1,
+                    progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value >= 60 &&
+                    progressionState.GetTrackTotal(AccountXp).Value == 35 &&
+                    progressionState.IsUnlocked(StarterUnlock) &&
+                    progressionState.IsUnlocked(BasicIdleAutoDefenseGame.Stage2Unlock),
+                RunUpgradeSnapshotRestored = restoredUpgradeState.GetRank(new RunUpgradeId("upgrade.template.damage-up")) == 1,
                 OfflineRewardCalculated = offline.Code == IdleProgressionResultCode.Success && offlineRewardResult.Succeeded,
                 MissingSaveDefaulted = missingDefaults.Succeeded && missingDefaults.Outcome == LoadOutcome.CreatedDefault,
                 CorruptedPrimaryRecovered = recovered.Succeeded && recovered.Outcome == LoadOutcome.RecoveredFromBackup && recovered.Document.Credits == 2,
@@ -692,13 +983,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private static ProgressionCatalog CreateProgressionCatalog()
         {
-            return new ProgressionCatalog(
-                new[]
-                {
-                    new CurrencyDefinition(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(100_000)),
-                    new CurrencyDefinition(BasicIdleAutoDefenseGame.Parts, new ProgressionAmount(10_000))
-                },
-                new[] { new ProgressionTrackDefinition(AccountXp, 0, new[] { new ProgressionAmount(100), new ProgressionAmount(250) }) });
+            return BasicIdleAutoDefenseGame.CreateProgressionCatalog();
         }
 
         private static DocumentDefinition<ProfileDto> CreateProfileDefinition()
