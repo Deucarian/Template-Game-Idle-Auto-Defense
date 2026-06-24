@@ -17,12 +17,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
             Assert.AreEqual("template-core", definition.Objective.Id.Value);
             Assert.AreEqual(4, definition.SpawnRing.Channels.Count);
-            Assert.AreEqual(1, definition.Enemies.Count);
+            Assert.AreEqual(3, definition.Enemies.Count);
             Assert.AreEqual(3, definition.Mounts.Count);
             Assert.AreEqual(3, definition.WeaponModules.Count);
             Assert.IsTrue(definition.Mounts[0].HasWeapon);
             Assert.IsTrue(definition.Mounts[1].HasWeapon);
             Assert.IsTrue(definition.Mounts[2].HasWeapon);
+        }
+
+        [Test]
+        public void EnemyAndWaveRecipesCreateRuntimeDefinitions()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+
+            Assert.AreEqual(3, enemies.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.BasicEnemySpawnableId.Value, enemies[0].Id);
+            Assert.AreEqual(EnemyRole.Fast, enemies[1].Role);
+            Assert.AreEqual(EnemyRole.Tank, enemies[2].Role);
+            Assert.AreEqual(3, BasicIdleAutoDefenseGame.CreateAutoDefenseEnemyDefinitions(enemies).Length);
+
+            Assert.AreEqual(2, waves.Length);
+            Assert.AreEqual("wave.template.early", waves[0].Id);
+            Assert.AreEqual("wave.template.mixed", waves[1].Id);
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateEncounterWaves(waves).Length);
+            Assert.AreEqual(3, waves[1].Entries.Entries.Count);
         }
 
         [Test]
@@ -62,6 +81,63 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(BasicIdleAutoDefenseGame.HitscanAttackId.Value, resolved[0].Id);
             Assert.AreEqual(BasicIdleAutoDefenseGame.FireOrbAttackId.Value, resolved[1].Id);
             Assert.AreEqual(BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, resolved[2].Id);
+        }
+
+        [Test]
+        public void AssignedEnemyDefinitionsFallBackWhenRequiredTemplateIdsAreMissing()
+        {
+            EnemyDefinitionAsset customOnly = EnemyDefinitionAsset.CreateTransient(
+                "enemy.custom.only",
+                "Custom Only",
+                EnemyRole.Basic,
+                9f,
+                2f,
+                1,
+                3f,
+                BasicIdleAutoDefenseGame.DamageType.Value,
+                prefab: new UnityEngine.GameObject("custom-enemy-prefab"));
+
+            try
+            {
+                EnemyDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(new[] { customOnly, null }, out int rejectedDefinitionCount);
+
+                Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+                Assert.AreEqual(3, resolved.Length);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.BasicEnemySpawnableId.Value, resolved[0].Id);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.FastEnemySpawnableId.Value, resolved[1].Id);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.TankEnemySpawnableId.Value, resolved[2].Id);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(customOnly.Presentation.Prefab);
+            }
+        }
+
+        [Test]
+        public void AssignedWaveDefinitionsFallBackWhenEnemyReferencesAreMissing()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            EnemyDefinitionAsset missingEnemy = EnemyDefinitionAsset.CreateTransient(
+                "enemy.custom.missing",
+                "Missing",
+                EnemyRole.Basic,
+                5f,
+                2f,
+                1,
+                2f,
+                BasicIdleAutoDefenseGame.DamageType.Value);
+            WaveDefinitionAsset invalidWave = WaveDefinitionAsset.CreateTransient(
+                "wave.custom.invalid",
+                "Invalid",
+                0,
+                new[] { new WaveEntryRecipe(missingEnemy, 2, 1, 0, 10, "perimeter-north") });
+
+            WaveDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(new[] { invalidWave }, enemies, out int rejectedDefinitionCount);
+
+            Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+            Assert.AreEqual(2, resolved.Length);
+            Assert.AreEqual("wave.template.early", resolved[0].Id);
+            Assert.AreEqual("wave.template.mixed", resolved[1].Id);
         }
 
         [Test]

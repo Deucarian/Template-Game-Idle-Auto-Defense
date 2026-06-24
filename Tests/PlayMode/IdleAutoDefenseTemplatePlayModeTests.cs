@@ -26,6 +26,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0));
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
             Assert.That(controller.PresentationEventCount, Is.GreaterThan(0));
+            Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0));
             Assert.That(controller.StatusHookApplicationCount, Is.GreaterThan(0));
             Assert.That(controller.SelectedUpgradeCount, Is.GreaterThan(0));
             Assert.True(controller.EncounterCompleted || controller.EncounterFailed, "Template run should reach a terminal state in deterministic smoke.");

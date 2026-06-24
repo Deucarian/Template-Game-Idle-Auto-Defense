@@ -14,6 +14,8 @@ This package provides a starter idle auto-defense game template built on `com.de
 - Four-way perimeter spawning.
 - Enemy movement toward the objective.
 - Recipe-backed direct hitscan, projectile, and homing/status projectile attack examples.
+- Authored basic, fast, and tank enemy definitions.
+- Authored early and mixed wave definitions.
 - Enemy death, objective contact damage, encounter completion, and encounter failure paths.
 - Deterministic upgrade draft with at least three choices.
 - Offline reward calculation.
@@ -21,7 +23,7 @@ This package provides a starter idle auto-defense game template built on `com.de
 - Save/load smoke coverage for profile, run, and settings data.
 - Corrupted primary save recovery and migration smoke coverage.
 - Primitive placeholder visuals for the core, mounts, enemies, and projectiles.
-- Attack recipe consumption through `AttackDefinitionAsset` conversion into Combat, Attacks, Projectiles, and Weapon Systems runtime definitions.
+- Authored content consumption through `AttackDefinitionAsset`, `EnemyDefinitionAsset`, and `WaveDefinitionAsset` conversion into Combat, Attacks, Projectiles, Weapon Systems, Auto Defense, World Spawning, and Encounters runtime definitions.
 
 ## Import Workflow
 
@@ -31,17 +33,30 @@ This package provides a starter idle auto-defense game template built on `com.de
 4. Open `Assets/Samples/Deucarian Template Game - Idle Auto Defense/0.1.0/Basic Idle Auto Defense Game/Scenes/BasicIdleAutoDefenseGame.unity`.
 5. Enter Play Mode.
 
-## Attack Recipe Sample
+## Authored Content Sample
 
-The template creates three attack recipes when no serialized recipes are assigned to `IdleAutoDefenseTemplateController`:
+The sample scene assigns authored attack, enemy, and wave assets. If those serialized references are missing or invalid, the template creates equivalent transient definitions so the sample remains playable.
+
+The attack set contains:
 
 - `attack.template.hitscan-beam`: direct hitscan-style beam attack.
 - `attack.template.fire-orb`: projectile attack using `projectile.template.fire-orb`.
 - `attack.template.homing-pulse`: homing-style projectile metadata with `status.template.slow`.
 
-The controller converts these recipes into `AttackDefinition`, `ProjectileDefinition`, and `CombatCatalog` entries at runtime. It also invokes OnFire/OnImpact presentation events and runs a small status hook smoke path so missing optional audio/VFX never blocks gameplay.
+The enemy set contains:
 
-To replace the transient recipes with persistent assets, create them through `Deucarian/Game Content Authoring` and assign them to `IdleAutoDefenseTemplateController`. The assigned set must include the three template attack IDs above because the starter weapon modules reference those IDs. Empty, duplicate, invalid, or incomplete assigned sets are ignored with a warning and the controller falls back to the built-in transient recipes.
+- `enemy.template.basic`: capsule placeholder, moderate speed, basic contact damage.
+- `enemy.template.fast`: sphere placeholder, faster speed, smaller collision radius.
+- `enemy.template.tank`: cube placeholder, high health, slower speed, higher contact damage.
+
+The wave set contains:
+
+- `wave.template.early`: simple two-lane basic enemy wave.
+- `wave.template.mixed`: mixed wave using all three enemy definitions.
+
+The controller converts these assets into runtime definitions at build time. It also invokes presentation events and runs a small status hook smoke path so missing optional audio/VFX never blocks gameplay.
+
+To create new persistent assets, use `Deucarian/Game Content Authoring` and assign them to `IdleAutoDefenseTemplateController`. The starter attack set must include the three template attack IDs because the starter weapon modules reference those IDs. The starter enemy set must include the three template enemy IDs because the sample waves reference those IDs. Empty, duplicate, invalid, prefabless, or incomplete assigned sets are ignored with a warning and the controller falls back to built-in transient content.
 
 ## Dependency Graph
 

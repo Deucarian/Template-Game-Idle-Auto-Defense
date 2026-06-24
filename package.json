@@ -22,7 +22,7 @@
   "samples": [
     {
       "displayName": "Basic Idle Auto Defense Game",
-      "description": "A deterministic starter scene with a central objective, perimeter spawns, direct and projectile weapons, upgrades, save/load, offline rewards, and placeholder primitives.",
+      "description": "A deterministic starter scene with authored attacks, enemies, waves, upgrades, save/load, offline rewards, and placeholder primitives.",
       "path": "Samples~/BasicIdleAutoDefenseGame"
     }
   ]

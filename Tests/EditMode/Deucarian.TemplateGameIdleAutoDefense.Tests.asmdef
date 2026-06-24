@@ -8,6 +8,8 @@
     "Deucarian.Combat",
     "Deucarian.AutoDefense",
     "Deucarian.DefenseGames",
+    "Deucarian.WorldSpawning",
+    "Deucarian.Encounters",
     "Deucarian.Projectiles",
     "Deucarian.RunUpgrades",
     "Deucarian.IdleProgression",

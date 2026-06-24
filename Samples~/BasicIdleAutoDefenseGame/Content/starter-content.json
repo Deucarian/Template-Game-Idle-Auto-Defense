@@ -54,6 +54,86 @@
       "status": "status.template.slow"
     }
   ],
+  "enemies": [
+    {
+      "id": "enemy.template.basic",
+      "role": "basic",
+      "maximumHealth": 8,
+      "moveSpeed": 2.2,
+      "rewardValue": 1,
+      "contactDamage": 3,
+      "collisionRadius": 0.3
+    },
+    {
+      "id": "enemy.template.fast",
+      "role": "fast",
+      "maximumHealth": 5,
+      "moveSpeed": 3.6,
+      "rewardValue": 1,
+      "contactDamage": 2,
+      "collisionRadius": 0.24
+    },
+    {
+      "id": "enemy.template.tank",
+      "role": "tank",
+      "maximumHealth": 22,
+      "moveSpeed": 1.25,
+      "rewardValue": 3,
+      "contactDamage": 5,
+      "collisionRadius": 0.42
+    }
+  ],
+  "waves": [
+    {
+      "id": "wave.template.early",
+      "startTick": 0,
+      "entries": [
+        {
+          "enemyId": "enemy.template.basic",
+          "count": 3,
+          "initialDelayTicks": 0,
+          "intervalTicks": 18,
+          "channel": "perimeter-north"
+        },
+        {
+          "enemyId": "enemy.template.basic",
+          "count": 3,
+          "initialDelayTicks": 9,
+          "intervalTicks": 18,
+          "channel": "perimeter-east"
+        }
+      ]
+    },
+    {
+      "id": "wave.template.mixed",
+      "startTick": 36,
+      "entries": [
+        {
+          "enemyId": "enemy.template.basic",
+          "count": 4,
+          "initialDelayTicks": 0,
+          "intervalTicks": 16,
+          "channel": "perimeter-south"
+        },
+        {
+          "enemyId": "enemy.template.fast",
+          "count": 3,
+          "initialDelayTicks": 8,
+          "intervalTicks": 14,
+          "channel": "perimeter-west",
+          "difficultyTier": 1
+        },
+        {
+          "enemyId": "enemy.template.tank",
+          "count": 2,
+          "initialDelayTicks": 18,
+          "intervalTicks": 24,
+          "channel": "perimeter-north",
+          "difficultyTier": 2
+        }
+      ]
+    }
+  ],
   "upgrades": [
     "upgrade.template.direct.damage",
     "upgrade.template.projectile.speed",
