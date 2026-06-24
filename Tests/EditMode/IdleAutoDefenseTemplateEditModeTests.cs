@@ -5,6 +5,7 @@ using Deucarian.IdleProgression;
 using Deucarian.Progression;
 using Deucarian.RunUpgrades;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 {
@@ -141,6 +142,85 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void ValidAssignedAuthoredContentResolvesWithoutFallback()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
+            WaveDefinitionAsset[] waves = CreateAssignedTemplateWaves(enemies);
+
+            try
+            {
+                AttackDefinitionAsset[] resolvedAttacks = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(attacks, out int rejectedRecipeCount);
+                EnemyDefinitionAsset[] resolvedEnemies = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(enemies, out int rejectedEnemyCount);
+                WaveDefinitionAsset[] resolvedWaves = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(waves, resolvedEnemies, out int rejectedWaveCount);
+
+                Assert.AreEqual(0, rejectedRecipeCount);
+                Assert.AreEqual(0, rejectedEnemyCount);
+                Assert.AreEqual(0, rejectedWaveCount);
+                Assert.AreEqual(3, resolvedAttacks.Length);
+                Assert.AreEqual(3, resolvedEnemies.Length);
+                Assert.AreEqual(2, resolvedWaves.Length);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, resolvedAttacks[2].Id);
+                Assert.AreSame(enemies[2], resolvedEnemies[2]);
+                Assert.AreSame(waves[1], resolvedWaves[1]);
+            }
+            finally
+            {
+                DestroyEnemyPrefabs(enemies);
+            }
+        }
+
+        [Test]
+        public void AssignedEnemyDefinitionsRejectDuplicatesAndFallbackWhenIncomplete()
+        {
+            EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
+            try
+            {
+                enemies[2].Configure(
+                    BasicIdleAutoDefenseGame.FastEnemySpawnableId.Value,
+                    "Duplicate Fast",
+                    null,
+                    EnemyRole.Tank,
+                    Array.Empty<string>(),
+                    enemies[2].Stats,
+                    enemies[2].Presentation);
+
+                EnemyDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(enemies, out int rejectedDefinitionCount);
+
+                Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+                Assert.AreEqual(3, resolved.Length);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.TankEnemySpawnableId.Value, resolved[2].Id);
+                Assert.AreNotSame(enemies[2], resolved[2]);
+            }
+            finally
+            {
+                DestroyEnemyPrefabs(enemies);
+            }
+        }
+
+        [Test]
+        public void AssignedWaveDefinitionsRejectDuplicateIds()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset first = WaveDefinitionAsset.CreateTransient(
+                "wave.custom.duplicate",
+                "Duplicate One",
+                0,
+                new[] { new WaveEntryRecipe(enemies[0], 2, 1, 0, 10, "perimeter-north") });
+            WaveDefinitionAsset second = WaveDefinitionAsset.CreateTransient(
+                "wave.custom.duplicate",
+                "Duplicate Two",
+                10,
+                new[] { new WaveEntryRecipe(enemies[1], 2, 1, 0, 10, "perimeter-east") });
+
+            WaveDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(new[] { first, second }, enemies, out int rejectedDefinitionCount);
+
+            Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+            Assert.AreEqual(1, resolved.Length);
+            Assert.AreSame(first, resolved[0]);
+        }
+
+        [Test]
         public void UpgradeDraftOffersAtLeastThreeDeterministicChoices()
         {
             RunUpgradeCatalog catalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog();
@@ -203,6 +283,75 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsTrue(result.Succeeded);
             Assert.AreEqual(25, state.GetBalance(BasicIdleAutoDefenseGame.Credits).Value);
             Assert.AreEqual(1, state.GetBalance(BasicIdleAutoDefenseGame.Parts).Value);
+        }
+
+        private static EnemyDefinitionAsset[] CreateAssignedTemplateEnemiesWithPrefabs()
+        {
+            return new[]
+            {
+                EnemyDefinitionAsset.CreateTransient(
+                    BasicIdleAutoDefenseGame.BasicEnemySpawnableId.Value,
+                    "Assigned Basic Enemy",
+                    EnemyRole.Basic,
+                    8f,
+                    2.2f,
+                    1,
+                    3f,
+                    BasicIdleAutoDefenseGame.DamageType.Value,
+                    prefab: new GameObject("assigned-basic-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(
+                    BasicIdleAutoDefenseGame.FastEnemySpawnableId.Value,
+                    "Assigned Fast Enemy",
+                    EnemyRole.Fast,
+                    5f,
+                    3.6f,
+                    1,
+                    2f,
+                    BasicIdleAutoDefenseGame.DamageType.Value,
+                    prefab: new GameObject("assigned-fast-enemy-prefab")),
+                EnemyDefinitionAsset.CreateTransient(
+                    BasicIdleAutoDefenseGame.TankEnemySpawnableId.Value,
+                    "Assigned Tank Enemy",
+                    EnemyRole.Tank,
+                    22f,
+                    1.25f,
+                    3,
+                    5f,
+                    BasicIdleAutoDefenseGame.DamageType.Value,
+                    prefab: new GameObject("assigned-tank-enemy-prefab"))
+            };
+        }
+
+        private static WaveDefinitionAsset[] CreateAssignedTemplateWaves(EnemyDefinitionAsset[] enemies)
+        {
+            return new[]
+            {
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.early",
+                    "Assigned Early",
+                    0,
+                    new[] { new WaveEntryRecipe(enemies[0], 2, 1, 0, 10, "perimeter-north") }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.mixed",
+                    "Assigned Mixed",
+                    12,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[0], 2, 1, 0, 10, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[1], 2, 1, 4, 10, "perimeter-south"),
+                        new WaveEntryRecipe(enemies[2], 1, 1, 8, 16, "perimeter-west")
+                    })
+            };
+        }
+
+        private static void DestroyEnemyPrefabs(EnemyDefinitionAsset[] enemies)
+        {
+            if (enemies == null) return;
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                if (enemies[i] != null && enemies[i].Presentation != null && enemies[i].Presentation.Prefab != null)
+                    UnityEngine.Object.DestroyImmediate(enemies[i].Presentation.Prefab);
+            }
         }
     }
 }
