@@ -10,6 +10,7 @@
     "Deucarian.WorldSpawning",
     "Deucarian.WorldNavigation",
     "Deucarian.Attacks",
+    "Deucarian.Attacks.Authoring",
     "Deucarian.Projectiles",
     "Deucarian.WeaponSystems",
     "Deucarian.RunUpgrades",

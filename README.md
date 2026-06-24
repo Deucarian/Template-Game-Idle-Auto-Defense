@@ -13,7 +13,7 @@ This package provides a starter idle auto-defense game template built on `com.de
 - Central objective with health, lives, damage, failure, and terminal state handling.
 - Four-way perimeter spawning.
 - Enemy movement toward the objective.
-- Direct weapon and projectile weapon examples.
+- Recipe-backed direct hitscan, projectile, and homing/status projectile attack examples.
 - Enemy death, objective contact damage, encounter completion, and encounter failure paths.
 - Deterministic upgrade draft with at least three choices.
 - Offline reward calculation.
@@ -21,6 +21,7 @@ This package provides a starter idle auto-defense game template built on `com.de
 - Save/load smoke coverage for profile, run, and settings data.
 - Corrupted primary save recovery and migration smoke coverage.
 - Primitive placeholder visuals for the core, mounts, enemies, and projectiles.
+- Attack recipe consumption through `AttackDefinitionAsset` conversion into Combat, Attacks, Projectiles, and Weapon Systems runtime definitions.
 
 ## Import Workflow
 
@@ -29,6 +30,16 @@ This package provides a starter idle auto-defense game template built on `com.de
 3. Import the `Basic Idle Auto Defense Game` sample.
 4. Open `Assets/Samples/Deucarian Template Game - Idle Auto Defense/0.1.0/Basic Idle Auto Defense Game/Scenes/BasicIdleAutoDefenseGame.unity`.
 5. Enter Play Mode.
+
+## Attack Recipe Sample
+
+The template creates three attack recipes when no serialized recipes are assigned to `IdleAutoDefenseTemplateController`:
+
+- `attack.template.hitscan-beam`: direct hitscan-style beam attack.
+- `attack.template.fire-orb`: projectile attack using `projectile.template.fire-orb`.
+- `attack.template.homing-pulse`: homing-style projectile metadata with `status.template.slow`.
+
+The controller converts these recipes into `AttackDefinition`, `ProjectileDefinition`, and `CombatCatalog` entries at runtime. It also invokes OnFire/OnImpact presentation events and runs a small status hook smoke path so missing optional audio/VFX never blocks gameplay.
 
 ## Dependency Graph
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Deucarian.Attacks;
+using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
 using Deucarian.Combat;
 using Deucarian.DefenseGames;
@@ -21,10 +22,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     public static class BasicIdleAutoDefenseGame
     {
         public static readonly DamageTypeId DamageType = new DamageTypeId("damage.template.basic");
-        public static readonly AttackDefinitionId AttackId = new AttackDefinitionId("attack.template.basic");
-        public static readonly ProjectileDefinitionId ProjectileId = new ProjectileDefinitionId("projectile.template.basic");
+        public static readonly DamageTypeId FireDamageType = new DamageTypeId("damage.template.fire");
+        public static readonly DamageTypeId ArcDamageType = new DamageTypeId("damage.template.arc");
+        public static readonly AttackDefinitionId HitscanAttackId = new AttackDefinitionId("attack.template.hitscan-beam");
+        public static readonly AttackDefinitionId FireOrbAttackId = new AttackDefinitionId("attack.template.fire-orb");
+        public static readonly AttackDefinitionId HomingPulseAttackId = new AttackDefinitionId("attack.template.homing-pulse");
+        public static readonly AttackDefinitionId AttackId = FireOrbAttackId;
+        public static readonly ProjectileDefinitionId FireOrbProjectileId = new ProjectileDefinitionId("projectile.template.fire-orb");
+        public static readonly ProjectileDefinitionId HomingPulseProjectileId = new ProjectileDefinitionId("projectile.template.homing-pulse");
+        public static readonly ProjectileDefinitionId ProjectileId = FireOrbProjectileId;
         public static readonly WorldSpawnableId EnemySpawnableId = new WorldSpawnableId("enemy.template.basic");
-        public static readonly WorldSpawnableId ProjectileSpawnableId = new WorldSpawnableId("projectile.template.basic");
+        public static readonly WorldSpawnableId FireOrbProjectileSpawnableId = new WorldSpawnableId("projectile.template.fire-orb");
+        public static readonly WorldSpawnableId HomingPulseProjectileSpawnableId = new WorldSpawnableId("projectile.template.homing-pulse");
+        public static readonly WorldSpawnableId ProjectileSpawnableId = FireOrbProjectileSpawnableId;
         public static readonly CurrencyId Credits = new CurrencyId("currency.template.credits");
         public static readonly CurrencyId Parts = new CurrencyId("currency.template.parts");
 
@@ -32,21 +42,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             var directWeaponId = new WeaponDefinitionId("weapon.template.direct");
             var projectileWeaponId = new WeaponDefinitionId("weapon.template.projectile");
+            var homingWeaponId = new WeaponDefinitionId("weapon.template.homing-pulse");
             var directMount = new AutoDefenseMountId("mount.template.direct");
             var projectileMount = new AutoDefenseMountId("mount.template.projectile");
+            var homingMount = new AutoDefenseMountId("mount.template.homing-pulse");
             return new AutoDefenseDefinition(
                 new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 28, DamageType, 0.45f, 3, 3),
                 AutoDefenseSpawnRingDefinition.FourWay(7f),
                 new[] { new AutoDefenseEnemyDefinition(EnemySpawnableId, 8, 2.2f, 3, DamageType, 0.3f) },
                 new[]
                 {
-                    new AutoDefenseMountDefinition(directMount, new Vector3(-1.4f, 0f, 0f), new WeaponSlotId("slot.template.direct"), directWeaponId),
-                    new AutoDefenseMountDefinition(projectileMount, new Vector3(1.4f, 0f, 0f), new WeaponSlotId("slot.template.projectile"), projectileWeaponId)
+                    new AutoDefenseMountDefinition(directMount, new Vector3(-1.7f, 0f, 0f), new WeaponSlotId("slot.template.direct"), directWeaponId),
+                    new AutoDefenseMountDefinition(projectileMount, new Vector3(0f, 0f, 1.35f), new WeaponSlotId("slot.template.projectile"), projectileWeaponId),
+                    new AutoDefenseMountDefinition(homingMount, new Vector3(1.7f, 0f, 0f), new WeaponSlotId("slot.template.homing-pulse"), homingWeaponId)
                 },
                 new[]
                 {
-                    new AutoDefenseWeaponModuleDefinition(directMount, new WeaponDefinition(directWeaponId, WeaponFireMode.DirectAttack, AttackId, 15), Source("direct")),
-                    new AutoDefenseWeaponModuleDefinition(projectileMount, new WeaponDefinition(projectileWeaponId, WeaponFireMode.Projectile, AttackId, 5, ProjectileId), Source("projectile"))
+                    new AutoDefenseWeaponModuleDefinition(directMount, new WeaponDefinition(directWeaponId, WeaponFireMode.DirectAttack, HitscanAttackId, 12), Source("direct")),
+                    new AutoDefenseWeaponModuleDefinition(projectileMount, new WeaponDefinition(projectileWeaponId, WeaponFireMode.Projectile, FireOrbAttackId, 5, FireOrbProjectileId), Source("projectile")),
+                    new AutoDefenseWeaponModuleDefinition(homingMount, new WeaponDefinition(homingWeaponId, WeaponFireMode.Projectile, HomingPulseAttackId, 18, HomingPulseProjectileId), Source("homing-pulse"))
                 });
         }
 
@@ -80,14 +94,40 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 seed: 20260623);
         }
 
-        public static CombatCatalog CreateCombatCatalog()
+        public static CombatCatalog CreateCombatCatalog(IReadOnlyList<AttackDefinitionAsset> attackRecipes = null)
         {
-            return new CombatCatalog(new[] { new DamageTypeDefinition(DamageType) });
+            attackRecipes = attackRecipes ?? CreateAttackRecipes();
+            var damageTypes = new List<DamageTypeDefinition>();
+            var damageIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddDamageType(damageTypes, damageIds, DamageType);
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = attackRecipes[i];
+                if (recipe == null || recipe.Mechanics == null || string.IsNullOrWhiteSpace(recipe.Mechanics.DamageTypeId)) continue;
+                AddDamageType(damageTypes, damageIds, new DamageTypeId(recipe.Mechanics.DamageTypeId));
+            }
+
+            var statuses = new List<StatusEffectDefinition>();
+            var statusIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = attackRecipes[i];
+                if (recipe == null) continue;
+                StatusEffectDefinition[] definitions = recipe.CreateStatusDefinitions();
+                for (int j = 0; j < definitions.Length; j++)
+                {
+                    if (definitions[j] != null && statusIds.Add(definitions[j].Id.Value))
+                        statuses.Add(definitions[j]);
+                }
+            }
+
+            return new CombatCatalog(damageTypes, statuses);
         }
 
-        public static AttackRuntime CreateAttackRuntime(CombatCatalog catalog, AutoDefenseDefinition definition)
+        public static AttackRuntime CreateAttackRuntime(CombatCatalog catalog, AutoDefenseDefinition definition, IReadOnlyList<AttackDefinitionAsset> attackRecipes = null)
         {
-            var runtime = new AttackRuntime(catalog, new[] { new AttackDefinition(AttackId, 0, DamageType, 8) });
+            AttackDefinition[] attacks = CreateAttackDefinitions(attackRecipes ?? CreateAttackRecipes());
+            var runtime = new AttackRuntime(catalog, attacks);
             for (int i = 0; i < definition.WeaponModules.Count; i++)
                 runtime.RegisterSource(definition.WeaponModules[i].Source);
             return runtime;
@@ -103,7 +143,88 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public static ProjectileDefinition CreateProjectileDefinition()
         {
-            return new ProjectileDefinition(ProjectileId, ProjectileSpawnableId, DamageType, 6, 120, 8f, 1);
+            return CreateProjectileDefinitions()[0];
+        }
+
+        public static ProjectileDefinition[] CreateProjectileDefinitions(IReadOnlyList<AttackDefinitionAsset> attackRecipes = null)
+        {
+            attackRecipes = attackRecipes ?? CreateAttackRecipes();
+            var definitions = new List<ProjectileDefinition>();
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = attackRecipes[i];
+                if (recipe == null || recipe.Delivery == null || recipe.Mechanics == null) continue;
+                if (recipe.Delivery.Mode != AttackRecipeDeliveryMode.Projectile) continue;
+                definitions.Add(new ProjectileDefinition(
+                    new ProjectileDefinitionId(recipe.Delivery.ProjectileDefinitionId),
+                    new WorldSpawnableId(recipe.Delivery.ProjectileSpawnableId),
+                    new DamageTypeId(recipe.Mechanics.DamageTypeId),
+                    recipe.Mechanics.DamageAmount,
+                    recipe.Delivery.ProjectileLifetimeTicks,
+                    recipe.Delivery.ProjectileSpeed,
+                    recipe.Delivery.MaxImpacts));
+            }
+
+            return definitions.ToArray();
+        }
+
+        public static AttackDefinitionAsset[] CreateAttackRecipes()
+        {
+            return new[]
+            {
+                AttackDefinitionAsset.CreateTransient(
+                    HitscanAttackId.Value,
+                    "Template Beam",
+                    AttackRecipeDeliveryMode.Hitscan,
+                    DamageType.Value,
+                    8,
+                    0,
+                    6,
+                    AttackRecipeTargetingMode.Nearest),
+                AttackDefinitionAsset.CreateTransient(
+                    FireOrbAttackId.Value,
+                    "Template Fire Orb",
+                    AttackRecipeDeliveryMode.Projectile,
+                    FireDamageType.Value,
+                    10,
+                    0,
+                    7,
+                    AttackRecipeTargetingMode.Strongest,
+                    projectileDefinitionId: FireOrbProjectileId.Value,
+                    projectileSpawnableId: FireOrbProjectileSpawnableId.Value,
+                    projectileSpeed: 8f,
+                    projectileLifetimeTicks: 120,
+                    pierceCount: 0),
+                AttackDefinitionAsset.CreateTransient(
+                    HomingPulseAttackId.Value,
+                    "Template Homing Pulse",
+                    AttackRecipeDeliveryMode.Projectile,
+                    ArcDamageType.Value,
+                    7,
+                    0,
+                    8,
+                    AttackRecipeTargetingMode.LowestHealth,
+                    new[] { new AttackStatusEffectRecipe("status.template.slow", 90, 30, 0.5f, effectNote: "Placeholder slow/status hook.") },
+                    HomingPulseProjectileId.Value,
+                    HomingPulseProjectileSpawnableId.Value,
+                    projectileSpeed: 6.5f,
+                    projectileLifetimeTicks: 150,
+                    homing: true,
+                    pierceCount: 1)
+            };
+        }
+
+        public static AttackDefinition[] CreateAttackDefinitions(IReadOnlyList<AttackDefinitionAsset> attackRecipes)
+        {
+            if (attackRecipes == null || attackRecipes.Count == 0) throw new ArgumentException("At least one attack recipe is required.", nameof(attackRecipes));
+            var definitions = new AttackDefinition[attackRecipes.Count];
+            for (int i = 0; i < attackRecipes.Count; i++)
+            {
+                if (attackRecipes[i] == null) throw new ArgumentException("Attack recipe cannot be null.", nameof(attackRecipes));
+                definitions[i] = attackRecipes[i].ToRuntimeDefinition();
+            }
+
+            return definitions;
         }
 
         public static RunUpgradeCatalog CreateRunUpgradeCatalog()
@@ -111,7 +232,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new RunUpgradeCatalog(new[]
             {
                 Upgrade("upgrade.template.direct.damage", "template.direct.damage_bonus", "weapon.template.direct", 1),
-                Upgrade("upgrade.template.projectile.speed", "template.projectile.speed_multiplier", "projectile.template.basic", 0.5),
+                Upgrade("upgrade.template.projectile.speed", "template.projectile.speed_multiplier", FireOrbProjectileId.Value, 0.5),
                 Upgrade("upgrade.template.objective.repair", "template.objective.heal", "objective.template-core", 2),
                 Upgrade("upgrade.template.enemy.pacing", "template.enemy.spawn_delay_ticks", "encounter.template.basic", 6)
             });
@@ -157,11 +278,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new AttackSourceSnapshot(new AttackSourceId("source.template." + suffix), new CombatantId("template-core"));
         }
+
+        private static void AddDamageType(List<DamageTypeDefinition> damageTypes, HashSet<string> seen, DamageTypeId id)
+        {
+            if (!id.IsEmpty && seen.Add(id.Value)) damageTypes.Add(new DamageTypeDefinition(id));
+        }
     }
 
     public class IdleAutoDefenseTemplateController : MonoBehaviour
     {
         private readonly SpawnRequest[] _spawnBuffer = new SpawnRequest[16];
+        [SerializeField] private AttackDefinitionAsset[] _attackRecipes;
+        private AttackDefinitionAsset[] _resolvedAttackRecipes;
+        private readonly Dictionary<string, AttackDefinitionAsset> _attackRecipeById = new Dictionary<string, AttackDefinitionAsset>(StringComparer.OrdinalIgnoreCase);
+        private AutoDefenseDefinition _definition;
+        private CombatCatalog _combatCatalog;
         private AutoDefenseRuntime _runtime;
         private EncounterRuntime _encounter;
         private ProjectileRuntime _projectiles;
@@ -191,6 +322,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int SelectedUpgradeCount { get; private set; }
         public double DirectDamageBonus { get; private set; }
         public double ProjectileSpeedMultiplier { get; private set; } = 1d;
+        public int PresentationEventCount { get; private set; }
+        public int StatusHookApplicationCount { get; private set; }
         public int EnemySpawnDelayTicks { get; private set; }
         public long OfflineRewardCredits { get; private set; }
         public long OfflineRewardParts { get; private set; }
@@ -213,40 +346,43 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public void Build()
         {
             if (_runtime != null) return;
-            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
-            CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog();
-            AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition);
-            WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
+            _resolvedAttackRecipes = ResolveAttackRecipes();
+            CacheAttackRecipes(_resolvedAttackRecipes);
+            _definition = BasicIdleAutoDefenseGame.CreateDefinition();
+            _combatCatalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes);
+            AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(_combatCatalog, _definition, _resolvedAttackRecipes);
+            WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(_definition, attacks);
 
             _root = new GameObject("BasicIdleAutoDefenseGame");
-            CreatePrimitive("Template Core", PrimitiveType.Cube, definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
-            for (int i = 0; i < definition.Mounts.Count; i++)
-                CreatePrimitive(definition.Mounts[i].Id.Value, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
+            CreatePrimitive("Template Core", PrimitiveType.Cube, _definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
+            for (int i = 0; i < _definition.Mounts.Count; i++)
+                CreatePrimitive(_definition.Mounts[i].Id.Value, PrimitiveType.Cube, _definition.Objective.Position + _definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
 
             _enemyPrefab = CreatePrefab("TemplateIdleEnemyPrefab", PrimitiveType.Capsule, Color.red);
             _projectilePrefab = CreatePrefab("TemplateIdleProjectilePrefab", PrimitiveType.Sphere, Color.magenta);
 
-            var poseResolver = new AutoDefensePerimeterPoseResolver(definition.Objective, definition.SpawnRing);
+            var poseResolver = new AutoDefensePerimeterPoseResolver(_definition.Objective, _definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
                 new SpawnableCatalog(new[] { new SpawnableDefinition(BasicIdleAutoDefenseGame.EnemySpawnableId, new GameObjectPrefabProvider(_enemyPrefab), 8, 32) }),
                 poseResolver,
                 rootName: "TemplateIdleEnemies");
             _navigation = new WorldNavigationService();
             _encounter = new EncounterRuntime(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
-            _runtime = new AutoDefenseRuntime(definition, _enemySpawning, _navigation, weapons, catalog, _encounter, poses: poseResolver, candidateCapacity: 64);
+            _runtime = new AutoDefenseRuntime(_definition, _enemySpawning, _navigation, weapons, _combatCatalog, _encounter, poses: poseResolver, candidateCapacity: 64);
 
             var projectilePoseResolver = new ChannelPoseResolver(new Dictionary<WorldSpawnChannelId, SpawnPose>
             {
-                { new WorldSpawnChannelId("projectile-origin"), new SpawnPose(definition.Objective.Position, Quaternion.identity) }
+                { new WorldSpawnChannelId("projectile-origin"), new SpawnPose(_definition.Objective.Position, Quaternion.identity) }
             });
+            ProjectileDefinition[] projectileDefinitions = BasicIdleAutoDefenseGame.CreateProjectileDefinitions(_resolvedAttackRecipes);
             _projectileSpawning = new WorldSpawnService(
-                new SpawnableCatalog(new[] { new SpawnableDefinition(BasicIdleAutoDefenseGame.ProjectileSpawnableId, new GameObjectPrefabProvider(_projectilePrefab), 4, 32) }),
+                new SpawnableCatalog(CreateProjectileSpawnables(projectileDefinitions, _projectilePrefab)),
                 projectilePoseResolver,
                 rootName: "TemplateIdleProjectiles");
             _projectileNavigation = new WorldNavigationService();
             _projectiles = new ProjectileRuntime(
-                catalog,
-                new[] { BasicIdleAutoDefenseGame.CreateProjectileDefinition() },
+                _combatCatalog,
+                projectileDefinitions,
                 new WorldSpawnProjectileSpawner(_projectileSpawning, new WorldSpawnChannelId("projectile-origin")),
                 new WorldNavigationProjectileNavigator(_projectileNavigation));
             _upgradeCatalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog();
@@ -256,6 +392,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _offlineDefinition = BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition();
 
             _runtime.Start();
+            ApplyStatusHookSmoke();
         }
 
         public IdleProgressionResult SimulateOfflineReward(DateTimeOffset lastSeenUtc, DateTimeOffset nowUtc)
@@ -288,16 +425,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             AutoDefenseRunResult result = _runtime.Tick(ticks, deltaSeconds);
+            DispatchDirectPresentation(result);
             DirectOrCombatKillCount += result.Killed;
             ObjectiveReachCount += result.ReachedObjective;
             if (result.ReachedObjective > 0) ObjectiveDamageEvents += result.ReachedObjective;
 
             for (int i = 0; i < result.ProjectileLaunches.Count; i++)
             {
-                ProjectileLaunchResult launch = _projectiles.Launch(result.ProjectileLaunches[i]);
+                ProjectileLaunchRequest request = result.ProjectileLaunches[i];
+                InvokePresentation(request.AttackDefinitionId, AttackPresentationEventKind.OnFire, _runtime.Objective.Definition.Position);
+                ProjectileLaunchResult launch = _projectiles.Launch(request);
                 if (!launch.Succeeded) continue;
                 ProjectileLaunchCount++;
-                TryApplySampleProjectileHit();
+                TryApplySampleProjectileHit(launch.ProjectileId, request.AttackDefinitionId);
             }
 
             _projectiles.Tick(ticks);
@@ -347,19 +487,126 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
-        private void TryApplySampleProjectileHit()
+        private void TryApplySampleProjectileHit(ProjectileInstanceId projectileId, AttackDefinitionId attackDefinitionId)
         {
             AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
             for (int i = 0; i < snapshot.Enemies.Count; i++)
             {
                 AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
                 if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
-                if (_runtime.TryKillEnemy(enemy.Id))
+                if (enemy.Health <= 0d) continue;
+
+                var projectedHealth = new HealthState(enemy.CombatantId, Math.Max(1d, enemy.Health), Math.Max(0.01d, enemy.Health));
+                ProjectileImpactResult impact = _projectiles.ReportImpact(new ProjectileImpactRequest(projectileId, enemy.CombatantId, projectedHealth));
+                if (!impact.Succeeded) return;
+
+                DamageResolutionResult damage = CombatDamageResolver.Resolve(impact.DamageRequest);
+                InvokePresentation(attackDefinitionId, AttackPresentationEventKind.OnImpact, enemy.Position);
+                if (damage.Current.LifeState == LifeState.Dead && _runtime.TryKillEnemy(enemy.Id))
                 {
                     ProjectileAdapterKillCount++;
                     return;
                 }
             }
+        }
+
+        private AttackDefinitionAsset[] ResolveAttackRecipes()
+        {
+            if (_attackRecipes != null && _attackRecipes.Length > 0)
+            {
+                var recipes = new List<AttackDefinitionAsset>();
+                for (int i = 0; i < _attackRecipes.Length; i++)
+                    if (_attackRecipes[i] != null)
+                        recipes.Add(_attackRecipes[i]);
+                if (recipes.Count > 0) return recipes.ToArray();
+            }
+
+            return BasicIdleAutoDefenseGame.CreateAttackRecipes();
+        }
+
+        private void CacheAttackRecipes(IReadOnlyList<AttackDefinitionAsset> recipes)
+        {
+            _attackRecipeById.Clear();
+            if (recipes == null) return;
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = recipes[i];
+                if (recipe != null && !string.IsNullOrWhiteSpace(recipe.Id))
+                    _attackRecipeById[recipe.Id] = recipe;
+            }
+        }
+
+        private SpawnableDefinition[] CreateProjectileSpawnables(IReadOnlyList<ProjectileDefinition> projectileDefinitions, GameObject projectilePrefab)
+        {
+            var spawnables = new List<SpawnableDefinition>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < projectileDefinitions.Count; i++)
+            {
+                ProjectileDefinition definition = projectileDefinitions[i];
+                if (definition == null || !seen.Add(definition.SpawnableId.Value)) continue;
+                spawnables.Add(new SpawnableDefinition(definition.SpawnableId, new GameObjectPrefabProvider(projectilePrefab), 4, 32));
+            }
+
+            return spawnables.ToArray();
+        }
+
+        private void DispatchDirectPresentation(AutoDefenseRunResult result)
+        {
+            if (result == null || result.WeaponFireResult == null) return;
+            for (int i = 0; i < result.WeaponFireResult.Intents.Count; i++)
+            {
+                WeaponIntent intent = result.WeaponFireResult.Intents[i];
+                if (intent.Kind != WeaponIntentKind.DirectAttack || intent.AttackIntent == null) continue;
+                InvokePresentation(intent.AttackIntent.DefinitionId, AttackPresentationEventKind.OnFire, _runtime.Objective.Definition.Position);
+                Vector3 impactPosition = _runtime.Objective.Definition.Position;
+                if (intent.AttackIntent.Selection.Found)
+                {
+                    AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
+                    for (int j = 0; j < snapshot.Enemies.Count; j++)
+                    {
+                        if (snapshot.Enemies[j].CombatantId.Equals(intent.AttackIntent.Selection.Target.CombatantId))
+                        {
+                            impactPosition = snapshot.Enemies[j].Position;
+                            break;
+                        }
+                    }
+                }
+
+                InvokePresentation(intent.AttackIntent.DefinitionId, AttackPresentationEventKind.OnImpact, impactPosition);
+            }
+        }
+
+        private void InvokePresentation(AttackDefinitionId attackId, AttackPresentationEventKind eventKind, Vector3 position)
+        {
+            if (_attackRecipeById.TryGetValue(attackId.Value, out AttackDefinitionAsset recipe))
+            {
+                AttackPresentationInvocationResult presentation = AttackPresentationRuntimeInvoker.Invoke(
+                    recipe,
+                    eventKind,
+                    position,
+                    Quaternion.identity);
+                if (presentation.Invoked) PresentationEventCount++;
+            }
+        }
+
+        private void ApplyStatusHookSmoke()
+        {
+            if (_combatCatalog == null || !_attackRecipeById.TryGetValue(BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, out AttackDefinitionAsset recipe))
+                return;
+
+            AttackDefinition definition = recipe.ToRuntimeDefinition();
+            var runtime = new AttackRuntime(_combatCatalog, new[] { definition });
+            AttackSourceSnapshot source = new AttackSourceSnapshot(new AttackSourceId("source.template.status-smoke"), new CombatantId("template-core"));
+            runtime.RegisterSource(source);
+            var target = new HealthState(new CombatantId("combatant.template.status-smoke"), 20, 20);
+            AttackResult attack = runtime.TryAttack(source.Id, definition.Id, new[] { new AttackTargetCandidate(target.Id, target, 1) });
+            if (!attack.Succeeded) return;
+
+            var statusState = new StatusState();
+            DamageResolutionResult result = CombatDamageResolver.Resolve(_combatCatalog, target, statusState, attack.Intent.DamageRequest);
+            if (!result.Succeeded) return;
+            if (statusState.Contains(new StatusEffectId("status.template.slow")))
+                StatusHookApplicationCount++;
         }
 
         private void ApplyEncounterRewardIfTerminal()

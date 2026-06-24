@@ -3,6 +3,8 @@
   "rootNamespace": "Deucarian.TemplateGameIdleAutoDefense.Tests",
   "references": [
     "Deucarian.TemplateGameIdleAutoDefense",
+    "Deucarian.Attacks.Authoring",
+    "Deucarian.Combat",
     "Deucarian.AutoDefense",
     "Deucarian.DefenseGames",
     "Deucarian.RunUpgrades",

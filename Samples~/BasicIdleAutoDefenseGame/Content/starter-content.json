@@ -17,11 +17,41 @@
   "weapons": [
     {
       "id": "weapon.template.direct",
-      "mode": "direct"
+      "mode": "direct",
+      "attackId": "attack.template.hitscan-beam"
     },
     {
       "id": "weapon.template.projectile",
-      "mode": "projectile"
+      "mode": "projectile",
+      "attackId": "attack.template.fire-orb",
+      "projectileId": "projectile.template.fire-orb"
+    },
+    {
+      "id": "weapon.template.homing-pulse",
+      "mode": "projectile",
+      "attackId": "attack.template.homing-pulse",
+      "projectileId": "projectile.template.homing-pulse"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "attack.template.hitscan-beam",
+      "delivery": "hitscan",
+      "damageType": "damage.template.basic",
+      "damage": 8
+    },
+    {
+      "id": "attack.template.fire-orb",
+      "delivery": "projectile",
+      "damageType": "damage.template.fire",
+      "damage": 10
+    },
+    {
+      "id": "attack.template.homing-pulse",
+      "delivery": "projectile",
+      "damageType": "damage.template.arc",
+      "damage": 7,
+      "status": "status.template.slow"
     }
   ],
   "upgrades": [

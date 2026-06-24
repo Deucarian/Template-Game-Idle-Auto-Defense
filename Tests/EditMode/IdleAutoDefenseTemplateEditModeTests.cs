@@ -1,4 +1,5 @@
 using System;
+using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
 using Deucarian.IdleProgression;
 using Deucarian.Progression;
@@ -10,17 +11,35 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
     public sealed class IdleAutoDefenseTemplateEditModeTests
     {
         [Test]
-        public void DefinitionHasCentralObjectivePerimeterEnemiesAndTwoWeaponModes()
+        public void DefinitionHasCentralObjectivePerimeterEnemiesAndThreeAuthoredWeaponModes()
         {
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
 
             Assert.AreEqual("template-core", definition.Objective.Id.Value);
             Assert.AreEqual(4, definition.SpawnRing.Channels.Count);
             Assert.AreEqual(1, definition.Enemies.Count);
-            Assert.AreEqual(2, definition.Mounts.Count);
-            Assert.AreEqual(2, definition.WeaponModules.Count);
+            Assert.AreEqual(3, definition.Mounts.Count);
+            Assert.AreEqual(3, definition.WeaponModules.Count);
             Assert.IsTrue(definition.Mounts[0].HasWeapon);
             Assert.IsTrue(definition.Mounts[1].HasWeapon);
+            Assert.IsTrue(definition.Mounts[2].HasWeapon);
+        }
+
+        [Test]
+        public void AttackRecipesCreateRuntimeDefinitionsProjectilesAndStatuses()
+        {
+            AttackDefinitionAsset[] recipes = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+
+            Assert.AreEqual(3, recipes.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.HitscanAttackId.Value, recipes[0].Id);
+            Assert.AreEqual(AttackRecipeDeliveryMode.Hitscan, recipes[0].Delivery.Mode);
+            Assert.AreEqual(AttackRecipeDeliveryMode.Projectile, recipes[1].Delivery.Mode);
+            Assert.IsTrue(recipes[2].Delivery.Homing);
+
+            Assert.AreEqual(3, BasicIdleAutoDefenseGame.CreateAttackDefinitions(recipes).Length);
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateProjectileDefinitions(recipes).Length);
+            Assert.AreEqual(1, recipes[2].CreateStatusDefinitions().Length);
+            Assert.IsTrue(BasicIdleAutoDefenseGame.CreateCombatCatalog(recipes).TryGetStatus(new Deucarian.Combat.StatusEffectId("status.template.slow"), out _));
         }
 
         [Test]
