@@ -7,6 +7,7 @@ using Deucarian.IdleProgression;
 using Deucarian.Monetization;
 using Deucarian.Progression;
 using Deucarian.RunUpgrades;
+using Deucarian.TemplateGameIdleAutoDefense.Editor;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -108,6 +109,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "resolve monetization availability");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultBalance");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultMonetization");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "asset-flip-workflow.md"), "Create Game From Template");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "override-guide.md"), "Copy `Samples~/BasicIdleAutoDefenseGame/Content`");
 
             string contentRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Content");
@@ -128,6 +130,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "DefaultUpgrades", "common-run-upgrades.json"), "upgrade.template.projectile-specialization");
             AssertFileContains(Path.Combine(contentRoot, "DefaultProgression", "currencies-rewards-saves.json"), "research.template.core-plating");
             AssertFileContains(Path.Combine(contentRoot, "DefaultMonetization", "mock-placements.json"), "template.rewarded.double-offline-reward");
+            AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Enemies", "README.md"), "Swarm");
+            AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Cannon");
+            AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Projectiles", "README.md"), "projectile");
         }
 
         [Test]
@@ -256,6 +261,84 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsTrue(state.PurchaseResearch(catalog, new ProgressionOperationId("template.test.shard-rank-1"), BasicIdleAutoDefenseGame.ShardLoaderResearch).Succeeded);
             Assert.AreEqual(1, state.GetResearchRank(BasicIdleAutoDefenseGame.CorePlatingResearch));
             Assert.AreEqual(1, state.GetResearchRank(BasicIdleAutoDefenseGame.OfflineRoutingResearch));
+        }
+
+        [Test]
+        public void SetupWizardCopiesStarterToProjectOwnedFolderAndBlocksOverwrite()
+        {
+            string tempRoot = "Assets/Temp/IdleAutoDefenseWizardTests";
+            string targetRoot = tempRoot + "/WizardSmoke" + Guid.NewGuid().ToString("N");
+            var request = new IdleAutoDefenseTemplateSetupRequest
+            {
+                TargetRootAssetPath = targetRoot,
+                GameNamespace = "WizardSmoke.IdleAutoDefense",
+                GamePrefix = "Wizard Smoke",
+                AllowOverwrite = false,
+                OpenCreatedScene = false,
+                RefreshAssetDatabase = false
+            };
+
+            try
+            {
+                IdleAutoDefenseTemplateSetupResult result = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+
+                Assert.IsTrue(result.Succeeded, result.CreateSummary());
+                Assert.AreEqual(IdleAutoDefenseTemplateSetupStatus.Succeeded, result.Status);
+                AssertCreatedPathsStayUnderTarget(result, targetRoot);
+                AssertFileExists(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity");
+                AssertFileExists(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs");
+                AssertFileExists(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs.meta");
+                AssertFileExists(targetRoot + "/WizardSmoke.IdleAutoDefense.asmdef");
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultStages"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultEnemies"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultWeapons"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultWaves"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultUpgrades"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultProgression"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultMonetization"));
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/asset-flip-checklist.md"), "product-owned");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), "Deucarian.TemplateGameIdleAutoDefense");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "namespace WizardSmoke.IdleAutoDefense");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "WizardSmokeIdleAutoDefenseGameBootstrap");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/WizardSmoke.IdleAutoDefense.asmdef"), "Deucarian.TemplateGameIdleAutoDefense");
+
+                string reportPath = AssetPathToFullPath(targetRoot + "/Docs/setup-report.md");
+                File.WriteAllText(reportPath, "existing report");
+                IdleAutoDefenseTemplateSetupResult blocked = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.AreEqual(IdleAutoDefenseTemplateSetupStatus.BlockedByExistingFiles, blocked.Status);
+                Assert.That(blocked.BlockedFiles.Count, Is.GreaterThan(0));
+                Assert.AreEqual("existing report", File.ReadAllText(reportPath));
+
+                request.AllowOverwrite = true;
+                IdleAutoDefenseTemplateSetupResult overwritten = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.IsTrue(overwritten.Succeeded, overwritten.CreateSummary());
+                AssertCreatedPathsStayUnderTarget(overwritten, targetRoot);
+                StringAssert.Contains("Idle Auto Defense Setup Report", File.ReadAllText(reportPath));
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(AssetPathToFullPath(tempRoot));
+            }
+        }
+
+        [Test]
+        public void SetupWizardRejectsTargetsOutsideAssets()
+        {
+            var request = new IdleAutoDefenseTemplateSetupRequest
+            {
+                TargetRootAssetPath = "Assets/../Packages/WizardSmoke",
+                GameNamespace = "WizardSmoke.IdleAutoDefense",
+                GamePrefix = "Wizard Smoke",
+                AllowOverwrite = false,
+                OpenCreatedScene = false,
+                RefreshAssetDatabase = false
+            };
+
+            IdleAutoDefenseTemplateSetupResult result = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+
+            Assert.AreEqual(IdleAutoDefenseTemplateSetupStatus.Failed, result.Status);
+            Assert.That(result.Messages.Count, Is.GreaterThan(0));
+            StringAssert.Contains("Assets", result.Messages[0]);
         }
 
         [Test]
@@ -402,6 +485,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             Assert.IsTrue(File.Exists(path), "Expected file to exist: " + path);
             StringAssert.Contains(expected, File.ReadAllText(path));
+        }
+
+        private static void AssertFileExists(string assetPath)
+        {
+            Assert.IsTrue(File.Exists(AssetPathToFullPath(assetPath)), "Expected file to exist: " + assetPath);
+        }
+
+        private static string AssetPathToFullPath(string assetPath)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            return Path.GetFullPath(Path.Combine(projectRoot, assetPath.Replace('/', Path.DirectorySeparatorChar)));
+        }
+
+        private static void AssertCreatedPathsStayUnderTarget(IdleAutoDefenseTemplateSetupResult result, string targetRoot)
+        {
+            for (int i = 0; i < result.CreatedFiles.Count; i++)
+            {
+                StringAssert.StartsWith(targetRoot + "/", result.CreatedFiles[i]);
+                StringAssert.DoesNotContain("Packages/", result.CreatedFiles[i]);
+                StringAssert.DoesNotContain("/Runtime/", result.CreatedFiles[i]);
+                StringAssert.DoesNotContain("/Editor/", result.CreatedFiles[i]);
+            }
+
+            for (int i = 0; i < result.CreatedDirectories.Count; i++)
+            {
+                StringAssert.StartsWith(targetRoot, result.CreatedDirectories[i]);
+                StringAssert.DoesNotContain("Packages/", result.CreatedDirectories[i]);
+                StringAssert.DoesNotContain("/Runtime/", result.CreatedDirectories[i]);
+                StringAssert.DoesNotContain("/Editor/", result.CreatedDirectories[i]);
+            }
+        }
+
+        private static void DeleteDirectoryIfExists(string path)
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, true);
+            string metaPath = path + ".meta";
+            if (File.Exists(metaPath))
+                File.Delete(metaPath);
         }
 
         private static IdleAutoDefenseTemplateController CreateController()

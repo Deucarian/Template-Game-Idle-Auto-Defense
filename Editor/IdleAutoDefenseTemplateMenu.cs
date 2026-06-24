@@ -14,6 +14,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private const string ImportedSampleSceneSuffix = "/Basic Idle Auto Defense Game/Scenes/BasicIdleAutoDefenseGame.unity";
         private const string SampleSaveFolderName = "IdleAutoDefenseTemplateSample";
 
+        [MenuItem(MenuRoot + "Create Game From Template", priority = 5)]
+        public static void CreateGameFromTemplate()
+        {
+            IdleAutoDefenseTemplateSetupWizardWindow.Open();
+        }
+
         [MenuItem(MenuRoot + "Open Starter Scene", priority = 10)]
         public static void OpenStarterScene()
         {

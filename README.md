@@ -13,8 +13,9 @@ This package is a starter Unity game template for an idle auto-defense loop. It 
 3. Find `Templates > Games > Idle Auto Defense`.
 4. Install `Deucarian Template Game - Idle Auto Defense`.
 5. Import the `Basic Idle Auto Defense Game` sample from the Package Installer details panel or Unity Package Manager.
-6. Run `Tools > Deucarian > Templates > Idle Auto Defense > Open Starter Scene`.
-7. Press Play.
+6. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template`.
+7. Choose a target folder under `Assets`, a namespace, and a game prefix.
+8. Open the created scene if needed, then press Play.
 
 The starter scene shows a central core, perimeter spawn markers, Pulse Cannon and Shard Launcher mounts, a placeholder enemy preview, runtime enemies, projectile launches, staged encounters, and a small status panel.
 
@@ -32,6 +33,7 @@ The starter scene shows a central core, perimeter spawn markers, Pulse Cannon an
 - Save/load, missing-save defaults, corrupted-save recovery, and migration smoke coverage.
 - A sample-local save snapshot and reset flow.
 - A documented canonical game flow and explicit default content/balance pack.
+- A setup wizard for creating a product-owned game folder from the starter.
 - Template-local editor utilities under `Tools > Deucarian > Templates > Idle Auto Defense`.
 
 ## What To Edit First
@@ -47,9 +49,11 @@ After importing the sample, start here:
 - `Content/DefaultUpgrades`: 14 run upgrades covering damage, survival, reward, offline, reroll, crit intent, and specialization choices.
 - `Content/DefaultProgression`: currencies, rewards, account XP, unlocks, research-like defaults, offline rewards, and save DTO setup.
 - `Content/DefaultMonetization`: mock rewarded/interstitial placements and IAP placeholders.
-- `Scripts/BasicIdleAutoDefenseGameBootstrap.cs`: sample UI, sample save snapshot, and the first place to add project-specific scene glue.
+- `Scripts/<GamePrefix>IdleAutoDefenseGameBootstrap.cs`: product UI, save snapshot, and the first place to add project-specific scene glue after running the setup wizard.
 - `Prefabs/`: place your real core, enemy, weapon, and projectile prefabs here.
-- `Scenes/BasicIdleAutoDefenseGame.unity`: duplicate this scene before making production changes.
+- `Scenes/<GamePrefix>IdleAutoDefense.unity`: product-owned scene created by the setup wizard.
+
+The setup wizard writes `Docs/setup-report.md` and `Docs/asset-flip-checklist.md` into the created folder. It blocks existing files unless overwrite is explicitly enabled.
 
 The template owns the default full loop from boot through save/restart. Product games should override content and balance first, and fork the flow only when a product requirement needs it.
 
@@ -106,12 +110,12 @@ The in-game status panel also has a `Reset Save` button.
 
 ## Create Your Own Game From This
 
-1. Duplicate the imported sample folder into your project, outside `Assets/Samples`.
-2. Rename the assembly definition, namespace, scene, and bootstrap class.
-3. Replace placeholder prefabs and IDs with project-specific content.
-4. Move copied starter logic out of the template namespace.
-5. Keep the Auto Defense Suite dependency unless you intentionally split packages later.
-6. Delete the template package only after your copied game code no longer references it.
+1. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template`.
+2. Choose a target folder under `Assets`, a C# namespace, and a game prefix.
+3. Replace placeholder prefabs and IDs with project-specific content in the generated folder.
+4. Follow `Docs/asset-flip-checklist.md` and `Docs/setup-report.md`.
+5. Keep the Auto Defense Suite and Monetization dependencies unless you intentionally split packages later.
+6. Delete the template package only after your generated game code no longer references it.
 
 ## Sample Folder Map
 

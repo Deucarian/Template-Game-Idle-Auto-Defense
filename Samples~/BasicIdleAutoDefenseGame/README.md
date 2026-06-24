@@ -35,6 +35,9 @@ Basic Idle Auto Defense Game
 │   ├── DefaultMonetization
 │   └── starter-content.json
 ├── Prefabs
+│   ├── Enemies
+│   ├── Projectiles
+│   ├── Weapons
 │   └── README.md
 ├── Scenes
 │   └── BasicIdleAutoDefenseGame.unity
@@ -46,8 +49,8 @@ Basic Idle Auto Defense Game
 
 ## First Edits
 
-1. Duplicate this sample folder outside `Assets/Samples`.
-2. Rename the scene and assembly definition.
+1. Prefer `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template` for a product-owned folder.
+2. Use the generated `Docs/asset-flip-checklist.md` and `Docs/setup-report.md`.
 3. Replace IDs and tuning values in `Content/starter-content.json` plus the focused `Default*` files.
 4. Replace the generated placeholder primitives with prefabs under `Prefabs`.
-5. Move copied starter code into your own namespace before deleting the template package.
+5. Keep Deucarian package source in packages; only the generated product folder should contain product code and content.

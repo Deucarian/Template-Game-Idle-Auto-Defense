@@ -9,6 +9,8 @@ Use this guide when turning the template into a product game.
 3. Replace tuning in this order: objective, stages, enemies, waves, weapons, upgrades, progression, monetization placeholders.
 4. Keep the canonical flow until a product requirement proves it needs a fork.
 
+For a new game, prefer `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template`. The wizard creates the product-owned folder, renamed bootstrap script, copied scene, docs, and setup report while keeping package dependencies intact.
+
 ## Content Override Points
 
 - Objective/core: health, lives, contact radius, model/prefab, scene placement.
