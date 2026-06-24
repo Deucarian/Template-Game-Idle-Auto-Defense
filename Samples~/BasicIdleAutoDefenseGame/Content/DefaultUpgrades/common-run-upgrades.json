@@ -1,0 +1,61 @@
+{
+  "draft": {
+    "choices": 3,
+    "everyTicks": 30,
+    "seed": 20260623
+  },
+  "upgrades": [
+    {
+      "id": "upgrade.template.direct.damage",
+      "rarity": "common",
+      "minRank": 1,
+      "maxRank": 3,
+      "effects": [
+        {
+          "id": "template.direct.damage_bonus",
+          "target": "weapon.template.direct",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "upgrade.template.projectile.speed",
+      "rarity": "common",
+      "minRank": 1,
+      "maxRank": 3,
+      "effects": [
+        {
+          "id": "template.projectile.speed_multiplier",
+          "target": "projectile.template.basic",
+          "amount": 0.5
+        }
+      ]
+    },
+    {
+      "id": "upgrade.template.objective.repair",
+      "rarity": "common",
+      "minRank": 1,
+      "maxRank": 3,
+      "effects": [
+        {
+          "id": "template.objective.heal",
+          "target": "objective.template-core",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "upgrade.template.enemy.pacing",
+      "rarity": "common",
+      "minRank": 1,
+      "maxRank": 3,
+      "effects": [
+        {
+          "id": "template.enemy.spawn_delay_ticks",
+          "target": "encounter.template.basic",
+          "amount": 6
+        }
+      ]
+    }
+  ]
+}

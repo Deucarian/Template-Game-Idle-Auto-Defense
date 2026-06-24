@@ -29,6 +29,7 @@ The starter scene shows a central core, perimeter spawn markers, a direct weapon
 - Progression currency reward application.
 - Save/load, missing-save defaults, corrupted-save recovery, and migration smoke coverage.
 - A sample-local save snapshot and reset flow.
+- A documented canonical game flow and explicit default content/balance pack.
 - Template-local editor utilities under `Tools > Deucarian > Templates > Idle Auto Defense`.
 
 ## What To Edit First
@@ -36,11 +37,17 @@ The starter scene shows a central core, perimeter spawn markers, a direct weapon
 After importing the sample, start here:
 
 - `Content/starter-content.json`: human-readable constants for the core, spawn ring, weapons, upgrades, and offline rewards.
+- `Content/DefaultBalance`: objective, spawn ring, run loop, and draft cadence values.
+- `Content/DefaultEnemies`: starter enemy definitions.
+- `Content/DefaultWeapons`: direct/projectile weapons, attacks, and projectile settings.
+- `Content/DefaultWaves`: starter encounter and wave groups.
+- `Content/DefaultUpgrades`: common run upgrades.
+- `Content/DefaultProgression`: currencies, rewards, offline rewards, and save DTO setup.
 - `Scripts/BasicIdleAutoDefenseGameBootstrap.cs`: sample UI, sample save snapshot, and the first place to add project-specific scene glue.
 - `Prefabs/`: place your real core, enemy, weapon, and projectile prefabs here.
 - `Scenes/BasicIdleAutoDefenseGame.unity`: duplicate this scene before making production changes.
 
-The runtime constants currently live in `Runtime/IdleAutoDefenseTemplate.cs`. Treat that file as starter code to copy into your game namespace when you graduate from the template.
+The template owns the default full loop from boot through save/restart. Product games should override content and balance first, and fork the flow only when a product requirement needs it.
 
 ## Replace Enemies
 
@@ -107,6 +114,12 @@ The in-game status panel also has a `Reset Save` button.
 ```text
 Basic Idle Auto Defense Game
 ├── Content
+│   ├── DefaultBalance
+│   ├── DefaultEnemies
+│   ├── DefaultWeapons
+│   ├── DefaultWaves
+│   ├── DefaultUpgrades
+│   ├── DefaultProgression
 │   └── starter-content.json
 ├── Prefabs
 │   └── README.md

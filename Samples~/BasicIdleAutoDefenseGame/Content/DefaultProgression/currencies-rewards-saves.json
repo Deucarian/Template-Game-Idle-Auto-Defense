@@ -1,0 +1,75 @@
+{
+  "currencies": [
+    {
+      "id": "currency.template.credits",
+      "maximum": 100000
+    },
+    {
+      "id": "currency.template.parts",
+      "maximum": 10000
+    }
+  ],
+  "tracks": [
+    {
+      "id": "track.template.account",
+      "startLevel": 0,
+      "thresholds": [100, 250]
+    }
+  ],
+  "unlocks": [
+    {
+      "id": "unlock.template.starter"
+    }
+  ],
+  "encounterCompletionReward": {
+    "operationId": "template.encounter.terminal.1",
+    "currencies": [
+      {
+        "id": "currency.template.credits",
+        "amount": 25,
+        "clampToMaximum": true
+      },
+      {
+        "id": "currency.template.parts",
+        "amount": 1,
+        "clampToMaximum": true
+      }
+    ]
+  },
+  "offlineReward": {
+    "maxHours": 8,
+    "production": [
+      {
+        "currencyId": "currency.template.credits",
+        "perSecond": 0.25
+      }
+    ],
+    "cycleRewards": [
+      {
+        "currencyId": "currency.template.parts",
+        "amount": 1,
+        "everyMinutes": 5
+      }
+    ]
+  },
+  "saveDocuments": [
+    {
+      "id": "idle-auto-defense-template-profile",
+      "schemaVersion": 2,
+      "fields": ["credits", "parts", "experience", "hasStarterUnlock", "lastSeenUtcTicks"],
+      "defaultLastSeenUtc": "1970-01-01T00:00:00Z",
+      "migrationFromVersion1": "adds parts, experience, and hasStarterUnlock"
+    },
+    {
+      "id": "idle-auto-defense-template-run",
+      "schemaVersion": 1,
+      "fields": ["runId", "tick", "upgradeIds", "upgradeRanks", "banishedUpgradeIds", "lastOfflineClaimUtcTicks"]
+    },
+    {
+      "id": "idle-auto-defense-template-settings",
+      "schemaVersion": 1,
+      "fields": ["audioVolume", "reducedMotion"],
+      "defaultAudioVolume": 1
+    }
+  ]
+}

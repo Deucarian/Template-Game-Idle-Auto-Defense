@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Deucarian.AutoDefense;
 using Deucarian.IdleProgression;
 using Deucarian.Progression;
@@ -86,6 +87,42 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsTrue(result.Succeeded);
             Assert.AreEqual(25, state.GetBalance(BasicIdleAutoDefenseGame.Credits).Value);
             Assert.AreEqual(1, state.GetBalance(BasicIdleAutoDefenseGame.Parts).Value);
+        }
+
+        [Test]
+        public void CanonicalFlowDocsAndDefaultContentPackArePresent()
+        {
+            string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
+
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "Boot");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultBalance");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "override-guide.md"), "Copy `Samples~/BasicIdleAutoDefenseGame/Content`");
+
+            string contentRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Content");
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultBalance"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultEnemies"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultWeapons"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultWaves"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultUpgrades"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultProgression"));
+
+            AssertFileContains(Path.Combine(contentRoot, "DefaultBalance", "objective-and-loop.json"), "template-core");
+            AssertFileContains(Path.Combine(contentRoot, "DefaultEnemies", "basic-idle-enemy.json"), "enemy.template.basic");
+            AssertFileContains(Path.Combine(contentRoot, "DefaultWeapons", "default-weapons.json"), "weapon.template.projectile");
+            AssertFileContains(Path.Combine(contentRoot, "DefaultWaves", "basic-encounter.json"), "wave.template.basic");
+            AssertFileContains(Path.Combine(contentRoot, "DefaultUpgrades", "common-run-upgrades.json"), "upgrade.template.direct.damage");
+            AssertFileContains(Path.Combine(contentRoot, "DefaultProgression", "currencies-rewards-saves.json"), "saveDocuments");
+        }
+
+        private static void AssertDirectoryExists(string path)
+        {
+            Assert.IsTrue(Directory.Exists(path), "Expected directory to exist: " + path);
+        }
+
+        private static void AssertFileContains(string path, string expected)
+        {
+            Assert.IsTrue(File.Exists(path), "Expected file to exist: " + path);
+            StringAssert.Contains(expected, File.ReadAllText(path));
         }
     }
 }

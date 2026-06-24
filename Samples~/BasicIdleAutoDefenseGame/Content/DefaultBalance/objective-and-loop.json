@@ -1,0 +1,40 @@
+{
+  "packId": "com.deucarian.template.game.idle-auto-defense.default-balance",
+  "canonicalFlow": [
+    "boot",
+    "load-profile-save",
+    "apply-offline-reward",
+    "show-run-state",
+    "start-run",
+    "spawn-waves",
+    "auto-weapons-fire",
+    "draft-run-upgrades",
+    "win-or-fail",
+    "apply-rewards",
+    "save",
+    "restart-or-return"
+  ],
+  "objective": {
+    "id": "template-core",
+    "position": [0, 0, 0],
+    "maximumHealth": 28,
+    "lives": 3,
+    "contactRadius": 0.45,
+    "previewPrimitive": "Cube"
+  },
+  "spawnRing": {
+    "radius": 7,
+    "channels": [
+      "perimeter-north",
+      "perimeter-east",
+      "perimeter-south",
+      "perimeter-west"
+    ]
+  },
+  "runLoop": {
+    "deterministicSeed": 20260623,
+    "upgradeDraftEveryTicks": 30,
+    "upgradeChoicesPerDraft": 3,
+    "candidateCapacity": 64
+  }
+}

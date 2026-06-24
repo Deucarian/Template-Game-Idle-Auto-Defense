@@ -1,0 +1,53 @@
+{
+  "damageTypes": [
+    {
+      "id": "damage.template.basic"
+    }
+  ],
+  "attacks": [
+    {
+      "id": "attack.template.basic",
+      "damageType": "damage.template.basic",
+      "damage": 8
+    }
+  ],
+  "projectiles": [
+    {
+      "id": "projectile.template.basic",
+      "spawnableId": "projectile.template.basic",
+      "damageType": "damage.template.basic",
+      "damage": 6,
+      "lifetimeTicks": 120,
+      "speed": 8,
+      "pierce": 1,
+      "previewPrimitive": "Sphere",
+      "pool": {
+        "preload": 4,
+        "capacity": 32
+      }
+    }
+  ],
+  "weapons": [
+    {
+      "id": "weapon.template.direct",
+      "slotId": "slot.template.direct",
+      "mountId": "mount.template.direct",
+      "mountOffset": [-1.4, 0, 0],
+      "mode": "direct",
+      "attackId": "attack.template.basic",
+      "rangeOrCadence": 15,
+      "sourceId": "source.template.direct"
+    },
+    {
+      "id": "weapon.template.projectile",
+      "slotId": "slot.template.projectile",
+      "mountId": "mount.template.projectile",
+      "mountOffset": [1.4, 0, 0],
+      "mode": "projectile",
+      "attackId": "attack.template.basic",
+      "projectileId": "projectile.template.basic",
+      "rangeOrCadence": 5,
+      "sourceId": "source.template.projectile"
+    }
+  ]
+}

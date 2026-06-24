@@ -1,0 +1,56 @@
+{
+  "encounter": {
+    "id": "basic-idle-auto-defense-template",
+    "seed": 20260623,
+    "objectives": [
+      {
+        "id": "all-waves-emitted",
+        "type": "all-waves-emitted"
+      }
+    ],
+    "waves": [
+      {
+        "id": "wave.template.basic",
+        "startTick": 0,
+        "groups": [
+          {
+            "id": "group.template.perimeter-north",
+            "spawnableId": "enemy.template.basic",
+            "count": 2,
+            "batchSize": 1,
+            "startTick": 0,
+            "intervalTicks": 24,
+            "channel": "perimeter-north"
+          },
+          {
+            "id": "group.template.perimeter-east",
+            "spawnableId": "enemy.template.basic",
+            "count": 2,
+            "batchSize": 1,
+            "startTick": 12,
+            "intervalTicks": 24,
+            "channel": "perimeter-east"
+          },
+          {
+            "id": "group.template.perimeter-south",
+            "spawnableId": "enemy.template.basic",
+            "count": 2,
+            "batchSize": 1,
+            "startTick": 24,
+            "intervalTicks": 24,
+            "channel": "perimeter-south"
+          },
+          {
+            "id": "group.template.perimeter-west",
+            "spawnableId": "enemy.template.basic",
+            "count": 2,
+            "batchSize": 1,
+            "startTick": 36,
+            "intervalTicks": 24,
+            "channel": "perimeter-west"
+          }
+        ]
+      }
+    ]
+  }
+}
