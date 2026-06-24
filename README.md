@@ -41,6 +41,8 @@ The template creates three attack recipes when no serialized recipes are assigne
 
 The controller converts these recipes into `AttackDefinition`, `ProjectileDefinition`, and `CombatCatalog` entries at runtime. It also invokes OnFire/OnImpact presentation events and runs a small status hook smoke path so missing optional audio/VFX never blocks gameplay.
 
+To replace the transient recipes with persistent assets, create them through `Deucarian/Game Content Authoring` and assign them to `IdleAutoDefenseTemplateController`. The assigned set must include the three template attack IDs above because the starter weapon modules reference those IDs. Empty, duplicate, invalid, or incomplete assigned sets are ignored with a warning and the controller falls back to the built-in transient recipes.
+
 ## Dependency Graph
 
 ```text

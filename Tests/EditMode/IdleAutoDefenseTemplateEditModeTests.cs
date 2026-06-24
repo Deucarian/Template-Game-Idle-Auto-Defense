@@ -43,6 +43,28 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void AssignedAttackRecipesFallBackWhenRequiredTemplateIdsAreMissing()
+        {
+            AttackDefinitionAsset customOnly = AttackDefinitionAsset.CreateTransient(
+                "attack.custom.only",
+                "Custom Only",
+                AttackRecipeDeliveryMode.Hitscan,
+                BasicIdleAutoDefenseGame.DamageType.Value,
+                3,
+                0,
+                5,
+                AttackRecipeTargetingMode.Nearest);
+
+            AttackDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(new[] { customOnly, null }, out int rejectedRecipeCount);
+
+            Assert.That(rejectedRecipeCount, Is.GreaterThan(0));
+            Assert.AreEqual(3, resolved.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.HitscanAttackId.Value, resolved[0].Id);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.FireOrbAttackId.Value, resolved[1].Id);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, resolved[2].Id);
+        }
+
+        [Test]
         public void UpgradeDraftOffersAtLeastThreeDeterministicChoices()
         {
             RunUpgradeCatalog catalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog();

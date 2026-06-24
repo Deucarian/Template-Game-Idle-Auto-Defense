@@ -28,6 +28,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly AttackDefinitionId FireOrbAttackId = new AttackDefinitionId("attack.template.fire-orb");
         public static readonly AttackDefinitionId HomingPulseAttackId = new AttackDefinitionId("attack.template.homing-pulse");
         public static readonly AttackDefinitionId AttackId = FireOrbAttackId;
+        private static readonly string[] RequiredTemplateAttackIds =
+        {
+            HitscanAttackId.Value,
+            FireOrbAttackId.Value,
+            HomingPulseAttackId.Value
+        };
+
         public static readonly ProjectileDefinitionId FireOrbProjectileId = new ProjectileDefinitionId("projectile.template.fire-orb");
         public static readonly ProjectileDefinitionId HomingPulseProjectileId = new ProjectileDefinitionId("projectile.template.homing-pulse");
         public static readonly ProjectileDefinitionId ProjectileId = FireOrbProjectileId;
@@ -214,13 +221,64 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             };
         }
 
+        public static AttackDefinitionAsset[] ResolveAttackRecipesForTemplate(IReadOnlyList<AttackDefinitionAsset> assignedRecipes, out int rejectedRecipeCount)
+        {
+            rejectedRecipeCount = 0;
+            if (assignedRecipes == null || assignedRecipes.Count == 0)
+                return CreateAttackRecipes();
+
+            var recipes = new List<AttackDefinitionAsset>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assignedRecipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = assignedRecipes[i];
+                if (recipe == null)
+                {
+                    rejectedRecipeCount++;
+                    continue;
+                }
+
+                AttackRecipeValidationReport report = AttackRecipeValidator.Validate(recipe, AttackRecipeValidationOptions.RuntimeFriendly);
+                if (!report.IsValid)
+                {
+                    rejectedRecipeCount++;
+                    continue;
+                }
+
+                string id = recipe.Id.Trim();
+                if (!seen.Add(id))
+                {
+                    rejectedRecipeCount++;
+                    continue;
+                }
+
+                recipes.Add(recipe);
+            }
+
+            if (recipes.Count == 0)
+                return CreateAttackRecipes();
+
+            int missingRequired = CountMissingRequiredTemplateAttackIds(recipes);
+            if (missingRequired > 0)
+            {
+                rejectedRecipeCount += missingRequired;
+                return CreateAttackRecipes();
+            }
+
+            return recipes.ToArray();
+        }
+
         public static AttackDefinition[] CreateAttackDefinitions(IReadOnlyList<AttackDefinitionAsset> attackRecipes)
         {
             if (attackRecipes == null || attackRecipes.Count == 0) throw new ArgumentException("At least one attack recipe is required.", nameof(attackRecipes));
             var definitions = new AttackDefinition[attackRecipes.Count];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < attackRecipes.Count; i++)
             {
                 if (attackRecipes[i] == null) throw new ArgumentException("Attack recipe cannot be null.", nameof(attackRecipes));
+                AttackRecipeValidationReport report = AttackRecipeValidator.Validate(attackRecipes[i], AttackRecipeValidationOptions.RuntimeFriendly);
+                if (!report.IsValid) throw new ArgumentException("Attack recipe is invalid: " + GetFirstValidationError(report), nameof(attackRecipes));
+                if (!seen.Add(attackRecipes[i].Id.Trim())) throw new ArgumentException("Duplicate attack recipe ID: " + attackRecipes[i].Id, nameof(attackRecipes));
                 definitions[i] = attackRecipes[i].ToRuntimeDefinition();
             }
 
@@ -283,6 +341,36 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (!id.IsEmpty && seen.Add(id.Value)) damageTypes.Add(new DamageTypeDefinition(id));
         }
+
+        private static int CountMissingRequiredTemplateAttackIds(IReadOnlyList<AttackDefinitionAsset> recipes)
+        {
+            int missing = 0;
+            for (int i = 0; i < RequiredTemplateAttackIds.Length; i++)
+                if (!ContainsRecipeId(recipes, RequiredTemplateAttackIds[i]))
+                    missing++;
+            return missing;
+        }
+
+        private static bool ContainsRecipeId(IReadOnlyList<AttackDefinitionAsset> recipes, string id)
+        {
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = recipes[i];
+                if (recipe != null && string.Equals(recipe.Id, id, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string GetFirstValidationError(AttackRecipeValidationReport report)
+        {
+            IReadOnlyList<AttackRecipeValidationIssue> issues = report.Issues;
+            for (int i = 0; i < issues.Count; i++)
+                if (issues[i].IsError)
+                    return issues[i].Path + ": " + issues[i].Message;
+            return "unknown validation error";
+        }
     }
 
     public class IdleAutoDefenseTemplateController : MonoBehaviour
@@ -308,7 +396,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private IdleProgressionDefinition _offlineDefinition;
         private bool _completionRewardApplied;
         private GameObject _enemyPrefab;
-        private GameObject _projectilePrefab;
+        private GameObject _fireProjectilePrefab;
+        private GameObject _homingProjectilePrefab;
         private GameObject _root;
 
         public AutoDefenseRuntime Runtime => _runtime;
@@ -316,6 +405,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int DirectOrCombatKillCount { get; private set; }
         public int ProjectileLaunchCount { get; private set; }
         public int ProjectileAdapterKillCount { get; private set; }
+        public int InvalidAssignedRecipeCount { get; private set; }
         public int ObjectiveReachCount { get; private set; }
         public int ObjectiveDamageEvents { get; private set; }
         public int DraftTickCount { get; private set; }
@@ -356,10 +446,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _root = new GameObject("BasicIdleAutoDefenseGame");
             CreatePrimitive("Template Core", PrimitiveType.Cube, _definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
             for (int i = 0; i < _definition.Mounts.Count; i++)
-                CreatePrimitive(_definition.Mounts[i].Id.Value, PrimitiveType.Cube, _definition.Objective.Position + _definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
+                CreatePrimitive(_definition.Mounts[i].Id.Value, PrimitiveType.Cube, _definition.Objective.Position + _definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), GetMountColor(_definition.Mounts[i].Id));
 
             _enemyPrefab = CreatePrefab("TemplateIdleEnemyPrefab", PrimitiveType.Capsule, Color.red);
-            _projectilePrefab = CreatePrefab("TemplateIdleProjectilePrefab", PrimitiveType.Sphere, Color.magenta);
+            _fireProjectilePrefab = CreatePrefab("TemplateIdleFireOrbProjectilePrefab", PrimitiveType.Sphere, new Color(1f, 0.36f, 0.08f));
+            _homingProjectilePrefab = CreatePrefab("TemplateIdleHomingPulseProjectilePrefab", PrimitiveType.Capsule, new Color(0.18f, 0.78f, 1f));
 
             var poseResolver = new AutoDefensePerimeterPoseResolver(_definition.Objective, _definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
@@ -376,7 +467,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             });
             ProjectileDefinition[] projectileDefinitions = BasicIdleAutoDefenseGame.CreateProjectileDefinitions(_resolvedAttackRecipes);
             _projectileSpawning = new WorldSpawnService(
-                new SpawnableCatalog(CreateProjectileSpawnables(projectileDefinitions, _projectilePrefab)),
+                new SpawnableCatalog(CreateProjectileSpawnables(projectileDefinitions)),
                 projectilePoseResolver,
                 rootName: "TemplateIdleProjectiles");
             _projectileNavigation = new WorldNavigationService();
@@ -512,16 +603,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private AttackDefinitionAsset[] ResolveAttackRecipes()
         {
-            if (_attackRecipes != null && _attackRecipes.Length > 0)
+            AttackDefinitionAsset[] recipes = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(_attackRecipes, out int rejectedRecipeCount);
+            InvalidAssignedRecipeCount = rejectedRecipeCount;
+            if (InvalidAssignedRecipeCount > 0)
             {
-                var recipes = new List<AttackDefinitionAsset>();
-                for (int i = 0; i < _attackRecipes.Length; i++)
-                    if (_attackRecipes[i] != null)
-                        recipes.Add(_attackRecipes[i]);
-                if (recipes.Count > 0) return recipes.ToArray();
+                Debug.LogWarning(
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or incomplete assigned attack recipe entries. The sample weapons require attack.template.hitscan-beam, attack.template.fire-orb, and attack.template.homing-pulse; missing required recipes fall back to built-in transient recipes.",
+                    this);
             }
 
-            return BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            return recipes;
         }
 
         private void CacheAttackRecipes(IReadOnlyList<AttackDefinitionAsset> recipes)
@@ -536,7 +627,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
-        private SpawnableDefinition[] CreateProjectileSpawnables(IReadOnlyList<ProjectileDefinition> projectileDefinitions, GameObject projectilePrefab)
+        private SpawnableDefinition[] CreateProjectileSpawnables(IReadOnlyList<ProjectileDefinition> projectileDefinitions)
         {
             var spawnables = new List<SpawnableDefinition>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -544,7 +635,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 ProjectileDefinition definition = projectileDefinitions[i];
                 if (definition == null || !seen.Add(definition.SpawnableId.Value)) continue;
-                spawnables.Add(new SpawnableDefinition(definition.SpawnableId, new GameObjectPrefabProvider(projectilePrefab), 4, 32));
+                spawnables.Add(new SpawnableDefinition(definition.SpawnableId, new GameObjectPrefabProvider(GetProjectilePrefab(definition.SpawnableId)), 4, 32));
             }
 
             return spawnables.ToArray();
@@ -639,6 +730,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return instance;
         }
 
+        private GameObject GetProjectilePrefab(WorldSpawnableId spawnableId)
+        {
+            if (string.Equals(spawnableId.Value, BasicIdleAutoDefenseGame.HomingPulseProjectileSpawnableId.Value, StringComparison.OrdinalIgnoreCase))
+                return _homingProjectilePrefab != null ? _homingProjectilePrefab : _fireProjectilePrefab;
+            return _fireProjectilePrefab != null ? _fireProjectilePrefab : _homingProjectilePrefab;
+        }
+
+        private static Color GetMountColor(AutoDefenseMountId mountId)
+        {
+            if (string.Equals(mountId.Value, "mount.template.projectile", StringComparison.OrdinalIgnoreCase))
+                return new Color(1f, 0.64f, 0.16f);
+            if (string.Equals(mountId.Value, "mount.template.homing-pulse", StringComparison.OrdinalIgnoreCase))
+                return new Color(0.18f, 0.78f, 1f);
+            return new Color(0.95f, 0.9f, 0.2f);
+        }
+
         private static void ApplyColor(GameObject instance, Color color)
         {
             Renderer renderer = instance.GetComponent<Renderer>();
@@ -650,7 +757,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _enemySpawning?.Dispose();
             _projectileSpawning?.Dispose();
             if (_enemyPrefab != null) Destroy(_enemyPrefab);
-            if (_projectilePrefab != null) Destroy(_projectilePrefab);
+            if (_fireProjectilePrefab != null) Destroy(_fireProjectilePrefab);
+            if (_homingProjectilePrefab != null) Destroy(_homingProjectilePrefab);
             if (_root != null) Destroy(_root);
         }
     }

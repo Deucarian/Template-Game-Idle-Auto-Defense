@@ -14,4 +14,4 @@ The scene contains a bootstrap object that creates:
 - save/load, offline reward, progression reward, and corrupted save recovery smoke paths
 - three attack recipes converted into runtime attack, projectile, status, and presentation hooks
 
-All visible gameplay objects are primitive placeholders. Replace them with real content in the `Prefabs` and `Content` folders when turning the template into a production game.
+All visible gameplay objects are primitive placeholders. The direct mount, fire orb projectile, and homing pulse projectile use different colors and shapes so the attack paths are easy to distinguish in Play Mode. Replace them with real content in the `Prefabs` and `Content` folders when turning the template into a production game.
