@@ -266,6 +266,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void GameContentPackValidationBlocksMissingIncludedContentSet()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            GameContentPackAsset pack = GameContentPackAsset.CreateTransient(
+                "contentpack.test.missing-included-set",
+                "Missing Included Set Pack",
+                new GameContentSetAsset[] { contentSet, null },
+                contentSet);
+
+            GameContentPackValidationReport report = GameContentPackValidator.Validate(pack);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "ContentSets[1]");
+        }
+
+        [Test]
         public void GameContentPackValidationBlocksInvalidReferencedContentSet()
         {
             GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
@@ -447,6 +463,38 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssetDatabase.SaveAssets();
 
                 Assert.IsTrue(GameContentAuthoringEditorAssets.HasDuplicateId<GameContentSetAsset>(existing.Id, asset => asset.Id));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(targetFolder);
+                if (createdRoot) AssetDatabase.DeleteAsset(tempRoot);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        [Test]
+        public void GameContentPackDuplicateIdsAreDetectedBySharedAuthoringScan()
+        {
+            const string tempRoot = "Assets/T";
+            string targetFolder = tempRoot + "/GcpDuplicate" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            string assetPath = targetFolder + "/DuplicateContentPack.asset";
+            bool createdRoot = false;
+            if (!AssetDatabase.IsValidFolder(tempRoot))
+            {
+                AssetDatabase.CreateFolder("Assets", "T");
+                createdRoot = true;
+            }
+
+            AssetDatabase.CreateFolder(tempRoot, Path.GetFileName(targetFolder));
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            GameContentPackAsset existing = CreateValidContentPack(contentSet);
+            existing.hideFlags = HideFlags.None;
+            try
+            {
+                AssetDatabase.CreateAsset(existing, assetPath);
+                AssetDatabase.SaveAssets();
+
+                Assert.IsTrue(GameContentAuthoringEditorAssets.HasDuplicateId<GameContentPackAsset>(existing.Id, asset => asset.Id));
             }
             finally
             {
