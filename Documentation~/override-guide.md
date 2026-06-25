@@ -6,10 +6,12 @@ Use this guide when turning the template into a product game.
 
 1. Copy `Samples~/BasicIdleAutoDefenseGame/Content` into a product-owned content folder.
 2. Rename IDs from `template.*` to the product namespace.
-3. Replace tuning in this order: objective, stages, enemies, waves, weapons, upgrades, progression, monetization placeholders.
-4. Keep the canonical flow until a product requirement proves it needs a fork.
+3. Rename the `ContentPacks` and `ContentSets` IDs after the referenced authored assets have product IDs.
+4. Replace tuning in this order: objective, stages, enemies, waves, weapons, upgrades, progression, monetization placeholders.
+5. Keep the canonical flow until a product requirement proves it needs a fork.
 
 For a new game, prefer `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template`. The wizard creates the product-owned folder, renamed bootstrap script, copied scene, docs, and setup report while keeping package dependencies intact.
+For authored asset setup, use `Tools > Deucarian > Game Content Authoring` and the `Content Pack` provider. Previewing a pack is read-only; applying the pack intentionally marks the scene dirty.
 
 ## Content Override Points
 
@@ -22,6 +24,7 @@ For a new game, prefer `Tools > Deucarian > Templates > Idle Auto Defense > Crea
 - Progression: currency caps, completion rewards, XP, unlocks, offline reward rates, max offline time.
 - Monetization: rewarded placement IDs, interstitial cooldowns, session caps, no-ads entitlement placeholder, starter/currency pack placeholders, and product claim IDs.
 - Saves: document IDs, DTO shape, validators, migrations, slots.
+- Content pack: pack ID, default content set, included content sets, compatibility notes, tags, and optional icon/banner.
 
 ## What To Keep In Packages
 
