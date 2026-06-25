@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 026a24230b52426782291341bd80e8a7, type: 3}
   m_Name: attack.template.hitscan-beam_AttackDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackDefinitionAsset
-  _id: attack.template.hitscan-beam
-  _displayName: Template Beam
+  _id: attack.template.pulse-cannon
+  _displayName: Template Beam Pulse
   _icon: {fileID: 0}
   _tags:
   - template
