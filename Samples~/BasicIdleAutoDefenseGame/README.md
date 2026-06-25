@@ -14,6 +14,7 @@ The scene contains a bootstrap object that creates:
 - one Pulse Cannon direct weapon mount
 - one Shard Launcher projectile weapon mount
 - First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder content definitions
+- a `Basic Idle Auto Defense Content Set` assigned to the scene bootstrap
 - deterministic run upgrade drafts
 - save/load, offline reward, mock monetization offers, progression reward, sample save reset, and corrupted save recovery smoke paths
 - a small on-screen status panel with save/reset buttons
@@ -33,6 +34,7 @@ Basic Idle Auto Defense Game
 │   ├── DefaultUpgrades
 │   ├── DefaultProgression
 │   ├── DefaultMonetization
+│   ├── ContentSets
 │   └── starter-content.json
 ├── Prefabs
 │   ├── Enemies
@@ -54,3 +56,5 @@ Basic Idle Auto Defense Game
 3. Replace IDs and tuning values in `Content/starter-content.json` plus the focused `Default*` files.
 4. Replace the generated placeholder primitives with prefabs under `Prefabs`.
 5. Keep Deucarian package source in packages; only the generated product folder should contain product code and content.
+
+The assigned content set lives under `Content/ContentSets`. It references the authored sample attacks, enemies, waves, towers/weapons, and upgrades, and proves the template can run from a single game recipe instead of only per-type fallback arrays. Sample audio is intentionally optional; missing audio or VFX references are expected to preview as unassigned rather than as errors.

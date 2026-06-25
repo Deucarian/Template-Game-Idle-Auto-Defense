@@ -4,7 +4,7 @@ Package ID: `com.deucarian.template.game.idle-auto-defense`
 
 Version: `0.1.1`
 
-This package is a starter Unity game template for an idle auto-defense loop. It depends on `com.deucarian.auto-defense-suite` and `com.deucarian.monetization`; reusable gameplay and monetization abstractions stay in Deucarian packages, while this package owns starter-game glue, sample content, placement hooks, and developer-facing setup helpers.
+This package is a starter Unity game template for an idle auto-defense loop. It depends on `com.deucarian.auto-defense-suite`, `com.deucarian.game-content-authoring`, and `com.deucarian.monetization`; reusable gameplay and monetization abstractions stay in Deucarian packages, while this package owns starter-game glue, sample content, placement hooks, and developer-facing setup helpers.
 
 ## Quick Start
 
@@ -34,6 +34,7 @@ The starter scene shows a central core, perimeter spawn markers, Pulse Cannon an
 - A sample-local save snapshot and reset flow.
 - A documented canonical game flow and explicit default content/balance pack.
 - A setup wizard for creating a product-owned game folder from the starter.
+- A `GameContentSetAsset` sample recipe and authoring provider for assembling attacks, enemies, waves, towers/weapons, and upgrades into a playable run.
 - Template-local editor utilities under `Tools > Deucarian > Templates > Idle Auto Defense`.
 
 ## What To Edit First
@@ -56,6 +57,19 @@ After importing the sample, start here:
 The setup wizard writes `Docs/setup-report.md` and `Docs/asset-flip-checklist.md` into the created folder. It blocks existing files unless overwrite is explicitly enabled.
 
 The template owns the default full loop from boot through save/restart. Product games should override content and balance first, and fork the flow only when a product requirement needs it.
+
+## Create A Game / Run Content Set
+
+1. Open `Tools > Deucarian > Game Content Authoring`.
+2. Use the Attack, Enemy, Wave, Tower / Weapon, and Upgrade providers to create the assets for a run.
+3. Select `Game / Run Content Set`.
+4. Assign the starting tower/weapon, available tower/weapon list, enemy pool, wave list, upgrade pool, resources, economy hints, tags, and optional icon/banner.
+5. Create under `Assets/GameContent/ContentSets/{ContentSetId}/`.
+6. Assign the created `GameContentSetAsset` to an `IdleAutoDefenseTemplateController`.
+
+The content set is a root asset that references existing authored assets; it does not own their sub-assets. Runtime conversion stays in gameplay packages: weapons still point at attack definitions, waves still point at enemies, and upgrades still point at included weapons, attacks, enemies, or projectile IDs. Missing optional icon/banner/audio/VFX/model references are safe metadata gaps. Missing required weapons, attacks, enemies, or waves block validation.
+
+When a valid content set is assigned, the template uses it as the source of truth. When it is missing or invalid, the controller logs a clear warning and falls back to direct assigned arrays or built-in sample content.
 
 ## Replace Enemies
 
@@ -130,6 +144,7 @@ Basic Idle Auto Defense Game
 │   ├── DefaultUpgrades
 │   ├── DefaultProgression
 │   ├── DefaultMonetization
+│   ├── ContentSets
 │   └── starter-content.json
 ├── Prefabs
 │   └── README.md
@@ -158,5 +173,6 @@ Package tests live under `Tests/EditMode` and `Tests/PlayMode`. The sample also 
 ```text
 com.deucarian.template.game.idle-auto-defense
 ├── com.deucarian.auto-defense-suite
+├── com.deucarian.game-content-authoring
 └── com.deucarian.monetization
 ```

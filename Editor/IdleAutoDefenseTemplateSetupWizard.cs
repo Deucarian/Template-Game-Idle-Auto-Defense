@@ -111,8 +111,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 string generatedScriptGuid = GenerateUnityGuid();
 
                 var operations = new List<FileOperation>();
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), Path.Combine(targetFullRoot, "Content"));
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"));
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), Path.Combine(targetFullRoot, "Content"), includeMetaFiles: true);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"), includeMetaFiles: true);
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "README.md"),
@@ -225,13 +225,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return sourceRoot;
         }
 
-        private static void AddDirectoryCopyOperations(List<FileOperation> operations, string sourceDirectory, string destinationDirectory)
+        private static void AddDirectoryCopyOperations(List<FileOperation> operations, string sourceDirectory, string destinationDirectory, bool includeMetaFiles)
         {
             if (!Directory.Exists(sourceDirectory)) return;
             string[] files = Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories);
             for (int i = 0; i < files.Length; i++)
             {
-                if (files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!includeMetaFiles && files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
                 string relative = files[i].Substring(sourceDirectory.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                 AddFileOperation(operations, Path.Combine(destinationDirectory, relative), File.ReadAllBytes(files[i]));
             }
