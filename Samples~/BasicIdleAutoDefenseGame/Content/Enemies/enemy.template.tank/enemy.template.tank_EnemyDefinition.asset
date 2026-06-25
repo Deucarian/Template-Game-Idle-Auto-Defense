@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c242515f24db449792eddec212c619fb, type: 3}
   m_Name: enemy.template.tank_EnemyDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
-  _id: enemy.template.tank
+  _id: enemy.template.legacy-tank
   _displayName: Template Tank Enemy
   _icon: {fileID: 0}
   _role: 2

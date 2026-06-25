@@ -897,6 +897,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void DefaultSampleAuthoredAssetIdsAreUniqueForContentLibrary()
+        {
+            string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
+            string contentRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Content");
+
+            AssertSampleAuthoredDefinitionIdsAreUnique(contentRoot);
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.tank", "enemy.template.tank_EnemyDefinition.asset"), "_id: enemy.template.legacy-tank");
+            AssertFileContains(Path.Combine(contentRoot, "RuntimeEnemies", "enemy.template.tank", "enemy.template.tank_EnemyDefinition.asset"), "_id: enemy.template.tank");
+            AssertFileContains(Path.Combine(contentRoot, "README.md"), "Content Library duplicate checks stay clean");
+        }
+
+        [Test]
         public void DefaultContentIdsAreUniqueAndVerticalSliceSized()
         {
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
@@ -1460,6 +1472,76 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         private static void AssertFileExists(string assetPath)
         {
             Assert.IsTrue(File.Exists(AssetPathToFullPath(assetPath)), "Expected file to exist: " + assetPath);
+        }
+
+        private static void AssertSampleAuthoredDefinitionIdsAreUnique(string contentRoot)
+        {
+            AssertDirectoryExists(contentRoot);
+            string[] assetPaths = Directory.GetFiles(contentRoot, "*.asset", SearchOption.AllDirectories);
+            var pathsByTypeAndId = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < assetPaths.Length; i++)
+            {
+                if (!TryReadAuthoredDefinitionIdentity(assetPaths[i], out string typeLabel, out string id))
+                    continue;
+
+                string key = typeLabel + "\n" + id;
+                if (!pathsByTypeAndId.TryGetValue(key, out List<string> paths))
+                {
+                    paths = new List<string>();
+                    pathsByTypeAndId.Add(key, paths);
+                }
+
+                paths.Add(ToContentRelativePath(contentRoot, assetPaths[i]));
+            }
+
+            var duplicates = new List<string>();
+            foreach (KeyValuePair<string, List<string>> pair in pathsByTypeAndId)
+            {
+                if (pair.Value.Count <= 1)
+                    continue;
+
+                string[] parts = pair.Key.Split(new[] { '\n' }, 2);
+                duplicates.Add(parts[0] + " '" + parts[1] + "': " + string.Join(", ", pair.Value));
+            }
+
+            Assert.That(duplicates, Is.Empty, "Duplicate authored sample IDs:\n" + string.Join("\n", duplicates));
+        }
+
+        private static bool TryReadAuthoredDefinitionIdentity(string assetPath, out string typeLabel, out string id)
+        {
+            typeLabel = string.Empty;
+            id = string.Empty;
+            string[] lines = File.ReadAllLines(assetPath);
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string trimmed = lines[i].Trim();
+                if (trimmed.StartsWith("m_EditorClassIdentifier:", StringComparison.Ordinal))
+                    typeLabel = ReadAuthoredDefinitionTypeLabel(trimmed);
+                else if (trimmed.StartsWith("_id:", StringComparison.Ordinal))
+                    id = trimmed.Substring("_id:".Length).Trim();
+            }
+
+            return !string.IsNullOrWhiteSpace(typeLabel) && !string.IsNullOrWhiteSpace(id);
+        }
+
+        private static string ReadAuthoredDefinitionTypeLabel(string editorClassIdentifier)
+        {
+            if (editorClassIdentifier.Contains("AttackDefinitionAsset")) return "Attack";
+            if (editorClassIdentifier.Contains("EnemyDefinitionAsset")) return "Enemy";
+            if (editorClassIdentifier.Contains("WaveDefinitionAsset")) return "Wave";
+            if (editorClassIdentifier.Contains("WeaponDefinitionAsset")) return "Tower / Weapon";
+            if (editorClassIdentifier.Contains("RunUpgradeDefinitionAsset")) return "Upgrade";
+            if (editorClassIdentifier.Contains("GameContentSetAsset")) return "Game / Run Content Set";
+            if (editorClassIdentifier.Contains("GameContentPackAsset")) return "Content Pack";
+            return string.Empty;
+        }
+
+        private static string ToContentRelativePath(string contentRoot, string assetPath)
+        {
+            string relative = assetPath.Substring(contentRoot.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return relative.Replace(Path.DirectorySeparatorChar, '/');
         }
 
         private static string ReadMetaGuid(string metaPath)

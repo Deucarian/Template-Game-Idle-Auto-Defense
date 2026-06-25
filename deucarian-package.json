@@ -1,0 +1,37 @@
+{
+  "packageId": "com.deucarian.template.game.idle-auto-defense",
+  "displayName": "Deucarian Template Game - Idle Auto Defense",
+  "ownedCapabilities": [],
+  "runtimeAssemblies": [
+    "Deucarian.TemplateGameIdleAutoDefense"
+  ],
+  "editorAssemblies": [
+    "Deucarian.TemplateGameIdleAutoDefense.Editor"
+  ],
+  "sampleAssemblies": [
+    "Deucarian.TemplateGameIdleAutoDefense.BasicIdleAutoDefenseGameSample"
+  ],
+  "testAssemblies": [
+    "Deucarian.TemplateGameIdleAutoDefense.BasicIdleAutoDefenseGameSample.Tests",
+    "Deucarian.TemplateGameIdleAutoDefense.PlayModeTests",
+    "Deucarian.TemplateGameIdleAutoDefense.Tests"
+  ],
+  "requiredDependencies": [
+    "com.deucarian.auto-defense-suite",
+    "com.deucarian.game-content-authoring",
+    "com.deucarian.monetization"
+  ],
+  "optionalVersionDefinedDependencies": [],
+  "allowedDirectDebugCalls": [
+    {
+      "file": "Runtime/IdleAutoDefenseTemplate.cs",
+      "reason": "Template sample diagnostics are intentionally visible in the Unity console; replacing them with Logging should be handled with an explicit dependency/governance phase."
+    },
+    {
+      "file": "Samples~/BasicIdleAutoDefenseGame/Scripts/BasicIdleAutoDefenseGameBootstrap.cs",
+      "reason": "Imported sample bootstrap reports save/load status to the Unity console for developer visibility."
+    }
+  ],
+  "allowedDirectUnityObjectLifetimeCalls": [],
+  "expectedSamplesRoot": "Samples~/BasicIdleAutoDefenseGame"
+}
