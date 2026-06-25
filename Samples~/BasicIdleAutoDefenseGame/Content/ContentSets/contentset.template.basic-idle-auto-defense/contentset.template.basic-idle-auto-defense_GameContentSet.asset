@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b4271c0a9f9d4f2d9a7288adf9e82965, type: 3}
-  m_Name: Basic Idle Auto Defense Content Set
+  m_Name: contentset.template.basic-idle-auto-defense_GameContentSet
   m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.GameContentSetAsset
   _id: contentset.template.basic-idle-auto-defense
   _displayName: Basic Idle Auto Defense Content Set

@@ -1189,6 +1189,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private ProgressionState _progressionState;
         private IdleProgressionDefinition _offlineDefinition;
         private bool _completionRewardApplied;
+        [SerializeField] private GameContentPackAsset _contentPack;
         [SerializeField] private GameContentSetAsset _contentSet;
         [SerializeField] private AttackDefinitionAsset[] _attackRecipes = Array.Empty<AttackDefinitionAsset>();
         [SerializeField] private EnemyDefinitionAsset[] _enemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
@@ -1224,8 +1225,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int InvalidAssignedWaveCount { get; private set; }
         public int InvalidAssignedWeaponCount { get; private set; }
         public int InvalidAssignedUpgradeCount { get; private set; }
+        public int InvalidAssignedContentPackIssueCount { get; private set; }
         public int InvalidAssignedContentSetIssueCount { get; private set; }
+        public bool UsingAssignedContentPack { get; private set; }
         public bool UsingAssignedContentSet { get; private set; }
+        public string AssignedContentPackStatus { get; private set; } = string.Empty;
         public string AssignedContentSetStatus { get; private set; } = string.Empty;
         public int ObjectiveReachCount { get; private set; }
         public int ObjectiveDamageEvents { get; private set; }
@@ -1582,11 +1586,46 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private bool TryUseAssignedContentSet()
         {
+            UsingAssignedContentPack = false;
             UsingAssignedContentSet = false;
+            InvalidAssignedContentPackIssueCount = 0;
             InvalidAssignedContentSetIssueCount = 0;
             _resolvedContentSet = null;
+
+            if (_contentPack != null)
+            {
+                GameContentPackResolution packResolution = GameContentPackValidator.Resolve(_contentPack, _contentSet);
+                InvalidAssignedContentPackIssueCount = packResolution.PackReport.ErrorCount;
+                if (packResolution.ContentSetResolution != null)
+                    InvalidAssignedContentSetIssueCount = packResolution.ContentSetResolution.Report.ErrorCount;
+
+                if (!packResolution.IsValid)
+                {
+                    AssignedContentPackStatus = "Assigned content pack is invalid; using direct assigned assets or built-in starter content.";
+                    AssignedContentSetStatus = "Content pack could not resolve a playable content set.";
+                    Debug.LogWarning(
+                        "[Idle Auto Defense Template] Assigned GameContentPackAsset '" + _contentPack.name + "' is incomplete or invalid. Falling back safely. " + CreateContentPackIssueSummary(packResolution),
+                        this);
+                    return false;
+                }
+
+                ApplyResolvedContentSet(packResolution.ContentSetResolution);
+                UsingAssignedContentPack = true;
+                AssignedContentPackStatus = "Using assigned content pack: " + packResolution.ContentPack.DisplayName;
+                AssignedContentSetStatus = "Using content set from pack: " + packResolution.SelectedContentSet.DisplayName;
+                if (packResolution.PackReport.WarningCount > 0 || packResolution.ContentSetResolution.Report.WarningCount > 0)
+                {
+                    Debug.LogWarning(
+                        "[Idle Auto Defense Template] Assigned GameContentPackAsset '" + _contentPack.name + "' is playable with warnings. " + CreateContentPackIssueSummary(packResolution),
+                        this);
+                }
+
+                return true;
+            }
+
             if (_contentSet == null)
             {
+                AssignedContentPackStatus = "No content pack assigned.";
                 AssignedContentSetStatus = "No content set assigned; using direct assigned assets or built-in starter content.";
                 return false;
             }
@@ -1603,12 +1642,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 return false;
             }
 
-            _resolvedAttackRecipes = CopyResolved(resolution.AttackRecipes);
-            _resolvedEnemyDefinitions = CopyResolved(resolution.Enemies);
-            _resolvedWaveDefinitions = CopyResolved(resolution.Waves);
-            _resolvedWeaponDefinitions = CopyResolved(resolution.Weapons);
-            _resolvedUpgradeDefinitions = CopyResolved(resolution.Upgrades);
-            UsingAssignedContentSet = true;
+            ApplyResolvedContentSet(resolution);
             AssignedContentSetStatus = "Using assigned content set: " + resolution.ContentSet.DisplayName;
             if (resolution.Report.WarningCount > 0)
             {
@@ -1618,6 +1652,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             return true;
+        }
+
+        private void ApplyResolvedContentSet(GameContentSetResolution resolution)
+        {
+            _resolvedContentSet = resolution;
+            _resolvedAttackRecipes = CopyResolved(resolution.AttackRecipes);
+            _resolvedEnemyDefinitions = CopyResolved(resolution.Enemies);
+            _resolvedWaveDefinitions = CopyResolved(resolution.Waves);
+            _resolvedWeaponDefinitions = CopyResolved(resolution.Weapons);
+            _resolvedUpgradeDefinitions = CopyResolved(resolution.Upgrades);
+            UsingAssignedContentSet = true;
         }
 
         private void ApplyContentSetStartingResources(GameContentSetResolution resolution)
@@ -1663,6 +1708,36 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             return string.Join(" | ", messages);
+        }
+
+        private static string CreateContentPackIssueSummary(GameContentPackResolution resolution)
+        {
+            if (resolution == null) return "No validation details were reported.";
+            var messages = new List<string>();
+            AddContentPackIssues(messages, resolution.PackReport);
+            if (resolution.ContentSetResolution != null)
+                AddContentSetIssues(messages, resolution.ContentSetResolution.Report);
+            return messages.Count == 0 ? "No validation details were reported." : string.Join(" | ", messages);
+        }
+
+        private static void AddContentPackIssues(List<string> messages, GameContentPackValidationReport report)
+        {
+            if (messages == null || report == null) return;
+            for (int i = 0; i < report.Issues.Count; i++)
+            {
+                GameContentPackValidationIssue issue = report.Issues[i];
+                messages.Add(issue.Path + ": " + issue.Message);
+            }
+        }
+
+        private static void AddContentSetIssues(List<string> messages, GameContentSetValidationReport report)
+        {
+            if (messages == null || report == null) return;
+            for (int i = 0; i < report.Issues.Count; i++)
+            {
+                GameContentSetValidationIssue issue = report.Issues[i];
+                messages.Add("ContentSet." + issue.Path + ": " + issue.Message);
+            }
         }
 
         private static T[] CopyResolved<T>(IReadOnlyList<T> source)
@@ -1865,8 +1940,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             InvalidAssignedWaveCount = 0;
             InvalidAssignedWeaponCount = 0;
             InvalidAssignedUpgradeCount = 0;
+            InvalidAssignedContentPackIssueCount = 0;
             InvalidAssignedContentSetIssueCount = 0;
+            UsingAssignedContentPack = false;
             UsingAssignedContentSet = false;
+            AssignedContentPackStatus = string.Empty;
             AssignedContentSetStatus = string.Empty;
             ObjectiveReachCount = 0;
             ObjectiveDamageEvents = 0;

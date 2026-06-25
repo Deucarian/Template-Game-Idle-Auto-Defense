@@ -20,6 +20,7 @@ press Play
 - Product bootstrap script in the requested namespace.
 - Product-owned scene copied from the starter scene.
 - Product-owned `Content`, `Prefabs`, `Scripts`, and `Docs` folders.
+- Authored content set and content pack assets that the copied scene can use immediately.
 - `Docs/asset-flip-checklist.md`.
 - `Docs/setup-report.md`.
 
@@ -36,6 +37,13 @@ The wizard does not copy reusable package source. Deucarian systems stay package
 - Progression values
 - Monetization placements
 - Save/profile names
+- Content pack ID and default content set
+
+## One-Click Content Setup
+
+Open `Tools > Deucarian > Game Content Authoring`, choose `Content Pack`, then create or select a pack. Use `One-Click Scene Setup` to assign the pack and default content set to the current `IdleAutoDefenseTemplateController`.
+
+Validation and preview do not dirty the scene. The scene is intentionally marked dirty only when `Apply To Scene` writes the selected content pack and content set onto the controller.
 
 ## Replace Enemy Visuals
 

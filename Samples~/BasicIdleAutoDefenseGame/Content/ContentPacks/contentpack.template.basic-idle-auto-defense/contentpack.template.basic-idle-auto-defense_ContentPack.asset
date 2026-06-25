@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad4512fc2bcb4b0eb404cdb340510c93, type: 3}
+  m_Name: contentpack.template.basic-idle-auto-defense_ContentPack
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.GameContentPackAsset
+  _id: contentpack.template.basic-idle-auto-defense
+  _displayName: Basic Idle Auto Defense Pack
+  _description: A packaged authored sample game setup using the Basic Idle Auto Defense Content Set.
+  _version: 0.1.0
+  _author: Deucarian
+  _icon: {fileID: 0}
+  _banner: {fileID: 0}
+  _contentSets:
+  - {fileID: 11400000, guid: e23c4ffed08248c48d7a71f169ad48d2, type: 2}
+  _defaultContentSet: {fileID: 11400000, guid: e23c4ffed08248c48d7a71f169ad48d2, type: 2}
+  _requiredPackages:
+  - com.deucarian.template.game.idle-auto-defense
+  - com.deucarian.attacks
+  - com.deucarian.weapon-systems
+  - com.deucarian.run-upgrades
+  - com.deucarian.game-content-authoring
+  _minimumPackageVersions: []
+  _templateCompatibilityNotes: Validated with the Idle Auto Defense template package set.
+  _tags:
+  - template
+  - authored
+  - content-pack

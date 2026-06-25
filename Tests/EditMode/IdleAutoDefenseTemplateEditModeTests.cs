@@ -229,6 +229,55 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void ValidGameContentPackValidationPassesAndCollectsDependencies()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            GameContentPackAsset pack = CreateValidContentPack(contentSet);
+
+            GameContentPackValidationReport report = GameContentPackValidator.Validate(pack);
+            GameContentPackResolution resolution = GameContentPackValidator.Resolve(pack);
+            GameContentPackDependencySummary dependencies = GameContentPackValidator.CollectDependencies(pack);
+
+            Assert.IsTrue(report.IsValid, FormatIssues(report));
+            Assert.IsTrue(resolution.IsValid, FormatIssues(resolution.PackReport));
+            Assert.AreSame(contentSet, resolution.SelectedContentSet);
+            Assert.AreEqual(1, dependencies.ContentSetCount);
+            Assert.AreEqual(2, dependencies.WeaponCount);
+            Assert.AreEqual(2, dependencies.AttackCount);
+            Assert.AreEqual(6, dependencies.EnemyCount);
+            Assert.AreEqual(2, dependencies.WaveCount);
+            Assert.AreEqual(4, dependencies.UpgradeCount);
+        }
+
+        [Test]
+        public void GameContentPackValidationBlocksMissingDefaultContentSet()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            GameContentPackAsset pack = GameContentPackAsset.CreateTransient(
+                "contentpack.test.missing-default",
+                "Missing Default Pack",
+                new[] { contentSet },
+                null);
+
+            GameContentPackValidationReport report = GameContentPackValidator.Validate(pack);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "DefaultContentSet");
+        }
+
+        [Test]
+        public void GameContentPackValidationBlocksInvalidReferencedContentSet()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
+            GameContentPackAsset pack = CreateValidContentPack(contentSet);
+
+            GameContentPackValidationReport report = GameContentPackValidator.Validate(pack);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "ContentSets[0].StartingWeapon");
+        }
+
+        [Test]
         public void GameContentSetValidationBlocksMissingStartingWeapon()
         {
             GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
@@ -429,6 +478,30 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void ControllerUsesValidAssignedGameContentPackWithoutFallback()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            GameContentPackAsset pack = CreateValidContentPack(contentSet);
+            IdleAutoDefenseTemplateController controller = CreateControllerWithContentPack(pack, null);
+            try
+            {
+                Assert.IsTrue(controller.UsingAssignedContentPack, controller.AssignedContentPackStatus);
+                Assert.IsTrue(controller.UsingAssignedContentSet, controller.AssignedContentSetStatus);
+                Assert.AreEqual(0, controller.InvalidAssignedContentPackIssueCount);
+                Assert.AreEqual(0, controller.InvalidAssignedContentSetIssueCount);
+                Assert.AreEqual(0, controller.InvalidAssignedRecipeCount);
+                Assert.AreEqual(0, controller.InvalidAssignedEnemyCount);
+                Assert.AreEqual(0, controller.InvalidAssignedWaveCount);
+                Assert.AreEqual(0, controller.InvalidAssignedWeaponCount);
+                Assert.AreEqual(0, controller.InvalidAssignedUpgradeCount);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
         public void ControllerFallsBackSafelyWhenAssignedGameContentSetIsInvalid()
         {
             GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
@@ -443,6 +516,69 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             finally
             {
                 DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void ControllerFallsBackSafelyWhenAssignedGameContentPackIsInvalid()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
+            GameContentPackAsset pack = CreateValidContentPack(contentSet);
+            IdleAutoDefenseTemplateController controller = CreateControllerWithContentPack(pack, null);
+            try
+            {
+                Assert.IsFalse(controller.UsingAssignedContentPack);
+                Assert.IsFalse(controller.UsingAssignedContentSet);
+                Assert.That(controller.InvalidAssignedContentPackIssueCount, Is.GreaterThan(0));
+                Assert.IsNotNull(controller.Runtime);
+                Assert.AreEqual("Running", controller.RuntimeStateName);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void ContentPackSceneSetupPreviewDoesNotDirtyAndApplyMarksSceneDirty()
+        {
+            const string tempRoot = "Assets/T";
+            string scenePath = tempRoot + "/ContentPackSetup_" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".unity";
+            bool createdRoot = false;
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            GameObject host = new GameObject("content-pack-setup-controller");
+            IdleAutoDefenseTemplateController controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            GameContentPackAsset pack = CreateValidContentPack(contentSet);
+
+            try
+            {
+                if (!AssetDatabase.IsValidFolder(tempRoot))
+                {
+                    AssetDatabase.CreateFolder("Assets", "T");
+                    createdRoot = true;
+                }
+
+                Assert.IsTrue(EditorSceneManager.SaveScene(scene, scenePath));
+                Assert.IsFalse(scene.isDirty);
+
+                GameContentAuthoringValidationResult validation = GameContentPackSceneSetupUtility.Validate(controller, pack, null);
+                string preview = GameContentPackSceneSetupUtility.CreatePreviewSummary(pack, null);
+
+                Assert.IsTrue(validation.IsValid);
+                Assert.That(preview, Does.Contain("Scene is unchanged"));
+                Assert.IsFalse(scene.isDirty);
+
+                GameContentCreationResult apply = GameContentPackSceneSetupUtility.Apply(controller, pack, null);
+
+                Assert.IsTrue(apply.Succeeded, apply.Message);
+                Assert.IsTrue(scene.isDirty);
+            }
+            finally
+            {
+                DestroyController(controller);
+                AssetDatabase.DeleteAsset(scenePath);
+                if (createdRoot) AssetDatabase.DeleteAsset(tempRoot);
             }
         }
 
@@ -490,6 +626,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.weapon-systems.weapon"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.run-upgrades.upgrade"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.template.idle-auto-defense.game-content-set"));
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.template.idle-auto-defense.content-pack"));
         }
 
         [Test]
@@ -695,6 +832,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertDirectoryExists(Path.Combine(contentRoot, "DefaultUpgrades"));
             AssertDirectoryExists(Path.Combine(contentRoot, "DefaultProgression"));
             AssertDirectoryExists(Path.Combine(contentRoot, "DefaultMonetization"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "ContentPacks"));
 
             AssertFileContains(Path.Combine(contentRoot, "DefaultBalance", "objective-and-loop.json"), "template-core");
             AssertFileContains(Path.Combine(contentRoot, "DefaultStages", "stages.json"), "stage.template.boss-pulse");
@@ -707,6 +845,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Enemies", "README.md"), "Swarm");
             AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Cannon");
             AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Projectiles", "README.md"), "projectile");
+            AssertFileContains(Path.Combine(contentRoot, "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset"), "contentpack.template.basic-idle-auto-defense");
         }
 
         [Test]
@@ -871,10 +1010,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultProgression"));
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultMonetization"));
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/ContentSets"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/ContentPacks"));
                 AssertFileExists(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset");
                 AssertFileExists(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta");
+                AssertFileExists(targetRoot + "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset");
+                AssertFileExists(targetRoot + "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset.meta");
                 string contentSetGuid = ReadMetaGuid(AssetPathToFullPath(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta"));
+                string contentPackGuid = ReadMetaGuid(AssetPathToFullPath(targetRoot + "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset.meta"));
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), contentSetGuid);
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), contentPackGuid);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/asset-flip-checklist.md"), "product-owned");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), "Deucarian.TemplateGameIdleAutoDefense");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "namespace WizardSmoke.IdleAutoDefense");
@@ -1155,6 +1299,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             return state;
         }
 
+        private static GameContentPackAsset CreateValidContentPack(GameContentSetAsset contentSet)
+        {
+            return GameContentPackAsset.CreateTransient(
+                "contentpack.test.basic-idle-auto-defense",
+                "Test Basic Idle Auto Defense Pack",
+                new[] { contentSet },
+                contentSet,
+                description: "Test-authored content pack.",
+                requiredPackages: new[]
+                {
+                    "com.deucarian.template.game.idle-auto-defense",
+                    "com.deucarian.attacks",
+                    "com.deucarian.weapon-systems",
+                    "com.deucarian.run-upgrades"
+                },
+                tags: new[] { "test", "content-pack" });
+        }
+
         private static IdleAutoDefenseTemplateController CreateControllerWithContentSet(GameContentSetAsset contentSet)
         {
             GameObject host = new GameObject("idle-auto-defense-template-content-set-editmode");
@@ -1168,7 +1330,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             return controller;
         }
 
+        private static IdleAutoDefenseTemplateController CreateControllerWithContentPack(GameContentPackAsset contentPack, GameContentSetAsset selectedContentSet)
+        {
+            GameObject host = new GameObject("idle-auto-defense-template-content-pack-editmode");
+            host.SetActive(false);
+            IdleAutoDefenseTemplateController controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            FieldInfo packField = typeof(IdleAutoDefenseTemplateController).GetField("_contentPack", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo setField = typeof(IdleAutoDefenseTemplateController).GetField("_contentSet", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(packField);
+            Assert.IsNotNull(setField);
+            packField.SetValue(controller, contentPack);
+            setField.SetValue(controller, selectedContentSet);
+            host.SetActive(true);
+            controller.RestartRun();
+            return controller;
+        }
+
         private static void AssertHasIssue(GameContentSetValidationReport report, string path)
+        {
+            for (int i = 0; i < report.Issues.Count; i++)
+                if (report.Issues[i].Path.Contains(path))
+                    return;
+            Assert.Fail("Expected validation issue containing path '" + path + "'. Issues: " + FormatIssues(report));
+        }
+
+        private static void AssertHasIssue(GameContentPackValidationReport report, string path)
         {
             for (int i = 0; i < report.Issues.Count; i++)
                 if (report.Issues[i].Path.Contains(path))
@@ -1183,6 +1369,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             for (int i = 0; i < report.Issues.Count; i++)
             {
                 GameContentSetValidationIssue issue = report.Issues[i];
+                messages.Add(issue.Path + ": " + issue.Message);
+            }
+
+            return string.Join(" | ", messages);
+        }
+
+        private static string FormatIssues(GameContentPackValidationReport report)
+        {
+            if (report == null || report.Issues.Count == 0) return "No issues.";
+            var messages = new List<string>();
+            for (int i = 0; i < report.Issues.Count; i++)
+            {
+                GameContentPackValidationIssue issue = report.Issues[i];
                 messages.Add(issue.Path + ": " + issue.Message);
             }
 
