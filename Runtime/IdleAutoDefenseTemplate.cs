@@ -104,6 +104,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 seed: 20260623);
         }
 
+        public static GameContentSetResolution ResolveGameContentSetForTemplate(GameContentSetAsset contentSet)
+        {
+            return GameContentSetValidator.Resolve(contentSet);
+        }
+
         public static StageDefinition[] CreateStageDefinitions()
         {
             return new[]
@@ -701,6 +706,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new RunUpgradeCatalog(CreateRunUpgradeDefinitions(upgradeDefinitions));
         }
 
+        public static RunUpgradeCatalog CreateRunUpgradeCatalogOrEmpty(IReadOnlyList<RunUpgradeDefinitionAsset> upgradeDefinitions)
+        {
+            if (upgradeDefinitions == null || upgradeDefinitions.Count == 0)
+                return new RunUpgradeCatalog(Array.Empty<RunUpgradeDefinition>());
+            return new RunUpgradeCatalog(CreateRunUpgradeDefinitions(upgradeDefinitions));
+        }
+
         public static RunUpgradeDefinitionAsset[] CreateRunUpgradeDefinitionAssets(IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null)
         {
             weaponDefinitions ??= CreateWeaponDefinitionAssets(CreateAttackRecipes());
@@ -996,6 +1008,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return values.ToArray();
         }
 
+        public static string SanitizeContentSetOperationSegment(string value)
+        {
+            return SanitizeRuntimeSegment(value);
+        }
+
         private static string SanitizeRuntimeSegment(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return "unnamed";
@@ -1172,6 +1189,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private ProgressionState _progressionState;
         private IdleProgressionDefinition _offlineDefinition;
         private bool _completionRewardApplied;
+        [SerializeField] private GameContentSetAsset _contentSet;
         [SerializeField] private AttackDefinitionAsset[] _attackRecipes = Array.Empty<AttackDefinitionAsset>();
         [SerializeField] private EnemyDefinitionAsset[] _enemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
         [SerializeField] private WaveDefinitionAsset[] _waveDefinitions = Array.Empty<WaveDefinitionAsset>();
@@ -1182,6 +1200,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private WaveDefinitionAsset[] _resolvedWaveDefinitions = Array.Empty<WaveDefinitionAsset>();
         private WeaponDefinitionAsset[] _resolvedWeaponDefinitions = Array.Empty<WeaponDefinitionAsset>();
         private RunUpgradeDefinitionAsset[] _resolvedUpgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
+        private GameContentSetResolution _resolvedContentSet;
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
@@ -1205,6 +1224,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int InvalidAssignedWaveCount { get; private set; }
         public int InvalidAssignedWeaponCount { get; private set; }
         public int InvalidAssignedUpgradeCount { get; private set; }
+        public int InvalidAssignedContentSetIssueCount { get; private set; }
+        public bool UsingAssignedContentSet { get; private set; }
+        public string AssignedContentSetStatus { get; private set; } = string.Empty;
         public int ObjectiveReachCount { get; private set; }
         public int ObjectiveDamageEvents { get; private set; }
         public int DraftTickCount { get; private set; }
@@ -1251,11 +1273,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (_runtime != null) return;
             ResetRunStateCounters();
-            _resolvedAttackRecipes = ResolveAttackRecipes();
-            _resolvedEnemyDefinitions = ResolveEnemyDefinitions();
-            _resolvedWaveDefinitions = ResolveWaveDefinitions(_resolvedEnemyDefinitions);
-            _resolvedWeaponDefinitions = ResolveWeaponDefinitions(_resolvedAttackRecipes);
-            _resolvedUpgradeDefinitions = ResolveUpgradeDefinitions();
+            if (!TryUseAssignedContentSet())
+            {
+                _resolvedAttackRecipes = ResolveAttackRecipes();
+                _resolvedEnemyDefinitions = ResolveEnemyDefinitions();
+                _resolvedWaveDefinitions = ResolveWaveDefinitions(_resolvedEnemyDefinitions);
+                _resolvedWeaponDefinitions = ResolveWeaponDefinitions(_resolvedAttackRecipes);
+                _resolvedUpgradeDefinitions = ResolveUpgradeDefinitions();
+            }
+
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions, _resolvedWeaponDefinitions);
             CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes, _resolvedEnemyDefinitions);
             AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition, _resolvedAttackRecipes);
@@ -1266,9 +1292,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateSpawnMarkers(definition.SpawnRing.Radius);
             for (int i = 0; i < definition.Mounts.Count; i++)
             {
-                string mountName = definition.Mounts[i].Id.Value.Contains("pulse")
-                    ? "Pulse Cannon Mount - Direct Single Target"
-                    : "Shard Launcher Mount - Projectile";
+                string mountName = CreateMountDisplayName(i, definition.WeaponModules[i].WeaponDefinition.FireMode);
                 CreatePrimitive(mountName, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
             }
             CreatePrimitive("Enemy Placeholder Preview - Replace Me", PrimitiveType.Capsule, new Vector3(0f, 0f, -3.25f), new Vector3(0.45f, 0.9f, 0.45f), Color.red);
@@ -1300,11 +1324,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 projectileDefinitions,
                 new WorldSpawnProjectileSpawner(_projectileSpawning, new WorldSpawnChannelId("projectile-origin")),
                 new WorldNavigationProjectileNavigator(_projectileNavigation));
-            _upgradeCatalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog(_resolvedUpgradeDefinitions);
+            _upgradeCatalog = UsingAssignedContentSet
+                ? BasicIdleAutoDefenseGame.CreateRunUpgradeCatalogOrEmpty(_resolvedUpgradeDefinitions)
+                : BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog(_resolvedUpgradeDefinitions);
             _upgradeState = new RunUpgradeState();
             _progressionCatalog ??= BasicIdleAutoDefenseGame.CreateProgressionCatalog();
+            bool createdProgressionState = _progressionState == null;
             _progressionState ??= new ProgressionState();
+            if (createdProgressionState && UsingAssignedContentSet)
+                ApplyContentSetStartingResources(_resolvedContentSet);
             _offlineDefinition = BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition();
+            ApplyContentSetEconomyTuning(_resolvedContentSet);
 
             _runtime.Start();
             Debug.Log("[Idle Auto Defense Template] Starter scene built. Open the Game view to watch the core, spawn markers, weapon mounts, and placeholder enemies.");
@@ -1312,7 +1342,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public void RestartRun()
         {
-            RestartRun(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+            RestartRun(null);
         }
 
         public void RestartRun(EncounterDefinition encounterDefinition)
@@ -1550,6 +1580,99 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EncounterRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
         }
 
+        private bool TryUseAssignedContentSet()
+        {
+            UsingAssignedContentSet = false;
+            InvalidAssignedContentSetIssueCount = 0;
+            _resolvedContentSet = null;
+            if (_contentSet == null)
+            {
+                AssignedContentSetStatus = "No content set assigned; using direct assigned assets or built-in starter content.";
+                return false;
+            }
+
+            GameContentSetResolution resolution = BasicIdleAutoDefenseGame.ResolveGameContentSetForTemplate(_contentSet);
+            _resolvedContentSet = resolution;
+            InvalidAssignedContentSetIssueCount = resolution.Report.ErrorCount;
+            if (!resolution.IsValid)
+            {
+                AssignedContentSetStatus = "Assigned content set is invalid; using direct assigned assets or built-in starter content.";
+                Debug.LogWarning(
+                    "[Idle Auto Defense Template] Assigned GameContentSetAsset '" + _contentSet.name + "' is incomplete or invalid. Falling back safely. " + CreateContentSetIssueSummary(resolution.Report),
+                    this);
+                return false;
+            }
+
+            _resolvedAttackRecipes = CopyResolved(resolution.AttackRecipes);
+            _resolvedEnemyDefinitions = CopyResolved(resolution.Enemies);
+            _resolvedWaveDefinitions = CopyResolved(resolution.Waves);
+            _resolvedWeaponDefinitions = CopyResolved(resolution.Weapons);
+            _resolvedUpgradeDefinitions = CopyResolved(resolution.Upgrades);
+            UsingAssignedContentSet = true;
+            AssignedContentSetStatus = "Using assigned content set: " + resolution.ContentSet.DisplayName;
+            if (resolution.Report.WarningCount > 0)
+            {
+                Debug.LogWarning(
+                    "[Idle Auto Defense Template] Assigned GameContentSetAsset '" + _contentSet.name + "' is playable with warnings. " + CreateContentSetIssueSummary(resolution.Report),
+                    this);
+            }
+
+            return true;
+        }
+
+        private void ApplyContentSetStartingResources(GameContentSetResolution resolution)
+        {
+            if (resolution == null || !resolution.IsValid || _progressionState == null || _progressionCatalog == null) return;
+            var currencies = new List<CurrencyLine>();
+            if (resolution.ContentSet.StartingCredits > 0)
+                currencies.Add(new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(resolution.ContentSet.StartingCredits), true));
+            if (resolution.ContentSet.StartingParts > 0)
+                currencies.Add(new CurrencyLine(BasicIdleAutoDefenseGame.Parts, new ProgressionAmount(resolution.ContentSet.StartingParts), true));
+            if (currencies.Count == 0) return;
+
+            _progressionState.ApplyReward(
+                _progressionCatalog,
+                new ProgressionOperationId("template.content-set.starting-resources." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(resolution.ContentSet.Id)),
+                new RewardBundle(currencies));
+        }
+
+        private void ApplyContentSetEconomyTuning(GameContentSetResolution resolution)
+        {
+            if (resolution == null || !resolution.IsValid) return;
+            RewardCreditMultiplierBonus = Math.Max(0d, resolution.ContentSet.RewardMultiplier - 1f);
+        }
+
+        private string CreateMountDisplayName(int index, WeaponFireMode fireMode)
+        {
+            string weaponName = index >= 0 && index < _resolvedWeaponDefinitions.Length && _resolvedWeaponDefinitions[index] != null
+                ? _resolvedWeaponDefinitions[index].DisplayName
+                : "Weapon " + (index + 1).ToString(CultureInfo.InvariantCulture);
+            if (string.IsNullOrWhiteSpace(weaponName))
+                weaponName = "Weapon " + (index + 1).ToString(CultureInfo.InvariantCulture);
+            return weaponName + " Mount - " + fireMode;
+        }
+
+        private static string CreateContentSetIssueSummary(GameContentSetValidationReport report)
+        {
+            if (report == null || report.Issues.Count == 0) return "No validation details were reported.";
+            var messages = new List<string>();
+            for (int i = 0; i < report.Issues.Count; i++)
+            {
+                GameContentSetValidationIssue issue = report.Issues[i];
+                messages.Add(issue.Path + ": " + issue.Message);
+            }
+
+            return string.Join(" | ", messages);
+        }
+
+        private static T[] CopyResolved<T>(IReadOnlyList<T> source)
+        {
+            if (source == null || source.Count == 0) return Array.Empty<T>();
+            var copy = new T[source.Count];
+            for (int i = 0; i < source.Count; i++) copy[i] = source[i];
+            return copy;
+        }
+
         private AttackDefinitionAsset[] ResolveAttackRecipes()
         {
             AttackDefinitionAsset[] recipes = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(_attackRecipes, out int rejectedRecipeCount);
@@ -1742,6 +1865,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             InvalidAssignedWaveCount = 0;
             InvalidAssignedWeaponCount = 0;
             InvalidAssignedUpgradeCount = 0;
+            InvalidAssignedContentSetIssueCount = 0;
+            UsingAssignedContentSet = false;
+            AssignedContentSetStatus = string.Empty;
             ObjectiveReachCount = 0;
             ObjectiveDamageEvents = 0;
             DraftTickCount = 0;

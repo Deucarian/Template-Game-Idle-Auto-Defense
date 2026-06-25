@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
 using Deucarian.Encounters;
+using Deucarian.GameContentAuthoring.Editor;
 using Deucarian.IdleProgression;
 using Deucarian.Monetization;
 using Deucarian.Progression;
@@ -13,6 +15,8 @@ using Deucarian.TemplateGameIdleAutoDefense.Editor;
 using Deucarian.WeaponSystems;
 using Deucarian.WeaponSystems.Authoring;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.Tests
@@ -204,6 +208,288 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             {
                 DestroyEnemyPrefabs(enemies);
             }
+        }
+
+        [Test]
+        public void ValidGameContentSetValidationPassesAndResolvesRecipe()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+            GameContentSetResolution resolution = BasicIdleAutoDefenseGame.ResolveGameContentSetForTemplate(contentSet);
+
+            Assert.IsTrue(report.IsValid, FormatIssues(report));
+            Assert.IsTrue(resolution.IsValid, FormatIssues(resolution.Report));
+            Assert.AreEqual(2, resolution.AttackRecipes.Count);
+            Assert.AreEqual(6, resolution.Enemies.Count);
+            Assert.AreEqual(2, resolution.Waves.Count);
+            Assert.AreEqual(2, resolution.Weapons.Count);
+            Assert.AreEqual(4, resolution.Upgrades.Count);
+            Assert.AreSame(contentSet.StartingWeapon, resolution.Weapons[0]);
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksMissingStartingWeapon()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "StartingWeapon");
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksMissingWaves()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(wavesOverride: Array.Empty<WaveDefinitionAsset>());
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "WaveSet");
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksEmptyEnemyPool()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(
+                enemiesOverride: Array.Empty<EnemyDefinitionAsset>(),
+                wavesOverride: Array.Empty<WaveDefinitionAsset>());
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "EnemyPool");
+        }
+
+        [Test]
+        public void GameContentSetValidationAllowsEmptyUpgradePoolAsWarning()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(upgradesOverride: Array.Empty<RunUpgradeDefinitionAsset>());
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsTrue(report.IsValid, FormatIssues(report));
+            Assert.That(report.WarningCount, Is.GreaterThan(0));
+            AssertHasIssue(report, "UpgradePool");
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksWeaponWithMissingAttackReference()
+        {
+            WeaponDefinitionAsset invalidWeapon = WeaponDefinitionAsset.CreateTransient(
+                "weapon.content-set.invalid",
+                "Invalid Weapon",
+                WeaponFireMode.DirectAttack,
+                null,
+                6,
+                7f);
+            GameContentSetAsset contentSet = CreateValidContentSet(startingWeaponOverride: invalidWeapon, weaponsOverride: new[] { invalidWeapon });
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "AvailableWeapons[0].Stats.Attack");
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksWaveReferencesMissingEnemies()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            EnemyDefinitionAsset missingEnemy = EnemyDefinitionAsset.CreateTransient(
+                "enemy.content-set.missing",
+                "Missing Enemy",
+                EnemyRole.Basic,
+                5f,
+                2f,
+                1,
+                1f,
+                BasicIdleAutoDefenseGame.DamageType.Value);
+            WaveDefinitionAsset invalidWave = WaveDefinitionAsset.CreateTransient(
+                "wave.content-set.invalid",
+                "Invalid Wave",
+                0,
+                new[] { new WaveEntryRecipe(missingEnemy, 1, 1, 0, 0, "perimeter-north") });
+            GameContentSetAsset contentSet = CreateValidContentSet(enemiesOverride: enemies, wavesOverride: new[] { invalidWave });
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "WaveSet[0].Entries[0].Enemy");
+        }
+
+        [Test]
+        public void GameContentSetValidationWarnsWhenUpgradeTargetsOutsideSet()
+        {
+            RunUpgradeDefinitionAsset outsideTarget = RunUpgradeDefinitionAsset.CreateTransient(
+                "upgrade.content-set.external-target",
+                "External Target",
+                RunUpgradeRarity.Common,
+                1,
+                1,
+                new[]
+                {
+                    new RunUpgradeEffectRecipe(
+                        RunUpgradeAuthoringTargetKind.AttackDamage,
+                        RunUpgradeModifierType.Additive,
+                        1,
+                        targetIdOverride: "weapon.external.not-in-set")
+                });
+            GameContentSetAsset contentSet = CreateValidContentSet(upgradesOverride: new[] { outsideTarget });
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsTrue(report.IsValid, FormatIssues(report));
+            Assert.That(report.WarningCount, Is.GreaterThan(0));
+            AssertHasIssue(report, "UpgradePool[0].Effects[0].Target");
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksInvalidEconomyDifficultyAndSessionValues()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(
+                startingCredits: -1,
+                startingParts: -1,
+                rewardMultiplier: 0f,
+                difficultyMultiplier: float.PositiveInfinity,
+                sessionLengthTicks: 0);
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "Economy.StartingCredits");
+            AssertHasIssue(report, "Economy.StartingParts");
+            AssertHasIssue(report, "Economy.RewardMultiplier");
+            AssertHasIssue(report, "Difficulty.Multiplier");
+            AssertHasIssue(report, "Run.SessionLengthTicks");
+        }
+
+        [Test]
+        public void GameContentSetValidationWarnsWhenEndlessSessionLengthIsOnlyPreviewHint()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(sessionLengthTicks: 0, endless: true);
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsTrue(report.IsValid, FormatIssues(report));
+            AssertHasIssue(report, "Run.SessionLengthTicks");
+        }
+
+        [Test]
+        public void GameContentSetDuplicateIdsAreDetectedBySharedAuthoringScan()
+        {
+            const string tempRoot = "Assets/T";
+            string targetFolder = tempRoot + "/GcsDuplicate" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            string assetPath = targetFolder + "/DuplicateContentSet.asset";
+            bool createdRoot = false;
+            if (!AssetDatabase.IsValidFolder(tempRoot))
+            {
+                AssetDatabase.CreateFolder("Assets", "T");
+                createdRoot = true;
+            }
+
+            AssetDatabase.CreateFolder(tempRoot, Path.GetFileName(targetFolder));
+            GameContentSetAsset existing = CreateValidContentSet();
+            existing.hideFlags = HideFlags.None;
+            try
+            {
+                AssetDatabase.CreateAsset(existing, assetPath);
+                AssetDatabase.SaveAssets();
+
+                Assert.IsTrue(GameContentAuthoringEditorAssets.HasDuplicateId<GameContentSetAsset>(existing.Id, asset => asset.Id));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(targetFolder);
+                if (createdRoot) AssetDatabase.DeleteAsset(tempRoot);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        [Test]
+        public void ControllerUsesValidAssignedGameContentSetWithoutFallback()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            IdleAutoDefenseTemplateController controller = CreateControllerWithContentSet(contentSet);
+            try
+            {
+                Assert.IsTrue(controller.UsingAssignedContentSet, controller.AssignedContentSetStatus);
+                Assert.AreEqual(0, controller.InvalidAssignedContentSetIssueCount);
+                Assert.AreEqual(0, controller.InvalidAssignedRecipeCount);
+                Assert.AreEqual(0, controller.InvalidAssignedEnemyCount);
+                Assert.AreEqual(0, controller.InvalidAssignedWaveCount);
+                Assert.AreEqual(0, controller.InvalidAssignedWeaponCount);
+                Assert.AreEqual(0, controller.InvalidAssignedUpgradeCount);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void ControllerFallsBackSafelyWhenAssignedGameContentSetIsInvalid()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet(omitStartingWeapon: true);
+            IdleAutoDefenseTemplateController controller = CreateControllerWithContentSet(contentSet);
+            try
+            {
+                Assert.IsFalse(controller.UsingAssignedContentSet);
+                Assert.That(controller.InvalidAssignedContentSetIssueCount, Is.GreaterThan(0));
+                Assert.IsNotNull(controller.Runtime);
+                Assert.AreEqual("Running", controller.RuntimeStateName);
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void GameContentSetPreviewSummaryDoesNotThrowWithMissingOptionalAssets()
+        {
+            GameContentSetAuthoringState state = CreateValidContentSetAuthoringState();
+            state.Icon = null;
+            state.Banner = null;
+            GameContentSetAsset preview = GameContentSetAsset.CreateTransient(
+                state.ContentSetId,
+                state.DisplayName,
+                state.StartingWeapon,
+                state.AvailableWeapons,
+                state.EnemyPool,
+                state.WaveSet,
+                state.UpgradePool);
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(preview);
+
+            Assert.DoesNotThrow(() => GameContentSetAuthoringPreviewSummaries.BuildSummaryRows(state));
+            Assert.DoesNotThrow(() => GameContentSetAuthoringPreviewSummaries.BuildDependencyRows(state));
+            Assert.DoesNotThrow(() => GameContentSetAuthoringPreviewSummaries.BuildWarnings(report));
+        }
+
+        [Test]
+        public void GameContentSetPreviewSummaryDoesNotDirtyActiveScene()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            bool wasDirty = scene.isDirty;
+            GameContentSetAuthoringState state = CreateValidContentSetAuthoringState();
+
+            GameContentSetAuthoringPreviewSummaries.BuildSummaryRows(state);
+            GameContentSetAuthoringPreviewSummaries.BuildDependencyRows(state);
+
+            Assert.AreEqual(wasDirty, EditorSceneManager.GetActiveScene().isDirty);
+        }
+
+        [Test]
+        public void GameContentSetProviderRegistersWithSharedAuthoringWindow()
+        {
+            Assert.AreEqual("Tools/Deucarian/Game Content Authoring", GameContentAuthoringWindow.MenuPath);
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.attack"));
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.enemy"));
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.wave"));
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.weapon-systems.weapon"));
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.run-upgrades.upgrade"));
+            Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.template.idle-auto-defense.game-content-set"));
         }
 
         [Test]
@@ -584,6 +870,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultUpgrades"));
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultProgression"));
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultMonetization"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/ContentSets"));
+                AssertFileExists(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset");
+                AssertFileExists(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta");
+                string contentSetGuid = ReadMetaGuid(AssetPathToFullPath(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta"));
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), contentSetGuid);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/asset-flip-checklist.md"), "product-owned");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), "Deucarian.TemplateGameIdleAutoDefense");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "namespace WizardSmoke.IdleAutoDefense");
@@ -803,6 +1094,101 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             };
         }
 
+        private static GameContentSetAsset CreateValidContentSet(
+            bool omitStartingWeapon = false,
+            WeaponDefinitionAsset startingWeaponOverride = null,
+            WeaponDefinitionAsset[] weaponsOverride = null,
+            EnemyDefinitionAsset[] enemiesOverride = null,
+            WaveDefinitionAsset[] wavesOverride = null,
+            RunUpgradeDefinitionAsset[] upgradesOverride = null,
+            int startingCredits = 60,
+            int startingParts = 2,
+            float rewardMultiplier = 1.1f,
+            float difficultyMultiplier = 1f,
+            int sessionLengthTicks = 180,
+            bool endless = false)
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = weaponsOverride ?? BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            EnemyDefinitionAsset[] enemies = enemiesOverride ?? BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = wavesOverride ?? CreateAssignedTemplateWaves(enemies);
+            RunUpgradeDefinitionAsset[] upgrades = upgradesOverride ?? BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            WeaponDefinitionAsset startingWeapon = omitStartingWeapon ? null : startingWeaponOverride ?? weapons[0];
+            return GameContentSetAsset.CreateTransient(
+                "contentset.test.basic-idle-auto-defense",
+                "Test Basic Idle Auto Defense Content Set",
+                startingWeapon,
+                weapons,
+                enemies,
+                waves,
+                upgrades,
+                startingCredits: startingCredits,
+                startingParts: startingParts,
+                rewardMultiplier: rewardMultiplier,
+                difficultyMultiplier: difficultyMultiplier,
+                sessionLengthTicks: sessionLengthTicks,
+                endless: endless,
+                description: "Test-authored content set.",
+                tags: new[] { "test", "content-set" });
+        }
+
+        private static GameContentSetAuthoringState CreateValidContentSetAuthoringState()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            var state = new GameContentSetAuthoringState
+            {
+                ContentSetId = contentSet.Id,
+                DisplayName = contentSet.DisplayName,
+                Description = contentSet.Description,
+                StartingWeapon = contentSet.StartingWeapon,
+                StartingCredits = contentSet.StartingCredits,
+                StartingParts = contentSet.StartingParts,
+                RewardMultiplier = contentSet.RewardMultiplier,
+                DifficultyMultiplier = contentSet.DifficultyMultiplier,
+                SessionLengthTicks = contentSet.SessionLengthTicks,
+                Endless = contentSet.Endless
+            };
+            state.AvailableWeapons.AddRange(contentSet.AvailableWeapons);
+            state.EnemyPool.AddRange(contentSet.EnemyPool);
+            state.WaveSet.AddRange(contentSet.WaveSet);
+            state.UpgradePool.AddRange(contentSet.UpgradePool);
+            return state;
+        }
+
+        private static IdleAutoDefenseTemplateController CreateControllerWithContentSet(GameContentSetAsset contentSet)
+        {
+            GameObject host = new GameObject("idle-auto-defense-template-content-set-editmode");
+            host.SetActive(false);
+            IdleAutoDefenseTemplateController controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            FieldInfo field = typeof(IdleAutoDefenseTemplateController).GetField("_contentSet", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field);
+            field.SetValue(controller, contentSet);
+            host.SetActive(true);
+            controller.RestartRun();
+            return controller;
+        }
+
+        private static void AssertHasIssue(GameContentSetValidationReport report, string path)
+        {
+            for (int i = 0; i < report.Issues.Count; i++)
+                if (report.Issues[i].Path.Contains(path))
+                    return;
+            Assert.Fail("Expected validation issue containing path '" + path + "'. Issues: " + FormatIssues(report));
+        }
+
+        private static string FormatIssues(GameContentSetValidationReport report)
+        {
+            if (report == null || report.Issues.Count == 0) return "No issues.";
+            var messages = new List<string>();
+            for (int i = 0; i < report.Issues.Count; i++)
+            {
+                GameContentSetValidationIssue issue = report.Issues[i];
+                messages.Add(issue.Path + ": " + issue.Message);
+            }
+
+            return string.Join(" | ", messages);
+        }
+
         private static void DestroyEnemyPrefabs(EnemyDefinitionAsset[] enemies)
         {
             if (enemies == null) return;
@@ -827,6 +1213,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         private static void AssertFileExists(string assetPath)
         {
             Assert.IsTrue(File.Exists(AssetPathToFullPath(assetPath)), "Expected file to exist: " + assetPath);
+        }
+
+        private static string ReadMetaGuid(string metaPath)
+        {
+            Assert.IsTrue(File.Exists(metaPath), "Expected meta file to exist: " + metaPath);
+            string[] lines = File.ReadAllLines(metaPath);
+            for (int i = 0; i < lines.Length; i++)
+                if (lines[i].StartsWith("guid:", StringComparison.Ordinal))
+                    return lines[i].Substring("guid:".Length).Trim();
+            Assert.Fail("Expected meta file to contain a guid: " + metaPath);
+            return string.Empty;
         }
 
         private static string AssetPathToFullPath(string assetPath)

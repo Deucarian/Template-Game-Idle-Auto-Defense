@@ -2,7 +2,11 @@
   "name": "Deucarian.TemplateGameIdleAutoDefense.Editor",
   "rootNamespace": "Deucarian.TemplateGameIdleAutoDefense.Editor",
   "references": [
-    "Deucarian.TemplateGameIdleAutoDefense"
+    "Deucarian.TemplateGameIdleAutoDefense",
+    "Deucarian.GameContentAuthoring.Editor",
+    "Deucarian.Attacks.Authoring",
+    "Deucarian.WeaponSystems.Authoring",
+    "Deucarian.RunUpgrades.Authoring"
   ],
   "includePlatforms": [
     "Editor"
