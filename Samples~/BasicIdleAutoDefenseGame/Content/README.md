@@ -14,6 +14,7 @@ The default pack is split by override area:
 - `DefaultMonetization` owns mock rewarded, interstitial, and IAP placeholder placement IDs.
 - `ContentSets` owns the authored playable run recipe consumed by the template controller.
 - `ContentPacks` owns the one-click package that points at the default content set and can be applied from Game Content Authoring.
+- `Enemies` and `Waves` are legacy authoring samples kept for browsing older enemy/wave recipes. Their IDs intentionally stay distinct from `RuntimeEnemies` and `RuntimeWaves` so Content Library duplicate checks stay clean.
 
 Edit this file first when experimenting with:
 
