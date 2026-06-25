@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61efcddf778f45b185cb5235ab0f4fe4, type: 3}
+  m_Name: weapon.template.shard-launcher_Stats
+  m_EditorClassIdentifier: Deucarian.WeaponSystems.Authoring::Deucarian.WeaponSystems.Authoring.WeaponStatsDefinitionAsset
+  _fireMode: 1
+  _attack: {fileID: 11400000, guid: 16f0c102ac4c82a46b5b4094f71e156a, type: 2}
+  _projectileDefinitionId: projectile.template.fire-orb
+  _cooldownTicks: 13
+  _range: 13
+  _burstCount: 1
+  _volleyCount: 1
+  _spreadDegrees: 0
+  _buildCost: 35
+  _targetingRoleId: nearest
+  _muzzleRoleId: primary

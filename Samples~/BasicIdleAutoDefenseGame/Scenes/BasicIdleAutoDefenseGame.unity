@@ -153,11 +153,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6fd2b8b1cbb841d5a22a7ac4b0502101, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _attackRecipes: []
-  _enemyDefinitions: []
-  _waveDefinitions: []
+  m_Name:
+  m_EditorClassIdentifier:
+  _attackRecipes:
+  - {fileID: 11400000, guid: 1ac4fa836181e64468d5bcce56a73bb6, type: 2}
+  - {fileID: 11400000, guid: 16f0c102ac4c82a46b5b4094f71e156a, type: 2}
+  _enemyDefinitions:
+  - {fileID: 11400000, guid: a4faad016e5ca2f4080cbecc93bb55cb, type: 2}
+  - {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
+  - {fileID: 11400000, guid: e22bfeeb5c23be44c8e41a8e66cd779b, type: 2}
+  - {fileID: 11400000, guid: 4602ef84828b8e24cafb0c6f599eef6b, type: 2}
+  - {fileID: 11400000, guid: f8ed416d64a537f4682fa474696b57dc, type: 2}
+  - {fileID: 11400000, guid: 34a29be23e8265347a22ab574694efd3, type: 2}
+  _waveDefinitions:
+  - {fileID: 11400000, guid: 139ea81c2ca6259408bcf0527b568e74, type: 2}
+  - {fileID: 11400000, guid: 5d70da8f6532ba943864e8ceae03d767, type: 2}
+  _weaponDefinitions:
+  - {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+  - {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+  _upgradeDefinitions:
+  - {fileID: 11400000, guid: 08b80f10347264245903e41ac6b98210, type: 2}
+  - {fileID: 11400000, guid: e390eddb27da0c84c8224c67756aeac5, type: 2}
+  - {fileID: 11400000, guid: 99862862109c2be4dbfa83f8391a1d63, type: 2}
+  - {fileID: 11400000, guid: 78c536521542f764abc76cb6ebd30a63, type: 2}
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0
