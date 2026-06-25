@@ -12,7 +12,10 @@
     "Deucarian.Encounters",
     "Deucarian.DefenseGames",
     "Deucarian.WorldSpawning",
+    "Deucarian.WeaponSystems",
+    "Deucarian.WeaponSystems.Authoring",
     "Deucarian.RunUpgrades",
+    "Deucarian.RunUpgrades.Authoring",
     "Deucarian.IdleProgression",
     "Deucarian.Progression",
     "Deucarian.Monetization"

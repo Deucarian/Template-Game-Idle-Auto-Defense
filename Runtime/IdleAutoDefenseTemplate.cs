@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using Deucarian.Attacks;
 using Deucarian.Attacks.Authoring;
@@ -13,7 +14,9 @@ using Deucarian.Persistence;
 using Deucarian.Progression;
 using Deucarian.Projectiles;
 using Deucarian.RunUpgrades;
+using Deucarian.RunUpgrades.Authoring;
 using Deucarian.WeaponSystems;
+using Deucarian.WeaponSystems.Authoring;
 using Deucarian.WorldNavigation;
 using Deucarian.WorldSpawning;
 using UnityEngine;
@@ -45,6 +48,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             PulseAttackId.Value,
             ShardAttackId.Value
         };
+        private static readonly string[] RequiredTemplateWeaponIds =
+        {
+            PulseCannonWeaponId.Value,
+            ShardLauncherWeaponId.Value
+        };
         private static readonly string[] RequiredTemplateEnemyIds =
         {
             SwarmEnemySpawnableId.Value,
@@ -67,27 +75,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly ResearchNodeId ShardLoaderResearch = new ResearchNodeId("research.template.shard-loader");
         public static readonly ResearchNodeId OfflineRoutingResearch = new ResearchNodeId("research.template.offline-routing");
 
-        public static AutoDefenseDefinition CreateDefinition(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null)
+        public static AutoDefenseDefinition CreateDefinition(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null, IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null)
         {
-            var pulseMount = new AutoDefenseMountId("mount.template.pulse-cannon");
-            var shardMount = new AutoDefenseMountId("mount.template.shard-launcher");
+            WeaponDefinitionAsset[] weapons = weaponDefinitions == null || weaponDefinitions.Count == 0
+                ? CreateWeaponDefinitionAssets(CreateAttackRecipes())
+                : CopyWeaponDefinitions(weaponDefinitions);
             AutoDefenseEnemyDefinition[] enemies = enemyDefinitions == null
                 ? CreateDefaultAutoDefenseEnemyDefinitions()
                 : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
+            AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
                 new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 42, DamageType, 0.45f, 4, 2),
                 AutoDefenseSpawnRingDefinition.FourWay(7f),
                 enemies,
-                new[]
-                {
-                    new AutoDefenseMountDefinition(pulseMount, new Vector3(-1.6f, 0f, 0f), new WeaponSlotId("slot.template.pulse-cannon"), PulseCannonWeaponId),
-                    new AutoDefenseMountDefinition(shardMount, new Vector3(1.6f, 0f, 0f), new WeaponSlotId("slot.template.shard-launcher"), ShardLauncherWeaponId)
-                },
-                new[]
-                {
-                    new AutoDefenseWeaponModuleDefinition(pulseMount, new WeaponDefinition(PulseCannonWeaponId, WeaponFireMode.DirectAttack, PulseAttackId, 7), Source("pulse-cannon")),
-                    new AutoDefenseWeaponModuleDefinition(shardMount, new WeaponDefinition(ShardLauncherWeaponId, WeaponFireMode.Projectile, ShardAttackId, 13, ShardProjectileId, burstCount: 1), Source("shard-launcher"))
-                });
+                mounts,
+                CreateAutoDefenseWeaponModuleDefinitions(weapons, mounts));
         }
 
         public static EncounterDefinition CreateEncounterDefinition(IReadOnlyList<WaveDefinitionAsset> waveDefinitions = null)
@@ -282,6 +284,101 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < definition.WeaponModules.Count; i++)
                 weapons.Add(definition.WeaponModules[i].WeaponDefinition);
             return new WeaponRuntime(weapons, new AttackRuntimeWeaponAttackAdapter(attacks), new ProjectileLaunchWeaponAdapter());
+        }
+
+        public static WeaponDefinitionAsset[] CreateWeaponDefinitionAssets(IReadOnlyList<AttackDefinitionAsset> attackRecipes = null)
+        {
+            attackRecipes ??= CreateAttackRecipes();
+            AttackDefinitionAsset pulse = FindAttackRecipe(attackRecipes, PulseAttackId.Value);
+            AttackDefinitionAsset shard = FindAttackRecipe(attackRecipes, ShardAttackId.Value);
+            return new[]
+            {
+                WeaponDefinitionAsset.CreateTransient(
+                    PulseCannonWeaponId.Value,
+                    "Template Pulse Cannon",
+                    WeaponFireMode.DirectAttack,
+                    pulse,
+                    7,
+                    7f,
+                    buildCost: 25,
+                    upgradeGroupId: "upgrade.group.template.pulse",
+                    tags: new[] { "template", "hitscan", "tower" }),
+                WeaponDefinitionAsset.CreateTransient(
+                    ShardLauncherWeaponId.Value,
+                    "Template Shard Launcher",
+                    WeaponFireMode.Projectile,
+                    shard,
+                    13,
+                    13f,
+                    ShardProjectileId.Value,
+                    buildCost: 35,
+                    upgradeGroupId: "upgrade.group.template.shard",
+                    tags: new[] { "template", "projectile", "tower" })
+            };
+        }
+
+        public static WeaponDefinitionAsset[] ResolveWeaponDefinitionsForTemplate(IReadOnlyList<WeaponDefinitionAsset> assignedDefinitions, IReadOnlyList<AttackDefinitionAsset> attackRecipes, out int rejectedDefinitionCount)
+        {
+            rejectedDefinitionCount = 0;
+            if (assignedDefinitions == null || assignedDefinitions.Count == 0)
+                return CreateWeaponDefinitionAssets(attackRecipes);
+
+            var definitions = new List<WeaponDefinitionAsset>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assignedDefinitions.Count; i++)
+            {
+                WeaponDefinitionAsset definition = assignedDefinitions[i];
+                if (definition == null)
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                WeaponDefinitionValidationReport report = WeaponDefinitionValidator.Validate(definition, WeaponDefinitionValidationOptions.RuntimeFriendly);
+                if (!report.IsValid || !WeaponAttackExists(definition, attackRecipes))
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                string id = definition.Id.Trim();
+                if (!seen.Add(id))
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                definitions.Add(definition);
+            }
+
+            if (definitions.Count == 0)
+                return CreateWeaponDefinitionAssets(attackRecipes);
+
+            int missingRequired = CountMissingRequiredTemplateWeaponIds(definitions);
+            if (missingRequired > 0)
+            {
+                rejectedDefinitionCount += missingRequired;
+                return CreateWeaponDefinitionAssets(attackRecipes);
+            }
+
+            return definitions.ToArray();
+        }
+
+        public static WeaponDefinition[] CreateWeaponDefinitions(IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions)
+        {
+            if (weaponDefinitions == null || weaponDefinitions.Count == 0) throw new ArgumentException("At least one weapon definition is required.", nameof(weaponDefinitions));
+            var definitions = new WeaponDefinition[weaponDefinitions.Count];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < weaponDefinitions.Count; i++)
+            {
+                if (weaponDefinitions[i] == null) throw new ArgumentException("Weapon definition cannot be null.", nameof(weaponDefinitions));
+                WeaponDefinitionValidationReport report = WeaponDefinitionValidator.Validate(weaponDefinitions[i], WeaponDefinitionValidationOptions.RuntimeFriendly);
+                if (!report.IsValid) throw new ArgumentException("Weapon definition is invalid.", nameof(weaponDefinitions));
+                if (!seen.Add(weaponDefinitions[i].Id.Trim())) throw new ArgumentException("Duplicate weapon definition ID: " + weaponDefinitions[i].Id, nameof(weaponDefinitions));
+                definitions[i] = weaponDefinitions[i].ToRuntimeDefinition();
+            }
+
+            return definitions;
         }
 
         public static ProjectileDefinition CreateProjectileDefinition()
@@ -597,7 +694,87 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return definitions;
         }
 
-        public static RunUpgradeCatalog CreateRunUpgradeCatalog()
+        public static RunUpgradeCatalog CreateRunUpgradeCatalog(IReadOnlyList<RunUpgradeDefinitionAsset> upgradeDefinitions = null)
+        {
+            if (upgradeDefinitions == null || upgradeDefinitions.Count == 0)
+                return CreateDefaultRunUpgradeCatalog();
+            return new RunUpgradeCatalog(CreateRunUpgradeDefinitions(upgradeDefinitions));
+        }
+
+        public static RunUpgradeDefinitionAsset[] CreateRunUpgradeDefinitionAssets(IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null)
+        {
+            weaponDefinitions ??= CreateWeaponDefinitionAssets(CreateAttackRecipes());
+            WeaponDefinitionAsset pulse = FindWeaponDefinition(weaponDefinitions, PulseCannonWeaponId.Value);
+            WeaponDefinitionAsset shard = FindWeaponDefinition(weaponDefinitions, ShardLauncherWeaponId.Value);
+            return new[]
+            {
+                UpgradeAsset("upgrade.template.damage-up", "Damage Increase", RunUpgradeAuthoringTargetKind.AttackDamage, RunUpgradeModifierType.Additive, 1.5, pulse, "10,20,35", RunUpgradeRarity.Common, 6, 3),
+                UpgradeAsset("upgrade.template.fire-rate-up", "Fire-Rate Increase", RunUpgradeAuthoringTargetKind.AttackRate, RunUpgradeModifierType.Additive, 1, pulse, "8,16,28", RunUpgradeRarity.Common, 5, 3),
+                UpgradeAsset("upgrade.template.range-up", "Range Increase", RunUpgradeAuthoringTargetKind.Range, RunUpgradeModifierType.Additive, 1.25, pulse, "12,24,36", RunUpgradeRarity.Common, 4, 3),
+                UpgradeAsset("upgrade.template.projectile-speed-up", "Projectile Speed Increase", RunUpgradeAuthoringTargetKind.ProjectileSpeed, RunUpgradeModifierType.Multiplicative, 0.35, shard, "10,20,40", RunUpgradeRarity.Common, 5, 3)
+            };
+        }
+
+        public static RunUpgradeDefinitionAsset[] ResolveUpgradeDefinitionsForTemplate(IReadOnlyList<RunUpgradeDefinitionAsset> assignedDefinitions, out int rejectedDefinitionCount)
+        {
+            rejectedDefinitionCount = 0;
+            if (assignedDefinitions == null || assignedDefinitions.Count == 0)
+                return CreateRunUpgradeDefinitionAssets();
+
+            var definitions = new List<RunUpgradeDefinitionAsset>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assignedDefinitions.Count; i++)
+            {
+                RunUpgradeDefinitionAsset definition = assignedDefinitions[i];
+                if (definition == null)
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                RunUpgradeDefinitionValidationReport report = RunUpgradeDefinitionValidator.Validate(definition);
+                if (!report.IsValid)
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                string id = definition.Id.Trim();
+                if (!seen.Add(id))
+                {
+                    rejectedDefinitionCount++;
+                    continue;
+                }
+
+                definitions.Add(definition);
+            }
+
+            if (definitions.Count == 0)
+                return CreateRunUpgradeDefinitionAssets();
+            if (rejectedDefinitionCount > 0)
+                return CreateRunUpgradeDefinitionAssets();
+
+            return definitions.ToArray();
+        }
+
+        public static RunUpgradeDefinition[] CreateRunUpgradeDefinitions(IReadOnlyList<RunUpgradeDefinitionAsset> upgradeDefinitions)
+        {
+            if (upgradeDefinitions == null || upgradeDefinitions.Count == 0) throw new ArgumentException("At least one upgrade definition is required.", nameof(upgradeDefinitions));
+            var definitions = new RunUpgradeDefinition[upgradeDefinitions.Count];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < upgradeDefinitions.Count; i++)
+            {
+                if (upgradeDefinitions[i] == null) throw new ArgumentException("Upgrade definition cannot be null.", nameof(upgradeDefinitions));
+                RunUpgradeDefinitionValidationReport report = RunUpgradeDefinitionValidator.Validate(upgradeDefinitions[i]);
+                if (!report.IsValid) throw new ArgumentException("Upgrade definition is invalid.", nameof(upgradeDefinitions));
+                if (!seen.Add(upgradeDefinitions[i].Id.Trim())) throw new ArgumentException("Duplicate upgrade definition ID: " + upgradeDefinitions[i].Id, nameof(upgradeDefinitions));
+                definitions[i] = upgradeDefinitions[i].ToRuntimeDefinition();
+            }
+
+            return definitions;
+        }
+
+        private static RunUpgradeCatalog CreateDefaultRunUpgradeCatalog()
         {
             return new RunUpgradeCatalog(new[]
             {
@@ -691,6 +868,145 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private static AttackSourceSnapshot Source(string suffix)
         {
             return new AttackSourceSnapshot(new AttackSourceId("source.template." + suffix), new CombatantId("template-core"));
+        }
+
+        private static AutoDefenseMountDefinition[] CreateAutoDefenseMountDefinitions(IReadOnlyList<WeaponDefinitionAsset> weapons)
+        {
+            var mounts = new AutoDefenseMountDefinition[weapons.Count];
+            float spacing = weapons.Count <= 1 ? 0f : 3.2f / Math.Max(1, weapons.Count - 1);
+            float start = weapons.Count <= 1 ? 0f : -1.6f;
+            for (int i = 0; i < weapons.Count; i++)
+            {
+                WeaponDefinitionAsset weapon = weapons[i];
+                string id = weapon == null || string.IsNullOrWhiteSpace(weapon.Id)
+                    ? "weapon.template.missing." + i.ToString(CultureInfo.InvariantCulture)
+                    : weapon.Id.Trim();
+                var weaponId = new WeaponDefinitionId(id);
+                var mountId = new AutoDefenseMountId("mount.template." + SanitizeRuntimeSegment(id));
+                var slotId = new WeaponSlotId("slot.template." + SanitizeRuntimeSegment(id));
+                mounts[i] = new AutoDefenseMountDefinition(mountId, new Vector3(start + spacing * i, 0f, 0f), slotId, weaponId);
+            }
+
+            return mounts;
+        }
+
+        private static AutoDefenseWeaponModuleDefinition[] CreateAutoDefenseWeaponModuleDefinitions(IReadOnlyList<WeaponDefinitionAsset> weapons, IReadOnlyList<AutoDefenseMountDefinition> mounts)
+        {
+            var modules = new AutoDefenseWeaponModuleDefinition[weapons.Count];
+            for (int i = 0; i < weapons.Count; i++)
+            {
+                string suffix = weapons[i] == null || string.IsNullOrWhiteSpace(weapons[i].Id)
+                    ? i.ToString(CultureInfo.InvariantCulture)
+                    : SanitizeRuntimeSegment(weapons[i].Id);
+                modules[i] = new AutoDefenseWeaponModuleDefinition(mounts[i].Id, weapons[i].ToRuntimeDefinition(), Source(suffix));
+            }
+
+            return modules;
+        }
+
+        private static WeaponDefinitionAsset[] CopyWeaponDefinitions(IReadOnlyList<WeaponDefinitionAsset> weapons)
+        {
+            if (weapons == null || weapons.Count == 0) return Array.Empty<WeaponDefinitionAsset>();
+            var copy = new WeaponDefinitionAsset[weapons.Count];
+            for (int i = 0; i < weapons.Count; i++) copy[i] = weapons[i];
+            return copy;
+        }
+
+        private static AttackDefinitionAsset FindAttackRecipe(IReadOnlyList<AttackDefinitionAsset> recipes, string id)
+        {
+            if (recipes == null || string.IsNullOrWhiteSpace(id)) return null;
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                AttackDefinitionAsset recipe = recipes[i];
+                if (recipe != null && string.Equals(recipe.Id, id, StringComparison.OrdinalIgnoreCase))
+                    return recipe;
+            }
+
+            return null;
+        }
+
+        private static WeaponDefinitionAsset FindWeaponDefinition(IReadOnlyList<WeaponDefinitionAsset> weapons, string id)
+        {
+            if (weapons == null || string.IsNullOrWhiteSpace(id)) return null;
+            for (int i = 0; i < weapons.Count; i++)
+            {
+                WeaponDefinitionAsset weapon = weapons[i];
+                if (weapon != null && string.Equals(weapon.Id, id, StringComparison.OrdinalIgnoreCase))
+                    return weapon;
+            }
+
+            return null;
+        }
+
+        private static RunUpgradeDefinitionAsset UpgradeAsset(
+            string id,
+            string displayName,
+            RunUpgradeAuthoringTargetKind targetKind,
+            RunUpgradeModifierType modifierType,
+            double amount,
+            WeaponDefinitionAsset weapon,
+            string costsCsv,
+            RunUpgradeRarity rarity,
+            int weight,
+            int maxRank)
+        {
+            return RunUpgradeDefinitionAsset.CreateTransient(
+                id,
+                displayName,
+                rarity,
+                weight,
+                maxRank,
+                new[]
+                {
+                    new RunUpgradeEffectRecipe(targetKind, modifierType, amount, weapon: weapon, targetIdOverride: weapon == null ? string.Empty : weapon.Id)
+                },
+                ParseIntCsv(costsCsv),
+                displayName + " authored upgrade.",
+                new[] { "template", "upgrade" });
+        }
+
+        private static bool WeaponAttackExists(WeaponDefinitionAsset weapon, IReadOnlyList<AttackDefinitionAsset> attackRecipes)
+        {
+            if (weapon == null || weapon.Stats == null || weapon.Stats.Attack == null) return false;
+            return FindAttackRecipe(attackRecipes, weapon.Stats.Attack.Id) != null;
+        }
+
+        private static int CountMissingRequiredTemplateWeaponIds(IReadOnlyList<WeaponDefinitionAsset> weapons)
+        {
+            int missing = 0;
+            for (int i = 0; i < RequiredTemplateWeaponIds.Length; i++)
+                if (!ContainsWeaponDefinitionId(weapons, RequiredTemplateWeaponIds[i]))
+                    missing++;
+            return missing;
+        }
+
+        private static bool ContainsWeaponDefinitionId(IReadOnlyList<WeaponDefinitionAsset> weapons, string id)
+        {
+            return FindWeaponDefinition(weapons, id) != null;
+        }
+
+        private static int[] ParseIntCsv(string csv)
+        {
+            if (string.IsNullOrWhiteSpace(csv)) return Array.Empty<int>();
+            string[] parts = csv.Split(',');
+            var values = new List<int>();
+            for (int i = 0; i < parts.Length; i++)
+                if (int.TryParse(parts[i].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
+                    values.Add(value);
+            return values.ToArray();
+        }
+
+        private static string SanitizeRuntimeSegment(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "unnamed";
+            var chars = new char[value.Length];
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                chars[i] = char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '_' ? c : '-';
+            }
+
+            return new string(chars).Trim('-', '.', '_');
         }
 
         private static AutoDefenseEnemyDefinition[] CreateDefaultAutoDefenseEnemyDefinitions()
@@ -859,9 +1175,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] private AttackDefinitionAsset[] _attackRecipes = Array.Empty<AttackDefinitionAsset>();
         [SerializeField] private EnemyDefinitionAsset[] _enemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
         [SerializeField] private WaveDefinitionAsset[] _waveDefinitions = Array.Empty<WaveDefinitionAsset>();
+        [SerializeField] private WeaponDefinitionAsset[] _weaponDefinitions = Array.Empty<WeaponDefinitionAsset>();
+        [SerializeField] private RunUpgradeDefinitionAsset[] _upgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
         private AttackDefinitionAsset[] _resolvedAttackRecipes = Array.Empty<AttackDefinitionAsset>();
         private EnemyDefinitionAsset[] _resolvedEnemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
         private WaveDefinitionAsset[] _resolvedWaveDefinitions = Array.Empty<WaveDefinitionAsset>();
+        private WeaponDefinitionAsset[] _resolvedWeaponDefinitions = Array.Empty<WeaponDefinitionAsset>();
+        private RunUpgradeDefinitionAsset[] _resolvedUpgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
@@ -883,6 +1203,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int InvalidAssignedRecipeCount { get; private set; }
         public int InvalidAssignedEnemyCount { get; private set; }
         public int InvalidAssignedWaveCount { get; private set; }
+        public int InvalidAssignedWeaponCount { get; private set; }
+        public int InvalidAssignedUpgradeCount { get; private set; }
         public int ObjectiveReachCount { get; private set; }
         public int ObjectiveDamageEvents { get; private set; }
         public int DraftTickCount { get; private set; }
@@ -932,7 +1254,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _resolvedAttackRecipes = ResolveAttackRecipes();
             _resolvedEnemyDefinitions = ResolveEnemyDefinitions();
             _resolvedWaveDefinitions = ResolveWaveDefinitions(_resolvedEnemyDefinitions);
-            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions);
+            _resolvedWeaponDefinitions = ResolveWeaponDefinitions(_resolvedAttackRecipes);
+            _resolvedUpgradeDefinitions = ResolveUpgradeDefinitions();
+            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions, _resolvedWeaponDefinitions);
             CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes, _resolvedEnemyDefinitions);
             AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition, _resolvedAttackRecipes);
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
@@ -976,7 +1300,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 projectileDefinitions,
                 new WorldSpawnProjectileSpawner(_projectileSpawning, new WorldSpawnChannelId("projectile-origin")),
                 new WorldNavigationProjectileNavigator(_projectileNavigation));
-            _upgradeCatalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog();
+            _upgradeCatalog = BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog(_resolvedUpgradeDefinitions);
             _upgradeState = new RunUpgradeState();
             _progressionCatalog ??= BasicIdleAutoDefenseGame.CreateProgressionCatalog();
             _progressionState ??= new ProgressionState();
@@ -1268,6 +1592,34 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return definitions;
         }
 
+        private WeaponDefinitionAsset[] ResolveWeaponDefinitions(IReadOnlyList<AttackDefinitionAsset> attackRecipes)
+        {
+            WeaponDefinitionAsset[] definitions = BasicIdleAutoDefenseGame.ResolveWeaponDefinitionsForTemplate(_weaponDefinitions, attackRecipes, out int rejectedDefinitionCount);
+            InvalidAssignedWeaponCount = rejectedDefinitionCount;
+            if (InvalidAssignedWeaponCount > 0)
+            {
+                Debug.LogWarning(
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or attack-mismatched assigned weapon definition entries. The starter mounts require pulse-cannon and shard-launcher weapon IDs; missing required weapons fall back to built-in transient weapons.",
+                    this);
+            }
+
+            return definitions;
+        }
+
+        private RunUpgradeDefinitionAsset[] ResolveUpgradeDefinitions()
+        {
+            RunUpgradeDefinitionAsset[] definitions = BasicIdleAutoDefenseGame.ResolveUpgradeDefinitionsForTemplate(_upgradeDefinitions, out int rejectedDefinitionCount);
+            InvalidAssignedUpgradeCount = rejectedDefinitionCount;
+            if (InvalidAssignedUpgradeCount > 0)
+            {
+                Debug.LogWarning(
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or incomplete assigned upgrade definition entries. Missing or invalid upgrade sets fall back to built-in transient upgrades.",
+                    this);
+            }
+
+            return definitions;
+        }
+
         private SpawnableDefinition[] CreateProjectileSpawnables(IReadOnlyList<ProjectileDefinition> projectileDefinitions)
         {
             var spawnables = new List<SpawnableDefinition>();
@@ -1388,6 +1740,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             InvalidAssignedRecipeCount = 0;
             InvalidAssignedEnemyCount = 0;
             InvalidAssignedWaveCount = 0;
+            InvalidAssignedWeaponCount = 0;
+            InvalidAssignedUpgradeCount = 0;
             ObjectiveReachCount = 0;
             ObjectiveDamageEvents = 0;
             DraftTickCount = 0;

@@ -8,7 +8,10 @@ using Deucarian.IdleProgression;
 using Deucarian.Monetization;
 using Deucarian.Progression;
 using Deucarian.RunUpgrades;
+using Deucarian.RunUpgrades.Authoring;
 using Deucarian.TemplateGameIdleAutoDefense.Editor;
+using Deucarian.WeaponSystems;
+using Deucarian.WeaponSystems.Authoring;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -65,6 +68,27 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateAttackDefinitions(recipes).Length);
             Assert.AreEqual(1, BasicIdleAutoDefenseGame.CreateProjectileDefinitions(recipes).Length);
             Assert.AreEqual(0, recipes[1].CreateStatusDefinitions().Length);
+        }
+
+        [Test]
+        public void WeaponAndUpgradeRecipesCreateRuntimeDefinitions()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+
+            Assert.AreEqual(2, weapons.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, weapons[0].Id);
+            Assert.AreEqual(WeaponFireMode.DirectAttack, weapons[0].Stats.FireMode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, weapons[1].Id);
+            Assert.AreEqual(WeaponFireMode.Projectile, weapons[1].Stats.FireMode);
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateWeaponDefinitions(weapons).Length);
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateDefinition(null, weapons).WeaponModules.Count);
+
+            Assert.AreEqual(4, upgrades.Length);
+            Assert.AreEqual("upgrade.template.damage-up", upgrades[0].Id);
+            Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitions(upgrades).Length);
+            Assert.IsTrue(BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog(upgrades).TryGet(new RunUpgradeId("upgrade.template.projectile-speed-up"), out _));
         }
 
         [Test]
@@ -150,21 +174,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
             EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
             WaveDefinitionAsset[] waves = CreateAssignedTemplateWaves(enemies);
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
 
             try
             {
                 AttackDefinitionAsset[] resolvedAttacks = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(attacks, out int rejectedRecipeCount);
                 EnemyDefinitionAsset[] resolvedEnemies = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(enemies, out int rejectedEnemyCount);
                 WaveDefinitionAsset[] resolvedWaves = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(waves, resolvedEnemies, out int rejectedWaveCount);
+                WeaponDefinitionAsset[] resolvedWeapons = BasicIdleAutoDefenseGame.ResolveWeaponDefinitionsForTemplate(weapons, resolvedAttacks, out int rejectedWeaponCount);
+                RunUpgradeDefinitionAsset[] resolvedUpgrades = BasicIdleAutoDefenseGame.ResolveUpgradeDefinitionsForTemplate(upgrades, out int rejectedUpgradeCount);
 
                 Assert.AreEqual(0, rejectedRecipeCount);
                 Assert.AreEqual(0, rejectedEnemyCount);
                 Assert.AreEqual(0, rejectedWaveCount);
+                Assert.AreEqual(0, rejectedWeaponCount);
+                Assert.AreEqual(0, rejectedUpgradeCount);
                 Assert.AreEqual(2, resolvedAttacks.Length);
                 Assert.AreEqual(6, resolvedEnemies.Length);
                 Assert.AreEqual(2, resolvedWaves.Length);
+                Assert.AreEqual(2, resolvedWeapons.Length);
+                Assert.AreEqual(4, resolvedUpgrades.Length);
                 Assert.AreSame(enemies[5], resolvedEnemies[5]);
                 Assert.AreSame(waves[1], resolvedWaves[1]);
+                Assert.AreSame(weapons[1], resolvedWeapons[1]);
+                Assert.AreSame(upgrades[3], resolvedUpgrades[3]);
             }
             finally
             {
@@ -220,6 +254,69 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
             Assert.AreEqual(1, resolved.Length);
             Assert.AreSame(first, resolved[0]);
+        }
+
+        [Test]
+        public void AssignedWeaponDefinitionsFallBackWhenRequiredIdsOrAttackRefsAreMissing()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset customOnly = WeaponDefinitionAsset.CreateTransient(
+                "weapon.custom.only",
+                "Custom Only",
+                WeaponFireMode.DirectAttack,
+                attacks[0],
+                6,
+                8f);
+
+            WeaponDefinitionAsset[] missingRequired = BasicIdleAutoDefenseGame.ResolveWeaponDefinitionsForTemplate(new[] { customOnly }, attacks, out int missingRequiredRejected);
+
+            Assert.That(missingRequiredRejected, Is.GreaterThan(0));
+            Assert.AreEqual(2, missingRequired.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, missingRequired[0].Id);
+
+            AttackDefinitionAsset foreignAttack = AttackDefinitionAsset.CreateTransient(
+                "attack.foreign.only",
+                "Foreign Attack",
+                AttackRecipeDeliveryMode.Hitscan,
+                BasicIdleAutoDefenseGame.DamageType.Value,
+                5,
+                0,
+                6,
+                AttackRecipeTargetingMode.Nearest);
+            WeaponDefinitionAsset invalidAttack = WeaponDefinitionAsset.CreateTransient(
+                BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value,
+                "Invalid Attack Ref",
+                WeaponFireMode.DirectAttack,
+                foreignAttack,
+                6,
+                8f);
+
+            WeaponDefinitionAsset[] missingAttack = BasicIdleAutoDefenseGame.ResolveWeaponDefinitionsForTemplate(new[] { invalidAttack }, attacks, out int missingAttackRejected);
+
+            Assert.That(missingAttackRejected, Is.GreaterThan(0));
+            Assert.AreEqual(2, missingAttack.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, missingAttack[1].Id);
+        }
+
+        [Test]
+        public void AssignedUpgradeDefinitionsRejectDuplicateIdsAndFallback()
+        {
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(BasicIdleAutoDefenseGame.CreateAttackRecipes());
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            RunUpgradeDefinitionAsset duplicate = RunUpgradeDefinitionAsset.CreateTransient(
+                upgrades[0].Id,
+                "Duplicate Damage",
+                RunUpgradeRarity.Common,
+                1,
+                1,
+                new[] { new RunUpgradeEffectRecipe(RunUpgradeAuthoringTargetKind.AttackDamage, RunUpgradeModifierType.Additive, 1, targetIdOverride: weapons[0].Id) });
+
+            RunUpgradeDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveUpgradeDefinitionsForTemplate(new[] { upgrades[0], duplicate }, out int rejectedDefinitionCount);
+
+            Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
+            Assert.AreEqual(4, resolved.Length);
+            Assert.AreEqual("upgrade.template.damage-up", resolved[0].Id);
+            Assert.AreNotSame(upgrades[0], resolved[0]);
         }
 
         [Test]
