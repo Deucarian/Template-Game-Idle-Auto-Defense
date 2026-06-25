@@ -4,6 +4,7 @@
   "references": [
     "Deucarian.TemplateGameIdleAutoDefense",
     "Deucarian.TemplateGameIdleAutoDefense.Editor",
+    "Deucarian.GameContentAuthoring.Editor",
     "Deucarian.Attacks",
     "Deucarian.Attacks.Authoring",
     "Deucarian.Combat",

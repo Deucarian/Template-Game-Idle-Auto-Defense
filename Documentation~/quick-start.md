@@ -31,3 +31,17 @@ Start customization in the product-owned folder created by the wizard:
 - `Prefabs/`
 
 The manual sample path still works: import the starter sample and use `Open Starter Scene`. Prefer the setup wizard for new product folders because it renames the bootstrap script and writes a setup report.
+
+## Create Your First Authored Run
+
+1. Open `Tools > Deucarian > Game Content Authoring`.
+2. Create or choose authored Attack, Enemy, Wave, Tower / Weapon, and Upgrade assets.
+3. Select `Game / Run Content Set`.
+4. Assign a stable ID, display name, starting weapon, available weapons, enemy pool, wave list, and upgrade pool.
+5. Keep the output root under `Assets/GameContent/ContentSets`.
+6. Review the playable-run preview and validation card.
+7. Create the content set, then assign the created `GameContentSetAsset` to an `IdleAutoDefenseTemplateController`.
+
+The content set is a root asset that references existing authored assets. It does not copy attack, enemy, wave, weapon, or upgrade sub-assets. At runtime the template prefers a complete assigned content set; if the set is missing or invalid, it logs a warning and falls back to the direct assigned arrays or built-in sample content.
+
+Current limitations: the content set drives the template's authored attacks, enemies, waves, weapons, upgrades, starting resources, and reward multiplier. Difficulty/session values are stored and shown in preview, but deeper run-length and scaling behavior remain template-specific follow-up work. Next planned authoring types remain content-set hardening and future gameplay-specific providers; this phase does not add towers beyond Weapon-Systems, loot, abilities, or new game modes.
