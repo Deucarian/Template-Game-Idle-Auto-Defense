@@ -35,6 +35,9 @@ Basic Idle Auto Defense Game
 │   ├── DefaultProgression
 │   ├── DefaultMonetization
 │   ├── ContentSets
+│   ├── ContentPacks
+│   ├── RuntimeEnemies
+│   ├── RuntimeWaves
 │   └── starter-content.json
 ├── Prefabs
 │   ├── Enemies
@@ -57,4 +60,4 @@ Basic Idle Auto Defense Game
 4. Replace the generated placeholder primitives with prefabs under `Prefabs`.
 5. Keep Deucarian package source in packages; only the generated product folder should contain product code and content.
 
-The assigned content set lives under `Content/ContentSets`. It references the authored sample attacks, enemies, waves, towers/weapons, and upgrades, and proves the template can run from a single game recipe instead of only per-type fallback arrays. Sample audio is intentionally optional; missing audio or VFX references are expected to preview as unassigned rather than as errors.
+The assigned content set lives under `Content/ContentSets`, and the one-click setup pack lives under `Content/ContentPacks`. It references the authored sample attacks, runtime enemies, runtime waves, towers/weapons, and upgrades, and proves the template can run from a single game recipe instead of only per-type fallback arrays. `Content/Enemies` and `Content/Waves` are legacy authoring samples with distinct IDs so the Content Library remains clean after import. Sample audio is intentionally optional; missing audio or VFX references are expected to preview as unassigned rather than as errors.
