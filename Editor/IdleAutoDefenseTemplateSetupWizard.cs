@@ -116,7 +116,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "README.md"),
-                    TransformReadme(File.ReadAllText(Path.Combine(sourceRoot, "README.md")), request.GamePrefix, gameNamespace, className));
+                    TransformReadme(ReadAllText(Path.Combine(sourceRoot, "README.md")), request.GamePrefix, gameNamespace, className));
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, gameNamespace + ".asmdef"),
@@ -124,12 +124,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "Scripts", className + ".cs"),
-                    TransformScript(File.ReadAllText(Path.Combine(sourceRoot, "Scripts", SampleScriptName)), gameNamespace, className, saveClassName, prefix));
+                    TransformScript(ReadAllText(Path.Combine(sourceRoot, "Scripts", SampleScriptName)), gameNamespace, className, saveClassName, prefix));
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "Scripts", className + ".cs.meta"),
                     CreateMonoScriptMeta(generatedScriptGuid));
-                string sceneText = File.ReadAllText(Path.Combine(sourceRoot, "Scenes", SampleSceneName));
+                string sceneText = ReadAllText(Path.Combine(sourceRoot, "Scenes", SampleSceneName));
                 if (!string.IsNullOrEmpty(sourceScriptGuid))
                     sceneText = sceneText.Replace(sourceScriptGuid, generatedScriptGuid);
                 AddTextOperation(operations, AssetPathToFullPath(sceneAssetPath), sceneText);
@@ -145,7 +145,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 for (int i = 0; i < operations.Count; i++)
                 {
                     string assetPath = FullPathToAssetPath(operations[i].DestinationFullPath);
-                    if (File.Exists(operations[i].DestinationFullPath) && !request.AllowOverwrite)
+                    if (FileExists(operations[i].DestinationFullPath) && !request.AllowOverwrite)
                         result.AddBlockedFile(assetPath);
                 }
 
@@ -165,7 +165,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     FileOperation operation = operations[i];
                     string directory = Path.GetDirectoryName(operation.DestinationFullPath);
                     if (!string.IsNullOrEmpty(directory)) CreateDirectory(directory, result);
-                    File.WriteAllBytes(operation.DestinationFullPath, operation.ContentBytes);
+                    WriteAllBytes(operation.DestinationFullPath, operation.ContentBytes);
                     result.AddCreatedFile(FullPathToAssetPath(operation.DestinationFullPath));
                 }
 
@@ -220,20 +220,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (packageInfo == null || string.IsNullOrWhiteSpace(packageInfo.resolvedPath))
                 throw new InvalidOperationException("Could not find installed Idle Auto Defense template package.");
             string sourceRoot = Path.Combine(packageInfo.resolvedPath, "Samples~", SampleFolderName);
-            if (!Directory.Exists(sourceRoot))
+            if (!DirectoryExists(sourceRoot))
                 throw new DirectoryNotFoundException("Could not find template sample folder: " + sourceRoot);
             return sourceRoot;
         }
 
         private static void AddDirectoryCopyOperations(List<FileOperation> operations, string sourceDirectory, string destinationDirectory, bool includeMetaFiles)
         {
-            if (!Directory.Exists(sourceDirectory)) return;
-            string[] files = Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories);
+            if (!DirectoryExists(sourceDirectory)) return;
+            string[] files = GetFiles(sourceDirectory);
             for (int i = 0; i < files.Length; i++)
             {
                 if (!includeMetaFiles && files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
-                string relative = files[i].Substring(sourceDirectory.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                AddFileOperation(operations, Path.Combine(destinationDirectory, relative), File.ReadAllBytes(files[i]));
+                string relative = files[i].Substring(Path.GetFullPath(sourceDirectory).Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                AddFileOperation(operations, Path.Combine(destinationDirectory, relative), ReadAllBytes(files[i]));
             }
         }
 
@@ -413,15 +413,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static void CreateDirectory(string fullPath, IdleAutoDefenseTemplateSetupResult result)
         {
-            if (Directory.Exists(fullPath)) return;
-            Directory.CreateDirectory(fullPath);
+            if (DirectoryExists(fullPath)) return;
+            CreateDirectoryOnDisk(fullPath);
             result.AddCreatedDirectory(FullPathToAssetPath(fullPath));
         }
 
         private static string TryReadGuid(string metaPath)
         {
-            if (!File.Exists(metaPath)) return string.Empty;
-            string[] lines = File.ReadAllLines(metaPath);
+            if (!FileExists(metaPath)) return string.Empty;
+            string[] lines = ReadAllLines(metaPath);
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i].Trim();
@@ -430,6 +430,75 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             return string.Empty;
+        }
+
+        private static string[] GetFiles(string fullPath)
+        {
+            string[] files = Directory.GetFiles(ToLongPath(fullPath), "*", SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++)
+                files[i] = FromLongPath(files[i]);
+            return files;
+        }
+
+        private static bool DirectoryExists(string fullPath)
+        {
+            return Directory.Exists(ToLongPath(fullPath));
+        }
+
+        private static bool FileExists(string fullPath)
+        {
+            return File.Exists(ToLongPath(fullPath));
+        }
+
+        private static string ReadAllText(string fullPath)
+        {
+            return File.ReadAllText(ToLongPath(fullPath));
+        }
+
+        private static string[] ReadAllLines(string fullPath)
+        {
+            return File.ReadAllLines(ToLongPath(fullPath));
+        }
+
+        private static byte[] ReadAllBytes(string fullPath)
+        {
+            return File.ReadAllBytes(ToLongPath(fullPath));
+        }
+
+        private static void WriteAllBytes(string fullPath, byte[] content)
+        {
+            File.WriteAllBytes(ToLongPath(fullPath), content);
+        }
+
+        private static void CreateDirectoryOnDisk(string fullPath)
+        {
+            Directory.CreateDirectory(ToLongPath(fullPath));
+        }
+
+        private static string ToLongPath(string fullPath)
+        {
+#if UNITY_EDITOR_WIN
+            if (string.IsNullOrWhiteSpace(fullPath)) return fullPath;
+            string normalized = Path.GetFullPath(fullPath);
+            if (normalized.StartsWith(@"\\?\", StringComparison.Ordinal)) return normalized;
+            if (normalized.StartsWith(@"\\", StringComparison.Ordinal))
+                return @"\\?\UNC\" + normalized.Substring(2);
+            return @"\\?\" + normalized;
+#else
+            return fullPath;
+#endif
+        }
+
+        private static string FromLongPath(string fullPath)
+        {
+#if UNITY_EDITOR_WIN
+            if (string.IsNullOrWhiteSpace(fullPath)) return fullPath;
+            if (fullPath.StartsWith(@"\\?\UNC\", StringComparison.Ordinal))
+                return @"\\" + fullPath.Substring(8);
+            if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal))
+                return fullPath.Substring(4);
+#endif
+            return fullPath;
         }
 
         private static string GenerateUnityGuid()
