@@ -15,7 +15,7 @@ MonoBehaviour:
   _mode: 0
   _projectileDefinitionId: projectile.template.fire-orb
   _projectileSpawnableId: projectile.template.fire-orb
-  _projectilePrefab: {fileID: 0}
+  _projectilePrefab: {fileID: 5225199999263018918, guid: 5478b5d0c5f2cc04da724f307574fb99, type: 3}
   _projectileSpeed: 8
   _projectileLifetimeTicks: 120
   _homing: 0
@@ -23,6 +23,6 @@ MonoBehaviour:
   _pierceCount: 0
   _radius: 0
   _beamVfxPrefab: {fileID: 0}
-  _impactVfxPrefab: {fileID: 0}
+  _impactVfxPrefab: {fileID: 3798696826337731743, guid: a4938706dc2350e4284968dc3bd17387, type: 3}
   _maxHits: 1
   _tickIntervalSeconds: 0.5

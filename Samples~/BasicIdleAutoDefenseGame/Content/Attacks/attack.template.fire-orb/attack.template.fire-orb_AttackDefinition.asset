@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackDefinitionAsset
   _id: attack.template.shard-launcher
   _displayName: Template Fire Projectile
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: e96cfdad6ad196a4f80477db2025bee8, type: 3}
   _tags:
   - template
   _mechanics: {fileID: 11400000, guid: c67ddaff5fc39a24694b9078e00b3a10, type: 2}

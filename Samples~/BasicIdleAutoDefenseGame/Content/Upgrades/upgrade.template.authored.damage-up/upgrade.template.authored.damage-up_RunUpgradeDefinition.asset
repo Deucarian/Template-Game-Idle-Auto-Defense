@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
   _id: upgrade.template.authored.damage-up
   _displayName: Authored Damage Increase
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: 2cdc5437e5d7e244d9342e4219984251, type: 3}
   _description: Authored Damage Increase authored sample upgrade.
   _tags:
   - template

@@ -15,7 +15,7 @@ MonoBehaviour:
   _mode: 0
   _projectileDefinitionId: projectile.template.homing-pulse
   _projectileSpawnableId: projectile.template.homing-pulse
-  _projectilePrefab: {fileID: 0}
+  _projectilePrefab: {fileID: 7966618697552162373, guid: d81a2052a085f494aaade0afc4f5fc21, type: 3}
   _projectileSpeed: 6.5
   _projectileLifetimeTicks: 150
   _homing: 1
@@ -23,6 +23,6 @@ MonoBehaviour:
   _pierceCount: 1
   _radius: 0
   _beamVfxPrefab: {fileID: 0}
-  _impactVfxPrefab: {fileID: 0}
+  _impactVfxPrefab: {fileID: 3798696826337731743, guid: a4938706dc2350e4284968dc3bd17387, type: 3}
   _maxHits: 1
   _tickIntervalSeconds: 0.5

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackDefinitionAsset
   _id: attack.template.pulse-cannon
   _displayName: Template Beam Pulse
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: e1293abb881c09b45b45dff5d9a061d9, type: 3}
   _tags:
   - template
   _mechanics: {fileID: 11400000, guid: 997e2d96eb9e91244a30da832b7d8d56, type: 2}

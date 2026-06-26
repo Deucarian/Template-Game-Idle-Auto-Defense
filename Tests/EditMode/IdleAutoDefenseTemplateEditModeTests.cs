@@ -909,6 +909,37 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void DefaultSamplePlaceholderStarterRoundIsCompleteAndPresentable()
+        {
+            string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
+            string sampleRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame");
+            string contentRoot = Path.Combine(sampleRoot, "Content");
+
+            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_AttackDefinition.asset", "AttackDefinitionAsset"), 5);
+            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_EnemyDefinition.asset", "EnemyDefinitionAsset"), 4);
+            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_WaveDefinition.asset", "WaveDefinitionAsset"), 6);
+            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_WeaponDefinition.asset", "WeaponDefinitionAsset"), 4);
+            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_RunUpgradeDefinition.asset", "RunUpgradeDefinitionAsset"), 6);
+
+            AssertFileContains(Path.Combine(contentRoot, "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset"), "contentpack.template.basic-idle-auto-defense");
+            AssertFileContains(Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset"), "placeholder-complete");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_mode: 0");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_mode: 1");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_homing: 1");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_Delivery.asset"), "_mode: 2");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.static-field", "attack.template.static-field_Delivery.asset"), "_mode: 3");
+
+            AssertDirectoryExists(Path.Combine(sampleRoot, "Audio"));
+            AssertDirectoryExists(Path.Combine(sampleRoot, "Visuals", "Prefabs"));
+            AssertDirectoryExists(Path.Combine(sampleRoot, "Visuals", "Textures"));
+            AssertFileContains(Path.Combine(sampleRoot, "Visuals", "Textures", "template-starter-pack-icon.png.meta"), "TextureImporter");
+            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Visuals", "Textures", "template-starter-pack-banner.png"));
+            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Visuals", "Prefabs", "template-projectile.prefab"));
+            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Audio", "template-fire.wav"));
+            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Audio", "template-impact.wav"));
+        }
+
+        [Test]
         public void DefaultContentIdsAreUniqueAndVerticalSliceSized()
         {
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
@@ -1469,9 +1500,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             StringAssert.Contains(expected, ReadAllText(path));
         }
 
+        private static void AssertFileExistsAtFullPath(string path)
+        {
+            Assert.IsTrue(FileExists(path), "Expected file to exist: " + path);
+        }
+
         private static void AssertFileExists(string assetPath)
         {
             Assert.IsTrue(FileExists(AssetPathToFullPath(assetPath)), "Expected file to exist: " + assetPath);
+        }
+
+        private static int CountAuthoredDefinitionFiles(string contentRoot, string searchPattern, string editorClassIdentifier)
+        {
+            string[] assetPaths = GetFiles(contentRoot, searchPattern);
+            int count = 0;
+            for (int i = 0; i < assetPaths.Length; i++)
+                if (ReadAllText(assetPaths[i]).Contains(editorClassIdentifier))
+                    count++;
+            return count;
         }
 
         private static void AssertSampleAuthoredDefinitionIdsAreUnique(string contentRoot)

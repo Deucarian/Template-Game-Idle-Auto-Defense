@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
   _id: enemy.template.boss
   _displayName: Authored Boss Enemy
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: e51a08e46b2455e4bb7e3a5a5a48ec56, type: 3}
   _role: 4
   _tags:
   - template

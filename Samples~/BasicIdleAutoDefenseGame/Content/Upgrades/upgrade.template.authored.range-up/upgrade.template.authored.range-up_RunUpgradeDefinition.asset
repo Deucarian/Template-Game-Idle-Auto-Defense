@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
   _id: upgrade.template.authored.range-up
   _displayName: Authored Range Increase
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: a7fca6feae9575742bf4521652beaf75, type: 3}
   _description: Authored Range Increase authored sample upgrade.
   _tags:
   - template

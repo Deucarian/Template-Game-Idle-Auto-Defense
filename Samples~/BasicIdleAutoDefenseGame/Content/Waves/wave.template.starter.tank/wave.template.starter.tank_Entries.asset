@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eff7702b508e4a80a220fcb4f548ef2e, type: 3}
+  m_Name: wave.template.starter.tank_Entries
+  m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
+  _entries:
+  - _enemy: {fileID: 11400000, guid: e22bfeeb5c23be44c8e41a8e66cd779b, type: 2}
+    _count: 3
+    _batchSize: 1
+    _initialDelayTicks: 0
+    _intervalTicks: 18
+    _spawnChannelId: perimeter-south
+    _scalingTier: 2
+  - _enemy: {fileID: 11400000, guid: d6fd7ddf0ead1c74bbfc6a6a08020a83, type: 2}
+    _count: 4
+    _batchSize: 1
+    _initialDelayTicks: 8
+    _intervalTicks: 10
+    _spawnChannelId: perimeter-west
+    _scalingTier: 1

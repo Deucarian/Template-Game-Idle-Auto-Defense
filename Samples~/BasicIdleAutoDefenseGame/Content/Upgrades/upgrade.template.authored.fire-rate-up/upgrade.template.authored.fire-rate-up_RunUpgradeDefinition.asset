@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
   _id: upgrade.template.authored.fire-rate-up
   _displayName: Authored Fire-Rate Increase
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: 88b303b490f9779479322398952617cc, type: 3}
   _description: Authored Fire-Rate Increase authored sample upgrade.
   _tags:
   - template

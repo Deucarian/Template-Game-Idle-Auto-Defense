@@ -19,6 +19,7 @@
   "requiredDependencies": [
     "com.deucarian.auto-defense-suite",
     "com.deucarian.game-content-authoring",
+    "com.deucarian.gameplay-foundation",
     "com.deucarian.monetization"
   ],
   "optionalVersionDefinedDependencies": [],

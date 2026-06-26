@@ -22,7 +22,7 @@ MonoBehaviour:
   _homingTurnRate: 180
   _pierceCount: 0
   _radius: 1.5
-  _beamVfxPrefab: {fileID: 0}
-  _impactVfxPrefab: {fileID: 0}
+  _beamVfxPrefab: {fileID: 7949990876258194118, guid: cf9e006673d1663419fc7abacc16e5a6, type: 3}
+  _impactVfxPrefab: {fileID: 3798696826337731743, guid: a4938706dc2350e4284968dc3bd17387, type: 3}
   _maxHits: 1
   _tickIntervalSeconds: 0.5

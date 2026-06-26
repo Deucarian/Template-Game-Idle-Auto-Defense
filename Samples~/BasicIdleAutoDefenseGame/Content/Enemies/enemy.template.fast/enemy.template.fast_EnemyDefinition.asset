@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
   _id: enemy.template.fast
   _displayName: Template Fast Enemy
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: 44676de806117b14e961844d1c0f9666, type: 3}
   _role: 1
   _tags:
   - template
