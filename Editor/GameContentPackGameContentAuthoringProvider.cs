@@ -44,35 +44,35 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             context.DrawSection("Pack Identity", () =>
             {
-                _state.PackId = EditorGUILayout.TextField("Stable ID", _state.PackId);
-                _state.DisplayName = EditorGUILayout.TextField("Display Name", _state.DisplayName);
-                _state.Description = EditorGUILayout.TextField("Description", _state.Description);
-                _state.Version = EditorGUILayout.TextField("Version", _state.Version);
-                _state.Author = EditorGUILayout.TextField("Author", _state.Author);
-                _state.Icon = (Sprite)EditorGUILayout.ObjectField("Icon", _state.Icon, typeof(Sprite), false);
-                _state.Banner = (Texture2D)EditorGUILayout.ObjectField("Banner", _state.Banner, typeof(Texture2D), false);
-                _state.TagsCsv = EditorGUILayout.TextField("Tags", _state.TagsCsv);
+                _state.PackId = context.DrawTextField("Stable ID", _state.PackId);
+                _state.DisplayName = context.DrawTextField("Display Name", _state.DisplayName);
+                _state.Description = context.DrawTextArea("Description", _state.Description);
+                _state.Version = context.DrawTextField("Version", _state.Version);
+                _state.Author = context.DrawTextField("Author", _state.Author);
+                _state.Icon = context.DrawObjectField("Icon", _state.Icon);
+                _state.Banner = context.DrawObjectField("Banner", _state.Banner);
+                _state.TagsCsv = context.DrawTextField("Tags", _state.TagsCsv);
                 _state.OutputRoot = context.DrawOutputRootField(_state.OutputRoot);
             });
 
             context.DrawSection("Included Game / Run Content Sets", () =>
             {
-                _state.DefaultContentSet = (GameContentSetAsset)EditorGUILayout.ObjectField("Default Content Set", _state.DefaultContentSet, typeof(GameContentSetAsset), false);
-                using (new EditorGUILayout.HorizontalScope())
+                _state.DefaultContentSet = context.DrawObjectField("Default Content Set", _state.DefaultContentSet);
+                context.DrawInlineCard(() =>
                 {
-                    _state.SelectedContentSet = (GameContentSetAsset)EditorGUILayout.ObjectField("Create From Selection", _state.SelectedContentSet, typeof(GameContentSetAsset), false);
+                    _state.SelectedContentSet = context.DrawObjectField("Create From Selection", _state.SelectedContentSet);
                     if (context.DrawSecondaryButton("Use Set", _state.SelectedContentSet != null, GUILayout.Width(72f), GUILayout.Height(22f)))
                         GameContentPackAssetCreator.UseSelectedContentSet(_state);
-                }
+                });
 
                 DrawContentSetList(context, _state);
             });
 
             context.DrawSection("Compatibility", () =>
             {
-                _state.RequiredPackagesCsv = EditorGUILayout.TextField("Required Packages", _state.RequiredPackagesCsv);
-                _state.MinimumVersionsCsv = EditorGUILayout.TextField("Minimum Versions", _state.MinimumVersionsCsv);
-                _state.CompatibilityNotes = EditorGUILayout.TextField("Compatibility Notes", _state.CompatibilityNotes);
+                _state.RequiredPackagesCsv = context.DrawTextField("Required Packages", _state.RequiredPackagesCsv);
+                _state.MinimumVersionsCsv = context.DrawTextField("Minimum Versions", _state.MinimumVersionsCsv);
+                _state.CompatibilityNotes = context.DrawTextArea("Compatibility Notes", _state.CompatibilityNotes);
                 EditorGUILayout.LabelField("Minimum versions may be left empty when the pack is tied to the installed template package set.", context.MutedStyle);
             });
 
@@ -106,15 +106,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private void DrawSceneSetup(GameContentAuthoringContext context)
         {
-            using (new EditorGUILayout.HorizontalScope())
+            context.DrawInlineCard(() =>
             {
-                _setup.Controller = (IdleAutoDefenseTemplateController)EditorGUILayout.ObjectField("Template Controller", _setup.Controller, typeof(IdleAutoDefenseTemplateController), true);
+                _setup.Controller = context.DrawObjectField("Template Controller", _setup.Controller, true);
                 if (context.DrawSecondaryButton("Find", true, GUILayout.Width(56f), GUILayout.Height(22f)))
                     _setup.Controller = GameContentPackSceneSetupUtility.FindControllerInOpenScenes();
-            }
+            });
 
-            _setup.ContentPack = (GameContentPackAsset)EditorGUILayout.ObjectField("Content Pack", _setup.ContentPack, typeof(GameContentPackAsset), false);
-            _setup.SelectedContentSet = (GameContentSetAsset)EditorGUILayout.ObjectField("Selected Content Set", _setup.SelectedContentSet, typeof(GameContentSetAsset), false);
+            _setup.ContentPack = context.DrawObjectField("Content Pack", _setup.ContentPack);
+            _setup.SelectedContentSet = context.DrawObjectField("Selected Content Set", _setup.SelectedContentSet);
             GameContentAuthoringValidationResult validation = GameContentPackSceneSetupUtility.Validate(_setup.Controller, _setup.ContentPack, _setup.SelectedContentSet);
             context.DrawValidation(validation, "Ready to apply this content pack to the selected scene controller.");
 
@@ -151,19 +151,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
                 for (int i = 0; i < state.ContentSets.Count; i++)
                 {
-                    using (new EditorGUILayout.HorizontalScope())
+                    bool makeDefault = false;
+                    bool remove = false;
+                    context.DrawInlineCard(() =>
                     {
-                        state.ContentSets[i] = (GameContentSetAsset)EditorGUILayout.ObjectField("Set " + (i + 1).ToString(CultureInfo.InvariantCulture), state.ContentSets[i], typeof(GameContentSetAsset), false);
-                        if (context.DrawSecondaryButton("Default", state.ContentSets[i] != null, GUILayout.Width(70f), GUILayout.Height(22f)))
-                            state.DefaultContentSet = state.ContentSets[i];
-                        if (context.DrawSecondaryButton("Remove", true, GUILayout.Width(70f), GUILayout.Height(22f)))
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            GameContentSetAsset removed = state.ContentSets[i];
-                            state.ContentSets.RemoveAt(i);
-                            if (state.DefaultContentSet == removed)
-                                state.DefaultContentSet = state.ContentSets.Count > 0 ? state.ContentSets[0] : null;
-                            i--;
+                            EditorGUILayout.LabelField("Set " + (i + 1).ToString(CultureInfo.InvariantCulture), context.SectionTitleStyle);
+                            GUILayout.FlexibleSpace();
+                            if (context.DrawSecondaryButton("Default", state.ContentSets[i] != null, GUILayout.Width(70f), GUILayout.Height(22f)))
+                                makeDefault = true;
+                            if (context.DrawSecondaryButton("Remove", true, GUILayout.Width(70f), GUILayout.Height(22f)))
+                                remove = true;
                         }
+
+                        if (remove) return;
+                        state.ContentSets[i] = context.DrawObjectField("Content Set", state.ContentSets[i]);
+                    });
+
+                    if (makeDefault)
+                        state.DefaultContentSet = state.ContentSets[i];
+                    if (remove)
+                    {
+                        GameContentSetAsset removed = state.ContentSets[i];
+                        state.ContentSets.RemoveAt(i);
+                        if (state.DefaultContentSet == removed)
+                            state.DefaultContentSet = state.ContentSets.Count > 0 ? state.ContentSets[0] : null;
+                        i--;
                     }
                 }
             });

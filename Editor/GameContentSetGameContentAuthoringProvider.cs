@@ -48,18 +48,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             context.DrawSection("Content Set Identity", () =>
             {
-                _state.ContentSetId = EditorGUILayout.TextField("Stable ID", _state.ContentSetId);
-                _state.DisplayName = EditorGUILayout.TextField("Display Name", _state.DisplayName);
-                _state.Description = EditorGUILayout.TextField("Description", _state.Description);
-                _state.Icon = (Sprite)EditorGUILayout.ObjectField("Icon", _state.Icon, typeof(Sprite), false);
-                _state.Banner = (Texture2D)EditorGUILayout.ObjectField("Banner", _state.Banner, typeof(Texture2D), false);
-                _state.TagsCsv = EditorGUILayout.TextField("Tags", _state.TagsCsv);
+                _state.ContentSetId = context.DrawTextField("Stable ID", _state.ContentSetId);
+                _state.DisplayName = context.DrawTextField("Display Name", _state.DisplayName);
+                _state.Description = context.DrawTextArea("Description", _state.Description);
+                _state.Icon = context.DrawObjectField("Icon", _state.Icon);
+                _state.Banner = context.DrawObjectField("Banner", _state.Banner);
+                _state.TagsCsv = context.DrawTextField("Tags", _state.TagsCsv);
                 _state.OutputRoot = context.DrawOutputRootField(_state.OutputRoot);
             });
 
             context.DrawSection("Loadout", () =>
             {
-                _state.StartingWeapon = (WeaponDefinitionAsset)EditorGUILayout.ObjectField("Starting Weapon", _state.StartingWeapon, typeof(WeaponDefinitionAsset), false);
+                _state.StartingWeapon = context.DrawObjectField("Starting Weapon", _state.StartingWeapon);
                 DrawAssetList(context, "Available Weapons / Towers", _state.AvailableWeapons, "Add Weapon");
             });
 
@@ -78,12 +78,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             context.DrawSection("Run Settings", () =>
             {
-                _state.StartingCredits = EditorGUILayout.IntField("Starting Credits", _state.StartingCredits);
-                _state.StartingParts = EditorGUILayout.IntField("Starting Parts", _state.StartingParts);
-                _state.RewardMultiplier = EditorGUILayout.FloatField("Reward Multiplier", _state.RewardMultiplier);
-                _state.DifficultyMultiplier = EditorGUILayout.FloatField("Difficulty Multiplier", _state.DifficultyMultiplier);
-                _state.SessionLengthTicks = EditorGUILayout.IntField("Session Length Ticks", _state.SessionLengthTicks);
-                _state.Endless = EditorGUILayout.Toggle("Endless", _state.Endless);
+                _state.StartingCredits = context.DrawIntField("Starting Credits", _state.StartingCredits);
+                _state.StartingParts = context.DrawIntField("Starting Parts", _state.StartingParts);
+                _state.RewardMultiplier = context.DrawFloatField("Reward Multiplier", _state.RewardMultiplier);
+                _state.DifficultyMultiplier = context.DrawFloatField("Difficulty Multiplier", _state.DifficultyMultiplier);
+                _state.SessionLengthTicks = context.DrawIntField("Session Length Ticks", _state.SessionLengthTicks);
+                _state.Endless = context.DrawToggle("Endless", _state.Endless);
             });
 
             context.DrawSection("Preview", () =>
@@ -116,14 +116,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
                 for (int i = 0; i < assets.Count; i++)
                 {
-                    using (new EditorGUILayout.HorizontalScope())
+                    bool remove = false;
+                    context.DrawInlineCard(() =>
                     {
-                        assets[i] = (TAsset)EditorGUILayout.ObjectField("Item " + (i + 1).ToString(CultureInfo.InvariantCulture), assets[i], typeof(TAsset), false);
-                        if (context.DrawSecondaryButton("Remove", true, GUILayout.Width(70f), GUILayout.Height(22f)))
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            assets.RemoveAt(i);
-                            i--;
+                            EditorGUILayout.LabelField("Item " + (i + 1).ToString(CultureInfo.InvariantCulture), context.SectionTitleStyle);
+                            GUILayout.FlexibleSpace();
+                            if (context.DrawSecondaryButton("Remove", true, GUILayout.Width(70f), GUILayout.Height(22f)))
+                                remove = true;
                         }
+
+                        if (remove) return;
+                        assets[i] = context.DrawObjectField("Item " + (i + 1).ToString(CultureInfo.InvariantCulture), assets[i]);
+                    });
+
+                    if (remove)
+                    {
+                        assets.RemoveAt(i);
+                        i--;
                     }
                 }
             });
