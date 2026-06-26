@@ -1460,24 +1460,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
         private static void AssertDirectoryExists(string path)
         {
-            Assert.IsTrue(Directory.Exists(path), "Expected directory to exist: " + path);
+            Assert.IsTrue(DirectoryExists(path), "Expected directory to exist: " + path);
         }
 
         private static void AssertFileContains(string path, string expected)
         {
-            Assert.IsTrue(File.Exists(path), "Expected file to exist: " + path);
-            StringAssert.Contains(expected, File.ReadAllText(path));
+            Assert.IsTrue(FileExists(path), "Expected file to exist: " + path);
+            StringAssert.Contains(expected, ReadAllText(path));
         }
 
         private static void AssertFileExists(string assetPath)
         {
-            Assert.IsTrue(File.Exists(AssetPathToFullPath(assetPath)), "Expected file to exist: " + assetPath);
+            Assert.IsTrue(FileExists(AssetPathToFullPath(assetPath)), "Expected file to exist: " + assetPath);
         }
 
         private static void AssertSampleAuthoredDefinitionIdsAreUnique(string contentRoot)
         {
             AssertDirectoryExists(contentRoot);
-            string[] assetPaths = Directory.GetFiles(contentRoot, "*.asset", SearchOption.AllDirectories);
+            string[] assetPaths = GetFiles(contentRoot, "*.asset");
             var pathsByTypeAndId = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
             for (int i = 0; i < assetPaths.Length; i++)
@@ -1512,7 +1512,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             typeLabel = string.Empty;
             id = string.Empty;
-            string[] lines = File.ReadAllLines(assetPath);
+            string[] lines = ReadAllLines(assetPath);
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -1546,13 +1546,67 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
         private static string ReadMetaGuid(string metaPath)
         {
-            Assert.IsTrue(File.Exists(metaPath), "Expected meta file to exist: " + metaPath);
-            string[] lines = File.ReadAllLines(metaPath);
+            Assert.IsTrue(FileExists(metaPath), "Expected meta file to exist: " + metaPath);
+            string[] lines = ReadAllLines(metaPath);
             for (int i = 0; i < lines.Length; i++)
                 if (lines[i].StartsWith("guid:", StringComparison.Ordinal))
                     return lines[i].Substring("guid:".Length).Trim();
             Assert.Fail("Expected meta file to contain a guid: " + metaPath);
             return string.Empty;
+        }
+
+        private static string[] GetFiles(string fullPath, string searchPattern)
+        {
+            string[] files = Directory.GetFiles(ToLongPath(fullPath), searchPattern, SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++)
+                files[i] = FromLongPath(files[i]);
+            return files;
+        }
+
+        private static bool DirectoryExists(string fullPath)
+        {
+            return Directory.Exists(ToLongPath(fullPath));
+        }
+
+        private static bool FileExists(string fullPath)
+        {
+            return File.Exists(ToLongPath(fullPath));
+        }
+
+        private static string ReadAllText(string fullPath)
+        {
+            return File.ReadAllText(ToLongPath(fullPath));
+        }
+
+        private static string[] ReadAllLines(string fullPath)
+        {
+            return File.ReadAllLines(ToLongPath(fullPath));
+        }
+
+        private static string ToLongPath(string fullPath)
+        {
+#if UNITY_EDITOR_WIN
+            if (string.IsNullOrWhiteSpace(fullPath)) return fullPath;
+            string normalized = Path.GetFullPath(fullPath);
+            if (normalized.StartsWith(@"\\?\", StringComparison.Ordinal)) return normalized;
+            if (normalized.StartsWith(@"\\", StringComparison.Ordinal))
+                return @"\\?\UNC\" + normalized.Substring(2);
+            return @"\\?\" + normalized;
+#else
+            return fullPath;
+#endif
+        }
+
+        private static string FromLongPath(string fullPath)
+        {
+#if UNITY_EDITOR_WIN
+            if (string.IsNullOrWhiteSpace(fullPath)) return fullPath;
+            if (fullPath.StartsWith(@"\\?\UNC\", StringComparison.Ordinal))
+                return @"\\" + fullPath.Substring(8);
+            if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal))
+                return fullPath.Substring(4);
+#endif
+            return fullPath;
         }
 
         private static string AssetPathToFullPath(string assetPath)
