@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: attack.template.static-field_Delivery
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackDeliveryDefinitionAsset
   _mode: 3
-  _projectileDefinitionId: projectile.example.basic
-  _projectileSpawnableId: projectile.example.basic
+  _projectileDefinitionId:
+  _projectileSpawnableId:
   _projectilePrefab: {fileID: 0}
   _projectileSpeed: 8
   _projectileLifetimeTicks: 120
