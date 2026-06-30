@@ -928,6 +928,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_homing: 1");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_Delivery.asset"), "_mode: 2");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.static-field", "attack.template.static-field_Delivery.asset"), "_mode: 3");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "projectile.example");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_Delivery.asset"), "projectile.example");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.static-field", "attack.template.static-field_Delivery.asset"), "projectile.example");
 
             AssertDirectoryExists(Path.Combine(sampleRoot, "Audio"));
             AssertDirectoryExists(Path.Combine(sampleRoot, "Visuals", "Prefabs"));
@@ -1498,6 +1501,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             Assert.IsTrue(FileExists(path), "Expected file to exist: " + path);
             StringAssert.Contains(expected, ReadAllText(path));
+        }
+
+        private static void AssertFileDoesNotContain(string path, string unexpected)
+        {
+            Assert.IsTrue(FileExists(path), "Expected file to exist: " + path);
+            StringAssert.DoesNotContain(unexpected, ReadAllText(path));
         }
 
         private static void AssertFileExistsAtFullPath(string path)
