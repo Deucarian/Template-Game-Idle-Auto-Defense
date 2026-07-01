@@ -14,20 +14,35 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
     }
 
-    internal sealed class GameContentPackAuthoringProvider : IGameContentAuthoringProvider
+    internal sealed class GameContentPackAuthoringProvider : IGameContentAuthoringProvider, IGameContentAuthoringSurfaceProvider
     {
         private readonly GameContentPackAuthoringState _state = new GameContentPackAuthoringState();
         private readonly GameContentPackSceneSetupState _setup = new GameContentPackSceneSetupState();
         private readonly GameContentPackPreviewController _preview = new GameContentPackPreviewController();
+        private readonly GameContentPackProviderV2State _v2State = new GameContentPackProviderV2State();
+        private readonly GameContentPackProviderV2View _v2View = new GameContentPackProviderV2View();
 
         public string ProviderId => "com.deucarian.template.idle-auto-defense.content-pack";
         public string DisplayName => "Content Pack";
         public string Description => "Package playable Game / Run Content Sets and apply one to an idle auto-defense scene.";
         public int SortOrder => 175;
         public bool Enabled => true;
-        public void OnSelected() { }
+        public void OnSelected()
+        {
+            _v2State.ResetProviderSession();
+        }
+
         public void DrawPreview(GameContentAuthoringPreviewContext context) { _preview.Draw(context, _state, _setup); }
-        public void StopPreview() { _preview.Stop(); }
+        public void StopPreview()
+        {
+            _preview.Stop();
+            _v2State.StopPreview();
+        }
+
+        public void DrawCustomAuthoringSurface(GameContentAuthoringSurfaceContext context)
+        {
+            _v2View.Draw(context, _state, _v2State);
+        }
 
         public void Draw(GameContentAuthoringContext context)
         {
