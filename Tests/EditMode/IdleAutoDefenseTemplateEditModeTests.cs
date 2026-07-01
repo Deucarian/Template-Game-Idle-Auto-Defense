@@ -679,7 +679,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
-        public void ContentSetAndContentPackProvidersUseCustomV2SurfacesWithoutMigratingContentLibrary()
+        public void ContentSetContentPackAndContentLibraryProvidersUseCustomV2Surfaces()
         {
             var contentSetProvider = new GameContentSetAuthoringProvider();
             var contentPackProvider = new GameContentPackAuthoringProvider();
@@ -687,9 +687,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
             Assert.That(contentSetProvider, Is.InstanceOf<IGameContentAuthoringSurfaceProvider>());
             Assert.That(contentPackProvider, Is.InstanceOf<IGameContentAuthoringSurfaceProvider>());
-            Assert.That(contentLibraryProvider, Is.Not.InstanceOf<IGameContentAuthoringSurfaceProvider>());
+            Assert.That(contentLibraryProvider, Is.InstanceOf<IGameContentAuthoringSurfaceProvider>());
             Assert.That(GameContentSetProviderV2PreviewModel.ExposesRedundantSelectButton, Is.False);
             Assert.That(GameContentPackProviderV2PreviewModel.ExposesRedundantSelectButton, Is.False);
+            Assert.That(GameContentLibraryV2UiContract.MainRowActionLabels, Does.Not.Contain("Select"));
             Assert.That(GetContentSetProviderV2State(contentSetProvider), Is.Not.Null);
             Assert.That(GetContentPackProviderV2State(contentPackProvider), Is.Not.Null);
         }
