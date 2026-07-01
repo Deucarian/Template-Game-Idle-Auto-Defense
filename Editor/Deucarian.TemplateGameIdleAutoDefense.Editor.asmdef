@@ -3,9 +3,11 @@
   "rootNamespace": "Deucarian.TemplateGameIdleAutoDefense.Editor",
   "references": [
     "Deucarian.TemplateGameIdleAutoDefense",
+    "Deucarian.Editor",
     "Deucarian.GameContentAuthoring.Editor",
     "Deucarian.GameplayFoundation",
     "Deucarian.Attacks.Authoring",
+    "Deucarian.WeaponSystems",
     "Deucarian.WeaponSystems.Authoring",
     "Deucarian.RunUpgrades.Authoring"
   ],

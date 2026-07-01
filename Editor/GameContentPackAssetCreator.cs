@@ -53,6 +53,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return new GameContentAuthoringValidationResult(issues);
         }
 
+        public static GameContentAuthoringValidationResult ValidateForUpdate(GameContentPackAuthoringState state, GameContentPackAsset existingAsset)
+        {
+            GameContentPackAsset preview = BuildTransient(state);
+            try
+            {
+                var issues = ToSharedIssues(GameContentPackValidator.Validate(preview));
+                if (existingAsset == null)
+                {
+                    issues.Add(GameContentAuthoringValidationIssue.Error("ContentPack", "Select an existing content pack before saving."));
+                }
+                else if (GameContentAuthoringEditorAssets.HasDuplicateIdExcept<GameContentPackAsset>(state.PackId, existingAsset, item => item.Id))
+                {
+                    issues.Add(GameContentAuthoringValidationIssue.Error("ContentPack.Id", "Content pack IDs must be unique. Rename this pack before saving."));
+                }
+
+                return new GameContentAuthoringValidationResult(issues);
+            }
+            finally
+            {
+                DestroyTransient(preview);
+            }
+        }
+
         public static IReadOnlyList<string> GetPreviewLines(GameContentPackAuthoringState state)
         {
             return new[]
@@ -100,6 +123,40 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return new GameContentCreationResult(true, "Created content pack at " + rootPath, AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(rootPath));
+        }
+
+        public static GameContentCreationResult UpdateExistingAsset(GameContentPackAsset root, GameContentPackAuthoringState state)
+        {
+            if (root == null)
+                return new GameContentCreationResult(false, "Select an existing content pack before saving.", null);
+
+            GameContentAuthoringValidationResult report = ValidateForUpdate(state, root);
+            if (!report.IsValid)
+                return new GameContentCreationResult(false, "Fix validation errors before saving the content pack.", root);
+
+            string path = AssetDatabase.GetAssetPath(root);
+            if (string.IsNullOrWhiteSpace(path))
+                return new GameContentCreationResult(false, "Content pack must be saved as an asset before it can be edited here.", root);
+
+            Undo.RegisterCompleteObjectUndo(root, "Save Content Pack");
+            root.Configure(
+                state.PackId,
+                state.DisplayName,
+                state.Description,
+                state.Version,
+                state.Author,
+                state.Icon,
+                state.Banner,
+                state.ContentSets,
+                state.DefaultContentSet,
+                GameContentAuthoringEditorAssets.SplitCsv(state.RequiredPackagesCsv),
+                GameContentAuthoringEditorAssets.SplitCsv(state.MinimumVersionsCsv),
+                state.CompatibilityNotes,
+                GameContentAuthoringEditorAssets.SplitCsv(state.TagsCsv));
+            EditorUtility.SetDirty(root);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return new GameContentCreationResult(true, "Saved content pack at " + path, root);
         }
 
         public static void DestroyTransient(GameContentPackAsset asset)
