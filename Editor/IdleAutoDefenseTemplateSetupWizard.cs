@@ -112,6 +112,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
                 var operations = new List<FileOperation>();
                 AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), Path.Combine(targetFullRoot, "Content"), includeMetaFiles: true);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Audio"), Path.Combine(targetFullRoot, "Audio"), includeMetaFiles: true);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Visuals"), Path.Combine(targetFullRoot, "Visuals"), includeMetaFiles: true);
                 AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"), includeMetaFiles: true);
                 AddTextOperation(
                     operations,
