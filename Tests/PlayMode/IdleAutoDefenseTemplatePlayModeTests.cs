@@ -15,6 +15,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             GameObject host = new GameObject("idle-auto-defense-template-smoke");
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
+            Assert.True(controller.TryPurchaseDamageUpgrade(), "Smoke run should be able to buy the first damage upgrade.");
 
             for (int i = 0; i < 720; i++)
             {
@@ -41,7 +42,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
                 if (i % 30 == 0) yield return null;
             }
 
-            Assert.True(controller.EncounterCompleted || controller.EncounterFailed, "Boss Pulse should reach a terminal state in deterministic smoke. " + controller.StatusSummary);
+            Assert.True(controller.EncounterCompleted || controller.EncounterFailed, "Pressure run should reach a terminal state in deterministic smoke. " + controller.StatusSummary);
 
             controller.SimulateOfflineReward(DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1));
             Assert.AreEqual(IdleProgressionResultCode.Success, controller.LastOfflineRewardCode);

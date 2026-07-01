@@ -1,31 +1,23 @@
 # Setup
 
-Install `com.deucarian.template.game.idle-auto-defense` with Package Manager or Deucarian Package Installer. The package declares `com.deucarian.auto-defense-suite` and `com.deucarian.monetization`. The suite pulls the gameplay foundation, persistence, progression, combat, encounter, spawning, navigation, defense, attack, projectile, weapon, auto-defense, upgrade, and idle progression packages.
+Install `com.deucarian.template.game.idle-auto-defense` with Package Manager or Deucarian Package Installer. The package directly requires the Auto Defense Suite, Editor, Game Content Authoring, Gameplay Foundation, and Monetization packages.
 
 For local workspace validation before registry publication, add this package as a local file reference:
 
 ```json
-"com.deucarian.template.game.idle-auto-defense": "file:C:/Repositories/Deucarian/Template-Game-Idle-Auto-Defense"
+"com.deucarian.template.game.idle-auto-defense": "file:C:/Repositories/Template-Game-Idle-Auto-Defense"
 ```
 
-If the suite dependency is not resolvable from the registry yet, keep explicit local file references for the lower packages in the validation project. The template package itself should still declare only the suite dependency.
-
-Import the sample named `Basic Idle Auto Defense Game`, then run:
+Create the product-owned game folder from the template:
 
 ```text
-Tools > Deucarian > Templates > Idle Auto Defense > Open Starter Scene
+Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game
 ```
 
-Press Play. The starter scene writes a small sample save snapshot and exposes reset actions in the Game view and under:
+Choose a target folder under `Assets`, a C# namespace, and a game prefix. The wizard copies the private template source into the target folder, remaps copied asset GUIDs, renames the bootstrap script, opens the created scene if requested, and writes `Docs/setup-report.md`.
 
-```text
-Tools > Deucarian > Templates > Idle Auto Defense > Reset Sample Save
-```
+Troubleshooting:
 
-To create a project-owned game folder, run:
-
-```text
-Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template
-```
-
-Choose a target folder under `Assets`, a C# namespace, and a game prefix. The wizard copies starter scenes, prefabs, content, docs, and a renamed bootstrap script without copying Deucarian package source. It blocks existing files unless overwrite is explicitly enabled, opens the created scene if requested, and writes `Docs/setup-report.md`.
+- `Create Playable Game cannot find template source`: reinstall or relink the template package and confirm `TemplateSource~/BasicIdleAutoDefenseGame` exists inside the package.
+- `Generated scene has invalid content set`: open `Tools > Deucarian > Game Content Authoring`, validate the generated content pack/set, and fix missing weapon, enemy, wave, or upgrade references.
+- Existing files block setup by default. Enable overwrite only after reviewing the target folder.

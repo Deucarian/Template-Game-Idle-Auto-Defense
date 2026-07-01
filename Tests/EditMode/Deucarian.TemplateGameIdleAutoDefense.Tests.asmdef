@@ -6,6 +6,7 @@
     "Deucarian.TemplateGameIdleAutoDefense.Editor",
     "Deucarian.Editor",
     "Deucarian.GameContentAuthoring.Editor",
+    "Deucarian.GameplayFoundation",
     "Deucarian.Attacks",
     "Deucarian.Attacks.Authoring",
     "Deucarian.Combat",

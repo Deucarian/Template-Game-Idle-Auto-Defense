@@ -1124,21 +1124,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
             try
             {
-                enemies[5].Configure(
+                enemies[3].Configure(
                     BasicIdleAutoDefenseGame.RunnerEnemySpawnableId.Value,
                     "Duplicate Runner",
                     null,
-                    EnemyRole.Boss,
+                    EnemyRole.Basic,
                     Array.Empty<string>(),
-                    enemies[5].Stats,
-                    enemies[5].Presentation);
+                    enemies[3].Stats,
+                    enemies[3].Presentation);
 
                 EnemyDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveEnemyDefinitionsForTemplate(enemies, out int rejectedDefinitionCount);
 
                 Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
                 Assert.AreEqual(6, resolved.Length);
-                Assert.AreEqual(BasicIdleAutoDefenseGame.BossEnemySpawnableId.Value, resolved[5].Id);
-                Assert.AreNotSame(enemies[5], resolved[5]);
+                Assert.AreEqual(BasicIdleAutoDefenseGame.ShieldedEnemySpawnableId.Value, resolved[3].Id);
+                Assert.AreNotSame(enemies[3], resolved[3]);
             }
             finally
             {
@@ -1306,81 +1306,93 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
 
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "Boot");
-            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "resolve monetization availability");
-            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultBalance");
-            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "DefaultMonetization");
-            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "asset-flip-workflow.md"), "Create Game From Template");
-            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "override-guide.md"), "Copy `Samples~/BasicIdleAutoDefenseGame/Content`");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "spawn profiles");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "apply upgrade drafts");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "TemplateSource~");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "ContentPacks");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "asset-flip-workflow.md"), "Create Playable Game");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "override-guide.md"), "Spawn profiles");
+            AssertFileContains(Path.Combine(packageRoot, "package.json"), "\"com.deucarian.editor\"");
+            AssertFileContains(Path.Combine(packageRoot, "package.json"), "\"com.deucarian.game-content-authoring\"");
+            AssertFileContains(Path.Combine(packageRoot, "deucarian-package.json"), "\"com.deucarian.editor\"");
+            AssertFileContains(Path.Combine(packageRoot, "deucarian-package.json"), "\"com.deucarian.game-content-authoring\"");
+            AssertFileDoesNotContain(Path.Combine(packageRoot, "package.json"), "\"samples\"");
+            Assert.IsFalse(Directory.Exists(Path.Combine(packageRoot, "Samples~")), "The template should not expose a public UPM sample.");
 
-            string contentRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Content");
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultBalance"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultStages"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultEnemies"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultWeapons"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultWaves"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultUpgrades"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultProgression"));
-            AssertDirectoryExists(Path.Combine(contentRoot, "DefaultMonetization"));
+            string menuPath = Path.Combine(packageRoot, "Editor", "IdleAutoDefenseTemplateMenu.cs");
+            AssertFileContains(menuPath, "Create Playable Game");
+            AssertFileContains(menuPath, "Open Template Docs");
+            AssertFileDoesNotContain(menuPath, "Open Starter Scene");
+            AssertFileDoesNotContain(menuPath, "Reset Sample Save");
+
+            string contentRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Content");
+            AssertDirectoryExists(Path.Combine(contentRoot, "Attacks"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "Enemies"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "Weapons"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "Waves"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "Upgrades"));
+            AssertDirectoryExists(Path.Combine(contentRoot, "ContentSets"));
             AssertDirectoryExists(Path.Combine(contentRoot, "ContentPacks"));
 
-            AssertFileContains(Path.Combine(contentRoot, "DefaultBalance", "objective-and-loop.json"), "template-core");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultStages", "stages.json"), "stage.template.boss-pulse");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultEnemies", "enemy-archetypes.json"), "enemy.template.boss");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultWeapons", "default-weapons.json"), "weapon.template.shard-launcher");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultWaves", "stages-and-encounters.json"), "wave.template.boss-pulse.boss");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultUpgrades", "common-run-upgrades.json"), "upgrade.template.projectile-specialization");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultProgression", "currencies-rewards-saves.json"), "research.template.core-plating");
-            AssertFileContains(Path.Combine(contentRoot, "DefaultMonetization", "mock-placements.json"), "template.rewarded.double-offline-reward");
-            AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Enemies", "README.md"), "Swarm");
-            AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Cannon");
-            AssertFileContains(Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Prefabs", "Projectiles", "README.md"), "projectile");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.swarm", "enemy.template.swarm_EnemyDefinition.asset"), "_id: enemy.template.swarm");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.runner", "enemy.template.runner_EnemyDefinition.asset"), "_id: enemy.template.runner");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.shielded", "enemy.template.shielded_EnemyDefinition.asset"), "_id: enemy.template.shielded");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_AttackDefinition.asset"), "_id: attack.template.pulse-cannon");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_AttackDefinition.asset"), "_id: attack.template.shard-launcher");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_AttackDefinition.asset"), "_id: attack.template.arc-burst");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_AttackDefinition.asset"), "_id: attack.template.homing-pulse");
+            AssertFileContains(Path.Combine(contentRoot, "Waves", "wave.template.authored.opening", "wave.template.authored.opening_WaveDefinition.asset"), "_id: wave.template.authored.opening");
+            AssertFileContains(Path.Combine(contentRoot, "Waves", "wave.template.authored.final", "wave.template.authored.final_WaveDefinition.asset"), "_id: wave.template.authored.final");
+            AssertFileContains(Path.Combine(contentRoot, "Upgrades", "upgrade.template.authored.projectile-speed-up", "upgrade.template.authored.projectile-speed-up_RunUpgradeDefinition.asset"), "Authored Projectile Speed");
+            AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Enemies", "README.md"), "Swarm");
+            AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Cannon");
+            AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Projectiles", "README.md"), "projectile");
             AssertFileContains(Path.Combine(contentRoot, "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset"), "contentpack.template.basic-idle-auto-defense");
         }
 
         [Test]
-        public void DefaultSampleAuthoredAssetIdsAreUniqueForContentLibrary()
+        public void TemplateSourceAuthoredAssetIdsAreUniqueForContentLibrary()
         {
             string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
-            string contentRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame", "Content");
+            string contentRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Content");
 
             AssertSampleAuthoredDefinitionIdsAreUnique(contentRoot);
-            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.tank", "enemy.template.tank_EnemyDefinition.asset"), "_id: enemy.template.legacy-tank");
-            AssertFileContains(Path.Combine(contentRoot, "RuntimeEnemies", "enemy.template.tank", "enemy.template.tank_EnemyDefinition.asset"), "_id: enemy.template.tank");
-            AssertFileContains(Path.Combine(contentRoot, "README.md"), "Content Library duplicate checks stay clean");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.swarm", "enemy.template.swarm_EnemyDefinition.asset"), "_id: enemy.template.swarm");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.shielded", "enemy.template.shielded_EnemyDefinition.asset"), "_id: enemy.template.shielded");
+            AssertFileContains(Path.Combine(contentRoot, "Upgrades", "upgrade.template.authored.projectile-speed-up", "upgrade.template.authored.projectile-speed-up_RunUpgradeDefinition.asset"), "_id: upgrade.template.authored.projectile-speed-up");
+            AssertFileContains(Path.Combine(contentRoot, "README.md"), "four generic enemy definitions");
         }
 
         [Test]
-        public void DefaultSamplePlaceholderStarterRoundIsCompleteAndPresentable()
+        public void TemplateSourcePlayableStarterRoundIsCompleteAndPresentable()
         {
             string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
-            string sampleRoot = Path.Combine(packageRoot, "Samples~", "BasicIdleAutoDefenseGame");
-            string contentRoot = Path.Combine(sampleRoot, "Content");
+            string templateSourceRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame");
+            string contentRoot = Path.Combine(templateSourceRoot, "Content");
 
-            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_AttackDefinition.asset", "AttackDefinitionAsset"), 5);
-            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_EnemyDefinition.asset", "EnemyDefinitionAsset"), 4);
-            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_WaveDefinition.asset", "WaveDefinitionAsset"), 6);
-            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_WeaponDefinition.asset", "WeaponDefinitionAsset"), 4);
-            Assert.GreaterOrEqual(CountAuthoredDefinitionFiles(contentRoot, "*_RunUpgradeDefinition.asset", "RunUpgradeDefinitionAsset"), 6);
+            Assert.AreEqual(4, CountAuthoredDefinitionFiles(contentRoot, "*_AttackDefinition.asset", "AttackDefinitionAsset"));
+            Assert.AreEqual(4, CountAuthoredDefinitionFiles(Path.Combine(contentRoot, "Enemies"), "*_EnemyDefinition.asset", "EnemyDefinitionAsset"));
+            Assert.AreEqual(4, CountAuthoredDefinitionFiles(Path.Combine(contentRoot, "Waves"), "*_WaveDefinition.asset", "WaveDefinitionAsset"));
+            Assert.AreEqual(4, CountAuthoredDefinitionFiles(contentRoot, "*_WeaponDefinition.asset", "WeaponDefinitionAsset"));
+            Assert.AreEqual(4, CountAuthoredDefinitionFiles(contentRoot, "*_RunUpgradeDefinition.asset", "RunUpgradeDefinitionAsset"));
 
             AssertFileContains(Path.Combine(contentRoot, "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset"), "contentpack.template.basic-idle-auto-defense");
-            AssertFileContains(Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset"), "placeholder-complete");
+            AssertFileContains(Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset"), "four generic attacks");
+            AssertFileContains(Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset"), "139ea81c2ca6259408bcf0527b568e74");
+            AssertFileContains(Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset"), "03d0c000098e49699eb86ed1176892d4");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_mode: 0");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.shard");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_mode: 1");
-            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_homing: 1");
-            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_Delivery.asset"), "_mode: 2");
-            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.static-field", "attack.template.static-field_Delivery.asset"), "_mode: 3");
-            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "projectile.example");
-            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_Delivery.asset"), "projectile.example");
-            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.static-field", "attack.template.static-field_Delivery.asset"), "projectile.example");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.fire-orb");
 
-            AssertDirectoryExists(Path.Combine(sampleRoot, "Audio"));
-            AssertDirectoryExists(Path.Combine(sampleRoot, "Visuals", "Prefabs"));
-            AssertDirectoryExists(Path.Combine(sampleRoot, "Visuals", "Textures"));
-            AssertFileContains(Path.Combine(sampleRoot, "Visuals", "Textures", "template-starter-pack-icon.png.meta"), "TextureImporter");
-            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Visuals", "Textures", "template-starter-pack-banner.png"));
-            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Visuals", "Prefabs", "template-projectile.prefab"));
-            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Audio", "template-fire.wav"));
-            AssertFileExistsAtFullPath(Path.Combine(sampleRoot, "Audio", "template-impact.wav"));
+            AssertDirectoryExists(Path.Combine(templateSourceRoot, "Audio"));
+            AssertDirectoryExists(Path.Combine(templateSourceRoot, "Visuals", "Prefabs"));
+            AssertDirectoryExists(Path.Combine(templateSourceRoot, "Visuals", "Textures"));
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Textures", "template-starter-pack-icon.png.meta"), "TextureImporter");
+            AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Textures", "template-starter-pack-banner.png"));
+            AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-projectile.prefab"));
+            AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Audio", "template-fire.wav"));
+            AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Audio", "template-impact.wav"));
         }
 
         [Test]
@@ -1472,9 +1484,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(controller.EncounterRewardCredits, Is.GreaterThanOrEqualTo(60));
                 Assert.That(controller.EncounterRewardParts, Is.GreaterThanOrEqualTo(3));
 
-                controller.RestartRun(BasicIdleAutoDefenseGame.CreateBossPulseEncounterDefinition());
+                controller.RestartRun(CreateFailCapablePressureEncounterDefinition());
                 StepUntilTerminal(controller, 720);
-                Assert.IsTrue(controller.EncounterFailed, "Boss Pulse should be a fail-capable default slice.");
+                Assert.IsTrue(controller.EncounterFailed, "The template should still support fail-capable pressure runs.");
 
                 controller.SimulateOfflineReward(DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1));
                 Assert.AreEqual(IdleProgressionResultCode.Success, controller.LastOfflineRewardCode);
@@ -1537,28 +1549,58 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertFileExists(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs");
                 AssertFileExists(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs.meta");
                 AssertFileExists(targetRoot + "/WizardSmoke.IdleAutoDefense.asmdef");
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultStages"));
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultEnemies"));
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultWeapons"));
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultWaves"));
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultUpgrades"));
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultProgression"));
-                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/DefaultMonetization"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/Attacks"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/Enemies"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/Weapons"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/Waves"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/Upgrades"));
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/ContentSets"));
                 AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Content/ContentPacks"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Visuals/Prefabs"));
+                AssertDirectoryExists(AssetPathToFullPath(targetRoot + "/Audio"));
+                AssertFileExists(targetRoot + "/Content/Enemies/enemy.template.swarm/enemy.template.swarm_EnemyDefinition.asset");
+                AssertFileExists(targetRoot + "/Content/Upgrades/upgrade.template.authored.projectile-speed-up/upgrade.template.authored.projectile-speed-up_RunUpgradeDefinition.asset");
                 AssertFileExists(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset");
                 AssertFileExists(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta");
                 AssertFileExists(targetRoot + "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset");
                 AssertFileExists(targetRoot + "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset.meta");
                 string contentSetGuid = ReadMetaGuid(AssetPathToFullPath(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta"));
                 string contentPackGuid = ReadMetaGuid(AssetPathToFullPath(targetRoot + "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset.meta"));
+                string generatedPulseWeaponGuid = ReadMetaGuid(AssetPathToFullPath(targetRoot + "/Content/Weapons/weapon.template.pulse-cannon/weapon.template.pulse-cannon_WeaponDefinition.asset.meta"));
+                string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
+                string templateSourceRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame");
+                string sourceContentSetGuid = ReadMetaGuid(Path.Combine(templateSourceRoot, "Content", "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta"));
+                string sourceContentPackGuid = ReadMetaGuid(Path.Combine(templateSourceRoot, "Content", "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset.meta"));
+                string sourcePulseWeaponGuid = ReadMetaGuid(Path.Combine(templateSourceRoot, "Content", "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_WeaponDefinition.asset.meta"));
+                Assert.AreNotEqual(sourceContentSetGuid, contentSetGuid);
+                Assert.AreNotEqual(sourceContentPackGuid, contentPackGuid);
+                Assert.AreNotEqual(sourcePulseWeaponGuid, generatedPulseWeaponGuid);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), contentSetGuid);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), contentPackGuid);
+                AssertFileDoesNotContain(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), sourceContentSetGuid);
+                AssertFileDoesNotContain(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), sourceContentPackGuid);
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset"), generatedPulseWeaponGuid);
+                AssertFileDoesNotContain(AssetPathToFullPath(targetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset"), sourcePulseWeaponGuid);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/asset-flip-checklist.md"), "product-owned");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), "Deucarian.TemplateGameIdleAutoDefense");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "namespace WizardSmoke.IdleAutoDefense");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "WizardSmokeIdleAutoDefenseGameBootstrap");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/WizardSmoke.IdleAutoDefense.asmdef"), "Deucarian.TemplateGameIdleAutoDefense");
+
+                string secondTargetRoot = tempRoot + "/W" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                var secondRequest = new IdleAutoDefenseTemplateSetupRequest
+                {
+                    TargetRootAssetPath = secondTargetRoot,
+                    GameNamespace = "WizardSmoke.SecondIdleAutoDefense",
+                    GamePrefix = "Wizard Second",
+                    AllowOverwrite = false,
+                    OpenCreatedScene = false,
+                    RefreshAssetDatabase = false
+                };
+                IdleAutoDefenseTemplateSetupResult second = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(secondRequest);
+                Assert.IsTrue(second.Succeeded, second.CreateSummary());
+                string secondContentSetGuid = ReadMetaGuid(AssetPathToFullPath(secondTargetRoot + "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset.meta"));
+                Assert.AreNotEqual(contentSetGuid, secondContentSetGuid);
 
                 string reportPath = AssetPathToFullPath(targetRoot + "/Docs/setup-report.md");
                 File.WriteAllText(reportPath, "existing report");
@@ -2193,6 +2235,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             GameObject host = new GameObject("idle-auto-defense-template-editmode");
             return host.AddComponent<IdleAutoDefenseTemplateController>();
+        }
+
+        private static EncounterDefinition CreateFailCapablePressureEncounterDefinition()
+        {
+            return new EncounterDefinition(
+                new EncounterId("encounter.template.fail-pressure"),
+                null,
+                new[]
+                {
+                    new WaveDefinition(new WaveId("wave.template.fail-pressure.overrun"), 0, new[]
+                    {
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.fail-pressure.runner-north"), new SpawnableId(BasicIdleAutoDefenseGame.RunnerEnemySpawnableId.Value), 24, 6, 0, 4, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.fail-pressure.runner-east"), new SpawnableId(BasicIdleAutoDefenseGame.RunnerEnemySpawnableId.Value), 24, 6, 0, 4, new SpawnChannelId("perimeter-east")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.fail-pressure.swarm-south"), new SpawnableId(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value), 30, 6, 4, 4, new SpawnChannelId("perimeter-south")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.fail-pressure.tank-west"), new SpawnableId(BasicIdleAutoDefenseGame.TankEnemySpawnableId.Value), 8, 2, 8, 8, new SpawnChannelId("perimeter-west"))
+                    })
+                },
+                new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
+                seed: 20260701);
         }
 
         private static void StepToTerminal(IdleAutoDefenseTemplateController controller)

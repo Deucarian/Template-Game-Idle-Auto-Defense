@@ -3,15 +3,16 @@
 Expected validation coverage:
 
 - Package import through the shared validation project.
-- Sample metadata discovery and import.
-- Sample path checks for `Scenes`, `Prefabs`, `Scripts`, `Content`, and `Tests`.
-- Sample scene load.
-- Template menu helper checks for starter scene discovery, documentation discovery, and sample save reset.
-- EditMode tests for definitions, upgrade draft, save/load, corrupted save recovery, offline reward, and progression reward.
-- PlayMode smoke for direct and projectile weapons, enemy kills, objective contact/failure handling, terminal encounter state, offline reward, and encounter reward.
-- Imported sample smoke for bootstrap inheritance, save reset, and save/progression composition.
+- No public Unity Package Manager sample entry.
+- Setup service creates product-owned `Scripts`, `Scenes`, `Content`, `Prefabs`, `Visuals`, `Audio`, and `Docs`.
+- Generated scene references generated product-owned content assets, not template-source GUIDs.
+- Generated content pack and content set validate with zero errors.
+- Generated controller uses assigned content in Play Mode.
+- Menu checks expose only `Create Playable Game` and `Open Template Docs` under `Tools > Deucarian > Templates > Idle Auto Defense`.
+- EditMode tests cover definitions, upgrade draft, save/load, corrupted save recovery, offline reward, progression reward, setup copying, and GUID remapping.
+- PlayMode smoke covers spawning, direct/projectile weapons, enemy kills, objective contact/failure handling, terminal encounter state, offline reward, and encounter reward.
 
-Use Deucarian Test Automation for durable batch results:
+Use Deucarian Test Automation when available:
 
 ```text
 Deucarian.TestAutomation.BatchTestRunner.RunEditMode

@@ -8,11 +8,8 @@
   "editorAssemblies": [
     "Deucarian.TemplateGameIdleAutoDefense.Editor"
   ],
-  "sampleAssemblies": [
-    "Deucarian.TemplateGameIdleAutoDefense.BasicIdleAutoDefenseGameSample"
-  ],
+  "sampleAssemblies": [],
   "testAssemblies": [
-    "Deucarian.TemplateGameIdleAutoDefense.BasicIdleAutoDefenseGameSample.Tests",
     "Deucarian.TemplateGameIdleAutoDefense.PlayModeTests",
     "Deucarian.TemplateGameIdleAutoDefense.Tests"
   ],
@@ -27,13 +24,12 @@
   "allowedDirectDebugCalls": [
     {
       "file": "Runtime/IdleAutoDefenseTemplate.cs",
-      "reason": "Template sample diagnostics are intentionally visible in the Unity console; replacing them with Logging should be handled with an explicit dependency/governance phase."
+      "reason": "Template diagnostics are intentionally visible in the Unity console; replacing them with Logging should be handled with an explicit dependency/governance phase."
     },
     {
-      "file": "Samples~/BasicIdleAutoDefenseGame/Scripts/BasicIdleAutoDefenseGameBootstrap.cs",
-      "reason": "Imported sample bootstrap reports save/load status to the Unity console for developer visibility."
+      "file": "TemplateSource~/BasicIdleAutoDefenseGame/Scripts/BasicIdleAutoDefenseGameBootstrap.cs",
+      "reason": "Generated product bootstrap reports save/load status to the Unity console for developer visibility."
     }
   ],
-  "allowedDirectUnityObjectLifetimeCalls": [],
-  "expectedSamplesRoot": "Samples~/BasicIdleAutoDefenseGame"
+  "allowedDirectUnityObjectLifetimeCalls": []
 }
