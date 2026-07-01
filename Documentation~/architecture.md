@@ -2,18 +2,13 @@
 
 The package is a template, not a reusable gameplay framework. It composes the Auto Defense Suite through starter application glue:
 
-- `BasicIdleAutoDefenseGame` creates deterministic content definitions.
-- `IdleAutoDefenseTemplateDefaultContent` exposes stage and module descriptors used by tests and product override docs. It belongs in the template because it describes starter-game content, including future module intent, rather than reusable framework behavior.
-- `IdleAutoDefenseTemplateController` wires spawning, navigation, auto-defense runtime, weapons, projectiles, upgrades, idle rewards, progression, and placeholder visuals.
-- `IdleAutoDefenseTemplateSaveProgressionComposition` validates profile, run, and settings save paths plus recovery and migration behavior.
-- `BasicIdleAutoDefenseGameBootstrap` adds sample-only status UI and sample save reset behavior after the sample is imported.
-- `IdleAutoDefenseTemplateMenu` adds editor-only setup helpers under `Tools > Deucarian > Templates > Idle Auto Defense`.
-- `IdleAutoDefenseTemplateSetupService` owns testable setup logic for product-owned folders. `IdleAutoDefenseTemplateSetupWizardWindow` stays a thin editor UI over that service.
+- `BasicIdleAutoDefenseGame` creates deterministic fallback definitions for tests and smoke runs.
+- `IdleAutoDefenseTemplateController` wires spawning, navigation, combat, weapons, projectiles, upgrades, idle rewards, progression, and simple scene visuals.
+- `BasicIdleAutoDefenseGameBootstrap` is private template-source code copied and renamed into generated product folders.
+- `IdleAutoDefenseTemplateSetupService` creates product-owned folders from `TemplateSource~/BasicIdleAutoDefenseGame`.
 
-Authored content is the main data handoff in this slice. The template accepts serialized `AttackDefinitionAsset`, `EnemyDefinitionAsset`, and `WaveDefinitionAsset` references. It validates attacks with runtime-friendly attack validation, enemies with asset-creation validation when assigned so prefab references are present, and waves with runtime-friendly wave validation plus an enemy-reference check.
+The generated scene prefers its assigned `GameContentPackAsset` and `GameContentSetAsset`. If generated content is invalid, the controller logs a warning and falls back to direct assigned arrays or built-in transient content so failures remain visible, but the normal setup path should validate with zero pack/set errors.
 
-Assigned attacks are used only when they include the two attack IDs referenced by the starter weapons: `attack.template.pulse-cannon` and `attack.template.shard-launcher`. Assigned enemies are used only when they include the six template enemy IDs referenced by the starter waves: swarm, runner, tank, shielded, elite, and boss. Assigned waves are used only when every entry references a resolved enemy. Invalid sets log a warning and fall back to transient built-in content so the sample remains playable while broken authoring is visible.
+Template source assets store root and section data as sibling `.asset` files. During setup, copied `.meta` files receive fresh GUIDs and copied YAML references are rewritten so generated scenes and assets point at product-owned assets.
 
-Package sample assets store root and section data as sibling `.asset` files because Unity imports `Samples~` content into a project. The editor wizard creates the same structure as root assets with focused sub-assets under normal `Assets/GameContent/...` folders.
-
-Replace this glue as a real game matures. New reusable systems should move into lower packages instead of growing inside the template.
+Reusable systems belong in lower Deucarian packages. Keep product-specific scene composition, prefabs, content IDs, and save DTOs in the product project.

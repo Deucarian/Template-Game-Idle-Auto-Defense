@@ -26,12 +26,5 @@
     "com.deucarian.game-content-authoring": "0.1.0",
     "com.deucarian.gameplay-foundation": "0.1.0",
     "com.deucarian.monetization": "0.1.0"
-  },
-  "samples": [
-    {
-      "displayName": "Basic Idle Auto Defense Game",
-      "description": "A ready-to-open starter scene with a central objective, visible perimeter spawns, direct and projectile weapon mounts, upgrades, save reset helpers, offline rewards, and placeholder primitives.",
-      "path": "Samples~/BasicIdleAutoDefenseGame"
-    }
-  ]
+  }
 }

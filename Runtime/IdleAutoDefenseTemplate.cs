@@ -58,9 +58,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             SwarmEnemySpawnableId.Value,
             RunnerEnemySpawnableId.Value,
             TankEnemySpawnableId.Value,
-            ShieldedEnemySpawnableId.Value,
-            EliteEnemySpawnableId.Value,
-            BossEnemySpawnableId.Value
+            ShieldedEnemySpawnableId.Value
         };
         public static readonly CurrencyId Credits = new CurrencyId("currency.template.credits");
         public static readonly CurrencyId Parts = new CurrencyId("currency.template.parts");
@@ -85,8 +83,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
             AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 42, DamageType, 0.45f, 4, 2),
-                AutoDefenseSpawnRingDefinition.FourWay(7f),
+                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 60, DamageType, 0.45f, 6, 2),
+                AutoDefenseSpawnRingDefinition.FourWay(9f),
                 enemies,
                 mounts,
                 CreateAutoDefenseWeaponModuleDefinitions(weapons, mounts));
@@ -1175,6 +1173,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     public class IdleAutoDefenseTemplateController : MonoBehaviour
     {
         private readonly SpawnRequest[] _spawnBuffer = new SpawnRequest[16];
+        private const long DefaultRuntimeStartingCredits = 60;
+        private const long KillRewardCredits = 6;
+        private const int PassiveIncomeIntervalTicks = 90;
+        private const int ManualTowerBaseCooldownTicks = 18;
+        private const int ManualTowerMinimumCooldownTicks = 5;
+        private const double ManualTowerBaseDamage = 4d;
+        private const double ManualTowerDamageRankBonus = 4d;
+        private const double ManualTowerRangeRankBonus = 1d;
+        private const double SampleProjectileFinishThreshold = 3d;
+        private const float TemplateSpawnLaneRadius = 9f;
         private AutoDefenseRuntime _runtime;
         private EncounterRuntime _encounter;
         private ProjectileRuntime _projectiles;
@@ -1189,13 +1197,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private ProgressionState _progressionState;
         private IdleProgressionDefinition _offlineDefinition;
         private bool _completionRewardApplied;
-        [SerializeField] private GameContentPackAsset _contentPack;
-        [SerializeField] private GameContentSetAsset _contentSet;
-        [SerializeField] private AttackDefinitionAsset[] _attackRecipes = Array.Empty<AttackDefinitionAsset>();
-        [SerializeField] private EnemyDefinitionAsset[] _enemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
-        [SerializeField] private WaveDefinitionAsset[] _waveDefinitions = Array.Empty<WaveDefinitionAsset>();
-        [SerializeField] private WeaponDefinitionAsset[] _weaponDefinitions = Array.Empty<WeaponDefinitionAsset>();
-        [SerializeField] private RunUpgradeDefinitionAsset[] _upgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
+        [SerializeField] protected GameContentPackAsset _contentPack;
+        [SerializeField] protected GameContentSetAsset _contentSet;
+        [SerializeField] protected AttackDefinitionAsset[] _attackRecipes = Array.Empty<AttackDefinitionAsset>();
+        [SerializeField] protected EnemyDefinitionAsset[] _enemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
+        [SerializeField] protected WaveDefinitionAsset[] _waveDefinitions = Array.Empty<WaveDefinitionAsset>();
+        [SerializeField] protected WeaponDefinitionAsset[] _weaponDefinitions = Array.Empty<WeaponDefinitionAsset>();
+        [SerializeField] protected RunUpgradeDefinitionAsset[] _upgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
         private AttackDefinitionAsset[] _resolvedAttackRecipes = Array.Empty<AttackDefinitionAsset>();
         private EnemyDefinitionAsset[] _resolvedEnemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
         private WaveDefinitionAsset[] _resolvedWaveDefinitions = Array.Empty<WaveDefinitionAsset>();
@@ -1207,6 +1215,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject _root;
         private bool _terminalStateLogged;
         private MonetizationSession _monetizationSession;
+        private int _manualTowerCooldownTicks;
+        private int _passiveIncomeTicks;
 
         public AutoDefenseRuntime Runtime => _runtime;
         public MonetizationSession MonetizationSession
@@ -1240,6 +1250,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int EnemySpawnDelayTicks { get; private set; }
         public double RewardCreditMultiplierBonus { get; private set; }
         public double OfflineRewardMultiplierBonus { get; private set; }
+        public long RuntimeCurrency { get; private set; }
+        public float SurvivalSeconds { get; private set; }
+        public int DamageUpgradeRank { get; private set; }
+        public int AttackSpeedUpgradeRank { get; private set; }
+        public int RangeUpgradeRank { get; private set; }
+        public int RepairUpgradeRank { get; private set; }
         public int UnsupportedUpgradeIntentCount { get; private set; }
         public long OfflineRewardCredits { get; private set; }
         public long OfflineRewardParts { get; private set; }
@@ -1249,18 +1265,43 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public bool ReviveOfferAccepted { get; private set; }
         public bool EncounterCompleted => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Completed;
         public bool EncounterFailed => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Failed;
+        public bool EncounterRunning => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Running;
+        public int ActiveEnemyCount => _runtime == null ? 0 : _runtime.ActiveEnemyCount;
+        public int ObjectiveLivesRemaining => _runtime == null ? 0 : _runtime.Objective.LivesRemaining;
+        public double ObjectiveHealth => _runtime == null ? 0d : _runtime.Objective.Health.CurrentHealth;
+        public double ObjectiveMaximumHealth => _runtime == null ? 0d : _runtime.Objective.Health.MaximumHealth;
+        public string ObjectiveHealthText => ObjectiveMaximumHealth <= 0d
+            ? "--"
+            : ObjectiveHealth.ToString("0", CultureInfo.InvariantCulture) + "/" + ObjectiveMaximumHealth.ToString("0", CultureInfo.InvariantCulture);
+        public string CurrentSpawnProfileName => ResolveCurrentSpawnProfileName();
+        public int DamageUpgradeCost => CalculateUpgradeCost(20, DamageUpgradeRank);
+        public int AttackSpeedUpgradeCost => CalculateUpgradeCost(18, AttackSpeedUpgradeRank);
+        public int RangeUpgradeCost => CalculateUpgradeCost(18, RangeUpgradeRank);
+        public int RepairUpgradeCost => CalculateUpgradeCost(16, RepairUpgradeRank);
+        public bool CanPurchaseDamageUpgrade => CanSpendRuntimeCurrency(DamageUpgradeCost);
+        public bool CanPurchaseAttackSpeedUpgrade => CanSpendRuntimeCurrency(AttackSpeedUpgradeCost);
+        public bool CanPurchaseRangeUpgrade => CanSpendRuntimeCurrency(RangeUpgradeCost);
+        public bool CanPurchaseRepairUpgrade => CanSpendRuntimeCurrency(RepairUpgradeCost);
         public string StatusSummary => "State=" + RuntimeState +
             " Spawned=" + SpawnedCount +
             " Kills=" + (DirectOrCombatKillCount + ProjectileAdapterKillCount) +
             " Projectiles=" + ProjectileLaunchCount +
             " Upgrades=" + SelectedUpgradeCount +
-            " ObjectiveHits=" + ObjectiveDamageEvents;
+            " ObjectiveHits=" + ObjectiveDamageEvents +
+            " Currency=" + RuntimeCurrency +
+            " Time=" + SurvivalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
 
         private AutoDefenseRuntimeState RuntimeState => _runtime == null ? AutoDefenseRuntimeState.Created : _runtime.State;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             Build();
+        }
+
+        protected void ConfigureContentPack(GameContentPackAsset contentPack, GameContentSetAsset contentSet)
+        {
+            _contentPack = contentPack;
+            _contentSet = contentSet;
         }
 
         private void Update()
@@ -1286,20 +1327,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _resolvedUpgradeDefinitions = ResolveUpgradeDefinitions();
             }
 
-            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions, _resolvedWeaponDefinitions);
+            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions, ResolveActiveWeaponDefinitionsForRun());
             CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes, _resolvedEnemyDefinitions);
             AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition, _resolvedAttackRecipes);
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
 
             _root = new GameObject("Basic Idle Auto Defense Runtime");
-            CreatePrimitive("Central Objective - Template Core", PrimitiveType.Cube, definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
-            CreateSpawnMarkers(definition.SpawnRing.Radius);
-            for (int i = 0; i < definition.Mounts.Count; i++)
-            {
-                string mountName = CreateMountDisplayName(i, definition.WeaponModules[i].WeaponDefinition.FireMode);
-                CreatePrimitive(mountName, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
-            }
-            CreatePrimitive("Enemy Placeholder Preview - Replace Me", PrimitiveType.Capsule, new Vector3(0f, 0f, -3.25f), new Vector3(0.45f, 0.9f, 0.45f), Color.red);
+            CreatePrimitive("Player Tower", PrimitiveType.Cylinder, definition.Objective.Position, new Vector3(0.8f, 0.9f, 0.8f), Color.cyan);
+            CreatePlayAreaMarkers();
 
             _enemyPrefab = CreatePrefab("Template Idle Enemy Runtime Prefab", PrimitiveType.Capsule, Color.red);
             _projectilePrefab = CreatePrefab("Template Idle Projectile Runtime Prefab", PrimitiveType.Sphere, Color.magenta);
@@ -1339,9 +1374,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 ApplyContentSetStartingResources(_resolvedContentSet);
             _offlineDefinition = BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition();
             ApplyContentSetEconomyTuning(_resolvedContentSet);
+            RuntimeCurrency = ResolveRuntimeStartingCredits(_resolvedContentSet);
 
             _runtime.Start();
-            Debug.Log("[Idle Auto Defense Template] Starter scene built. Open the Game view to watch the core, spawn markers, weapon mounts, and placeholder enemies.");
+            Debug.Log("[Idle Auto Defense Template] Starter scene built. Open the Game view to watch the player tower and spawned enemies.");
         }
 
         public void RestartRun()
@@ -1474,7 +1510,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public void Step(int ticks, float deltaSeconds)
         {
             if (_runtime == null || _runtime.State != AutoDefenseRuntimeState.Running) return;
-            DraftAndApplyUpgradeIfDue(ticks);
+            SurvivalSeconds += Math.Max(0f, deltaSeconds);
             _encounter.AdvanceTicks(EnemySpawnDelayTicks);
             _encounter.DrainSpawnRequests(_spawnBuffer);
             for (int i = 0; i < _spawnBuffer.Length; i++)
@@ -1487,6 +1523,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             AutoDefenseRunResult result = _runtime.Tick(ticks, deltaSeconds);
             DirectOrCombatKillCount += result.Killed;
+            int rewardedKills = result.Killed;
             ObjectiveReachCount += result.ReachedObjective;
             if (result.ReachedObjective > 0) ObjectiveDamageEvents += result.ReachedObjective;
 
@@ -1495,14 +1532,58 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 ProjectileLaunchResult launch = _projectiles.Launch(result.ProjectileLaunches[i]);
                 if (!launch.Succeeded) continue;
                 ProjectileLaunchCount++;
-                TryApplySampleProjectileHit();
+                rewardedKills += TryApplySampleProjectileHit();
             }
 
             _projectiles.Tick(ticks);
             _projectileNavigation.Tick((float)(deltaSeconds * ProjectileSpeedMultiplier));
-            ApplyDirectDamageBonusIfReady();
+            rewardedKills += ApplyDirectDamageBonusIfReady();
+            rewardedKills += FireManualTowerShotIfReady(ticks);
+            AwardRuntimeCurrencyForKills(rewardedKills);
+            GrantPassiveIncomeIfReady(ticks);
+            DraftAndApplyUpgradeIfDue(ticks);
             ApplyEncounterRewardIfTerminal();
             LogTerminalStateIfNeeded();
+        }
+
+        public bool TryPurchaseDamageUpgrade()
+        {
+            if (!SpendRuntimeCurrency(DamageUpgradeCost)) return false;
+            DamageUpgradeRank++;
+            DirectDamageBonus += ManualTowerDamageRankBonus;
+            SelectedUpgradeCount++;
+            return true;
+        }
+
+        public bool TryPurchaseAttackSpeedUpgrade()
+        {
+            if (!SpendRuntimeCurrency(AttackSpeedUpgradeCost)) return false;
+            AttackSpeedUpgradeRank++;
+            SelectedUpgradeCount++;
+            return true;
+        }
+
+        public bool TryPurchaseRangeUpgrade()
+        {
+            if (!SpendRuntimeCurrency(RangeUpgradeCost)) return false;
+            RangeUpgradeRank++;
+            DirectDamageBonus += 0.5d;
+            SelectedUpgradeCount++;
+            return true;
+        }
+
+        public bool TryPurchaseRepairUpgrade()
+        {
+            if (!SpendRuntimeCurrency(RepairUpgradeCost)) return false;
+            RepairUpgradeRank++;
+            if (_runtime != null)
+            {
+                _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + 6d, MaximumChangePolicy.PreserveAbsolute);
+                _runtime.Objective.Health.Heal(12d + RepairUpgradeRank * 3d);
+            }
+
+            SelectedUpgradeCount++;
+            return true;
         }
 
         private void DraftAndApplyUpgradeIfDue(int ticks)
@@ -1527,6 +1608,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 else if (effect.EffectId.Value == "template.projectile.speed_multiplier") ProjectileSpeedMultiplier += effect.Amount;
                 else if (effect.EffectId.Value == "template.objective.heal") _runtime.Objective.Health.Heal(effect.Amount);
                 else if (effect.EffectId.Value == "template.objective.max_health") _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + effect.Amount, MaximumChangePolicy.FillToMaximum);
+                else if (effect.EffectId.Value == "template.weapon.fire_rate_intent") AttackSpeedUpgradeRank++;
+                else if (effect.EffectId.Value == "template.weapon.range_intent")
+                {
+                    RangeUpgradeRank++;
+                    DirectDamageBonus += Math.Max(0.5d, effect.Amount * 0.5d);
+                }
                 else if (effect.EffectId.Value == "template.enemy.spawn_delay_ticks") EnemySpawnDelayTicks += (int)effect.Amount;
                 else if (effect.EffectId.Value == "template.reward.credits_multiplier") RewardCreditMultiplierBonus += effect.Amount;
                 else if (effect.EffectId.Value == "template.offline.credits_multiplier") OfflineRewardMultiplierBonus += effect.Amount;
@@ -1534,9 +1621,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
-        private void ApplyDirectDamageBonusIfReady()
+        private int ApplyDirectDamageBonusIfReady()
         {
-            if (DirectDamageBonus <= 0d) return;
+            if (DirectDamageBonus <= 0d) return 0;
             AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
             for (int i = 0; i < snapshot.Enemies.Count; i++)
             {
@@ -1545,24 +1632,124 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (enemy.Health <= DirectDamageBonus && _runtime.TryKillEnemy(enemy.Id))
                 {
                     DirectOrCombatKillCount++;
-                    return;
+                    return 1;
                 }
             }
+
+            return 0;
         }
 
-        private void TryApplySampleProjectileHit()
+        private int TryApplySampleProjectileHit()
         {
             AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
             for (int i = 0; i < snapshot.Enemies.Count; i++)
             {
                 AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
                 if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                if (enemy.Health > SampleProjectileFinishThreshold) continue;
                 if (_runtime.TryKillEnemy(enemy.Id))
                 {
                     ProjectileAdapterKillCount++;
-                    return;
+                    return 1;
                 }
             }
+
+            return 0;
+        }
+
+        private int FireManualTowerShotIfReady(int ticks)
+        {
+            _manualTowerCooldownTicks += Math.Max(1, ticks);
+            int cooldownTicks = Math.Max(ManualTowerMinimumCooldownTicks, ManualTowerBaseCooldownTicks - AttackSpeedUpgradeRank * 3);
+            if (_manualTowerCooldownTicks < cooldownTicks) return 0;
+            _manualTowerCooldownTicks = 0;
+
+            double damageThreshold = ManualTowerBaseDamage + DamageUpgradeRank * ManualTowerDamageRankBonus + RangeUpgradeRank * ManualTowerRangeRankBonus;
+            AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
+            AutoDefenseEnemySnapshot selected = default;
+            bool hasSelected = false;
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
+                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                if (enemy.Health > damageThreshold) continue;
+                if (hasSelected && enemy.ObjectiveProgress <= selected.ObjectiveProgress) continue;
+                selected = enemy;
+                hasSelected = true;
+            }
+
+            if (!hasSelected || !_runtime.TryKillEnemy(selected.Id)) return 0;
+            DirectOrCombatKillCount++;
+            return 1;
+        }
+
+        private void AwardRuntimeCurrencyForKills(int kills)
+        {
+            if (kills <= 0) return;
+            RuntimeCurrency += Math.Max(kills, (long)Math.Ceiling(kills * KillRewardCredits * (1d + RewardCreditMultiplierBonus)));
+        }
+
+        private void GrantPassiveIncomeIfReady(int ticks)
+        {
+            _passiveIncomeTicks += Math.Max(1, ticks);
+            if (_passiveIncomeTicks < PassiveIncomeIntervalTicks) return;
+            int intervals = _passiveIncomeTicks / PassiveIncomeIntervalTicks;
+            _passiveIncomeTicks %= PassiveIncomeIntervalTicks;
+            RuntimeCurrency += intervals;
+        }
+
+        private bool SpendRuntimeCurrency(int cost)
+        {
+            if (!CanSpendRuntimeCurrency(cost)) return false;
+            RuntimeCurrency -= cost;
+            return true;
+        }
+
+        private bool CanSpendRuntimeCurrency(int cost)
+        {
+            return EncounterRunning && cost > 0 && RuntimeCurrency >= cost;
+        }
+
+        private static int CalculateUpgradeCost(int baseCost, int rank)
+        {
+            return baseCost + Math.Max(0, rank) * (baseCost / 2 + 6);
+        }
+
+        private static long ResolveRuntimeStartingCredits(GameContentSetResolution resolution)
+        {
+            if (resolution != null && resolution.IsValid && resolution.ContentSet != null && resolution.ContentSet.StartingCredits > 0)
+                return resolution.ContentSet.StartingCredits;
+            return DefaultRuntimeStartingCredits;
+        }
+
+        private string ResolveCurrentSpawnProfileName()
+        {
+            if (_encounter == null) return "None";
+            EncounterSnapshot snapshot = _encounter.CreateSnapshot();
+            string lastStarted = string.Empty;
+            for (int i = 0; i < snapshot.Waves.Count; i++)
+            {
+                WaveProgressSnapshot wave = snapshot.Waves[i];
+                if (wave.Started && !wave.Emitted)
+                    return ResolveWaveDisplayName(wave.WaveId.Value);
+                if (wave.Started)
+                    lastStarted = wave.WaveId.Value;
+            }
+
+            return string.IsNullOrWhiteSpace(lastStarted) ? "None" : ResolveWaveDisplayName(lastStarted);
+        }
+
+        private string ResolveWaveDisplayName(string waveId)
+        {
+            if (string.IsNullOrWhiteSpace(waveId)) return "None";
+            for (int i = 0; i < _resolvedWaveDefinitions.Length; i++)
+            {
+                WaveDefinitionAsset wave = _resolvedWaveDefinitions[i];
+                if (wave == null || !string.Equals(wave.Id, waveId, StringComparison.OrdinalIgnoreCase)) continue;
+                return string.IsNullOrWhiteSpace(wave.DisplayName) ? wave.Id : wave.DisplayName;
+            }
+
+            return waveId;
         }
 
         private void ApplyEncounterRewardIfTerminal()
@@ -1665,6 +1852,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             UsingAssignedContentSet = true;
         }
 
+        private WeaponDefinitionAsset[] ResolveActiveWeaponDefinitionsForRun()
+        {
+            return _resolvedWeaponDefinitions;
+        }
+
         private void ApplyContentSetStartingResources(GameContentSetResolution resolution)
         {
             if (resolution == null || !resolution.IsValid || _progressionState == null || _progressionCatalog == null) return;
@@ -1685,16 +1877,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (resolution == null || !resolution.IsValid) return;
             RewardCreditMultiplierBonus = Math.Max(0d, resolution.ContentSet.RewardMultiplier - 1f);
-        }
-
-        private string CreateMountDisplayName(int index, WeaponFireMode fireMode)
-        {
-            string weaponName = index >= 0 && index < _resolvedWeaponDefinitions.Length && _resolvedWeaponDefinitions[index] != null
-                ? _resolvedWeaponDefinitions[index].DisplayName
-                : "Weapon " + (index + 1).ToString(CultureInfo.InvariantCulture);
-            if (string.IsNullOrWhiteSpace(weaponName))
-                weaponName = "Weapon " + (index + 1).ToString(CultureInfo.InvariantCulture);
-            return weaponName + " Mount - " + fireMode;
         }
 
         private static string CreateContentSetIssueSummary(GameContentSetValidationReport report)
@@ -1896,12 +2078,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return instance;
         }
 
-        private void CreateSpawnMarkers(float radius)
+        private void CreatePlayAreaMarkers()
         {
-            CreatePrimitive("Spawn Marker - North Perimeter", PrimitiveType.Cylinder, new Vector3(0f, 0f, radius), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
-            CreatePrimitive("Spawn Marker - East Perimeter", PrimitiveType.Cylinder, new Vector3(radius, 0f, 0f), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
-            CreatePrimitive("Spawn Marker - South Perimeter", PrimitiveType.Cylinder, new Vector3(0f, 0f, -radius), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
-            CreatePrimitive("Spawn Marker - West Perimeter", PrimitiveType.Cylinder, new Vector3(-radius, 0f, 0f), new Vector3(0.45f, 0.08f, 0.45f), Color.green);
+            CreatePrimitive("Pulse Cannon Mount", PrimitiveType.Cube, new Vector3(-0.85f, 0.2f, 0f), new Vector3(0.45f, 0.25f, 0.45f), new Color(0.15f, 0.55f, 1f));
+            CreatePrimitive("Shard Launcher Mount", PrimitiveType.Cube, new Vector3(0.85f, 0.2f, 0f), new Vector3(0.45f, 0.25f, 0.45f), new Color(1f, 0.45f, 0.1f));
+            CreatePrimitive("Spawn Lane North", PrimitiveType.Cube, new Vector3(0f, 0.05f, TemplateSpawnLaneRadius), new Vector3(1.2f, 0.08f, 0.35f), Color.yellow);
+            CreatePrimitive("Spawn Lane East", PrimitiveType.Cube, new Vector3(TemplateSpawnLaneRadius, 0.05f, 0f), new Vector3(0.35f, 0.08f, 1.2f), Color.yellow);
+            CreatePrimitive("Spawn Lane South", PrimitiveType.Cube, new Vector3(0f, 0.05f, -TemplateSpawnLaneRadius), new Vector3(1.2f, 0.08f, 0.35f), Color.yellow);
+            CreatePrimitive("Spawn Lane West", PrimitiveType.Cube, new Vector3(-TemplateSpawnLaneRadius, 0.05f, 0f), new Vector3(0.35f, 0.08f, 1.2f), Color.yellow);
         }
 
         private void LogTerminalStateIfNeeded()
@@ -1926,7 +2110,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private void OnDestroy()
         {
-            DisposeRuntimeObjects();
+            DisposeRuntimeObjects(!Application.isPlaying);
+        }
+
+        private void OnApplicationQuit()
+        {
+            ClearSpawnedRuntimeObjects();
         }
 
         private void ResetRunStateCounters()
@@ -1955,21 +2144,43 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EnemySpawnDelayTicks = 0;
             RewardCreditMultiplierBonus = 0d;
             OfflineRewardMultiplierBonus = 0d;
+            RuntimeCurrency = 0;
+            SurvivalSeconds = 0f;
+            DamageUpgradeRank = 0;
+            AttackSpeedUpgradeRank = 0;
+            RangeUpgradeRank = 0;
+            RepairUpgradeRank = 0;
             UnsupportedUpgradeIntentCount = 0;
             EncounterRewardCredits = 0;
             EncounterRewardParts = 0;
             ReviveOfferAccepted = false;
             _completionRewardApplied = false;
             _terminalStateLogged = false;
+            _manualTowerCooldownTicks = 0;
+            _passiveIncomeTicks = 0;
         }
 
-        private void DisposeRuntimeObjects()
+        private void ClearSpawnedRuntimeObjects()
         {
-            _enemySpawning?.Dispose();
-            _projectileSpawning?.Dispose();
-            DestroyTemplateObject(_enemyPrefab);
-            DestroyTemplateObject(_projectilePrefab);
-            DestroyTemplateObject(_root);
+            _enemySpawning?.Clear(false);
+            _projectileSpawning?.Clear(false);
+        }
+
+        private void DisposeRuntimeObjects(bool destroySceneObjects = true)
+        {
+            if (destroySceneObjects)
+            {
+                _enemySpawning?.Dispose();
+                _projectileSpawning?.Dispose();
+                DestroyTemplateObject(_enemyPrefab);
+                DestroyTemplateObject(_projectilePrefab);
+                DestroyTemplateObject(_root);
+            }
+            else
+            {
+                ClearSpawnedRuntimeObjects();
+            }
+
             _enemySpawning = null;
             _projectileSpawning = null;
             _enemyPrefab = null;

@@ -53,10 +53,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             if (Succeeded)
             {
-                return "Created Idle Auto Defense game folder at " + TargetRootAssetPath +
+                return "Created playable Idle Auto Defense game folder at " + TargetRootAssetPath +
                     "\nScene: " + CreatedSceneAssetPath +
                     "\nReport: " + SetupReportAssetPath +
-                    "\nNext: replace content assets, tune JSON, then press Play.";
+                    "\nNext: open the created scene and press Play.";
             }
 
             if (Status == IdleAutoDefenseTemplateSetupStatus.BlockedByExistingFiles)
@@ -68,7 +68,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     public static class IdleAutoDefenseTemplateSetupService
     {
-        private const string SampleFolderName = "BasicIdleAutoDefenseGame";
+        private const string TemplateSourceFolderName = "BasicIdleAutoDefenseGame";
         private const string SampleSceneName = "BasicIdleAutoDefenseGame.unity";
         private const string SampleScriptName = "BasicIdleAutoDefenseGameBootstrap.cs";
         private const string SampleBootstrapClass = "BasicIdleAutoDefenseGameBootstrap";
@@ -98,7 +98,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 if (!IsValidNamespace(gameNamespace))
                     throw new ArgumentException("Game namespace must be a valid C# namespace.");
 
-                string sourceRoot = FindSourceSampleRoot();
+                string sourceRoot = FindTemplateSourceRoot();
                 string className = prefix + "IdleAutoDefenseGameBootstrap";
                 string saveClassName = prefix + "IdleAutoDefenseSave";
                 string sceneAssetPath = targetRoot + "/Scenes/" + prefix + "IdleAutoDefense.unity";
@@ -109,10 +109,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 string sourceScriptMeta = Path.Combine(sourceRoot, "Scripts", SampleScriptName + ".meta");
                 string sourceScriptGuid = TryReadGuid(sourceScriptMeta);
                 string generatedScriptGuid = GenerateUnityGuid();
+                var guidMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (!string.IsNullOrWhiteSpace(sourceScriptGuid))
+                    guidMap[sourceScriptGuid] = generatedScriptGuid;
 
                 var operations = new List<FileOperation>();
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), Path.Combine(targetFullRoot, "Content"), includeMetaFiles: true);
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"), includeMetaFiles: true);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), Path.Combine(targetFullRoot, "Content"), true, guidMap);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"), true, guidMap);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Visuals"), Path.Combine(targetFullRoot, "Visuals"), true, guidMap);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Audio"), Path.Combine(targetFullRoot, "Audio"), true, guidMap);
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "README.md"),
@@ -141,6 +146,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     operations,
                     Path.Combine(targetFullRoot, "Docs", "setup-report.md"),
                     CreateSetupReport(targetRoot, gameNamespace, prefix, sceneAssetPath));
+                RewriteGuidReferences(operations, guidMap);
 
                 for (int i = 0; i < operations.Count; i++)
                 {
@@ -171,9 +177,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
                 result.Status = IdleAutoDefenseTemplateSetupStatus.Succeeded;
                 result.AddMessage("Created product-owned Idle Auto Defense starter folder.");
-                if (request.RefreshAssetDatabase) AssetDatabase.Refresh();
-                if (request.OpenCreatedScene && !string.IsNullOrEmpty(sceneAssetPath))
+                string generatedBootstrapTypeName = gameNamespace + "." + className;
+                if (request.OpenCreatedScene && request.RefreshAssetDatabase && !string.IsNullOrEmpty(sceneAssetPath))
+                    IdleAutoDefenseGeneratedSceneOpenQueue.Queue(sceneAssetPath, targetRoot, generatedBootstrapTypeName);
+                if (request.RefreshAssetDatabase) AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                if (request.OpenCreatedScene && !string.IsNullOrEmpty(sceneAssetPath) && !request.RefreshAssetDatabase)
                     EditorSceneManager.OpenScene(sceneAssetPath);
+                else if (request.OpenCreatedScene && request.RefreshAssetDatabase && !string.IsNullOrEmpty(sceneAssetPath))
+                    IdleAutoDefenseGeneratedSceneOpenQueue.Queue(sceneAssetPath, targetRoot, generatedBootstrapTypeName);
                 return result;
             }
             catch (Exception ex)
@@ -214,18 +225,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return builder.ToString();
         }
 
-        private static string FindSourceSampleRoot()
+        private static string FindTemplateSourceRoot()
         {
             PackageInfo packageInfo = PackageInfo.FindForAssembly(typeof(IdleAutoDefenseTemplateController).Assembly);
             if (packageInfo == null || string.IsNullOrWhiteSpace(packageInfo.resolvedPath))
                 throw new InvalidOperationException("Could not find installed Idle Auto Defense template package.");
-            string sourceRoot = Path.Combine(packageInfo.resolvedPath, "Samples~", SampleFolderName);
+            string sourceRoot = Path.Combine(packageInfo.resolvedPath, "TemplateSource~", TemplateSourceFolderName);
             if (!DirectoryExists(sourceRoot))
-                throw new DirectoryNotFoundException("Could not find template sample folder: " + sourceRoot);
+                throw new DirectoryNotFoundException("Could not find Idle Auto Defense template source folder: " + sourceRoot);
             return sourceRoot;
         }
 
-        private static void AddDirectoryCopyOperations(List<FileOperation> operations, string sourceDirectory, string destinationDirectory, bool includeMetaFiles)
+        private static void AddDirectoryCopyOperations(
+            List<FileOperation> operations,
+            string sourceDirectory,
+            string destinationDirectory,
+            bool includeMetaFiles,
+            Dictionary<string, string> guidMap)
         {
             if (!DirectoryExists(sourceDirectory)) return;
             string[] files = GetFiles(sourceDirectory);
@@ -233,7 +249,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 if (!includeMetaFiles && files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
                 string relative = files[i].Substring(Path.GetFullPath(sourceDirectory).Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                AddFileOperation(operations, Path.Combine(destinationDirectory, relative), ReadAllBytes(files[i]));
+                byte[] contentBytes = ReadAllBytes(files[i]);
+                if (files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                    contentBytes = RemapMetaGuid(files[i], contentBytes, guidMap);
+                AddFileOperation(operations, Path.Combine(destinationDirectory, relative), contentBytes);
             }
         }
 
@@ -247,6 +266,70 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             operations.Add(new FileOperation(Path.GetFullPath(destinationFullPath), contentBytes ?? Array.Empty<byte>()));
         }
 
+        private static byte[] RemapMetaGuid(string sourceMetaPath, byte[] contentBytes, Dictionary<string, string> guidMap)
+        {
+            string oldGuid = TryReadGuid(sourceMetaPath);
+            if (string.IsNullOrWhiteSpace(oldGuid)) return contentBytes;
+
+            string newGuid = GenerateUnityGuid();
+            guidMap[oldGuid] = newGuid;
+            string text = Utf8NoBom.GetString(contentBytes);
+            return Utf8NoBom.GetBytes(ReplaceGuidLine(text, newGuid));
+        }
+
+        private static void RewriteGuidReferences(List<FileOperation> operations, Dictionary<string, string> guidMap)
+        {
+            if (guidMap == null || guidMap.Count == 0) return;
+            for (int i = 0; i < operations.Count; i++)
+            {
+                FileOperation operation = operations[i];
+                if (!CanContainUnityGuidReferences(operation.DestinationFullPath)) continue;
+                string text = Utf8NoBom.GetString(operation.ContentBytes);
+                string rewritten = ReplaceGuidReferences(text, guidMap);
+                if (!string.Equals(text, rewritten, StringComparison.Ordinal))
+                    operation.ContentBytes = Utf8NoBom.GetBytes(rewritten);
+            }
+        }
+
+        private static bool CanContainUnityGuidReferences(string fullPath)
+        {
+            string extension = Path.GetExtension(fullPath);
+            return extension.Equals(".asset", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".prefab", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".mat", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".meta", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".unity", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".asmdef", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".md", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".json", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ReplaceGuidReferences(string text, Dictionary<string, string> guidMap)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            string rewritten = text;
+            foreach (KeyValuePair<string, string> pair in guidMap)
+                rewritten = rewritten.Replace(pair.Key, pair.Value);
+            return rewritten;
+        }
+
+        private static string ReplaceGuidLine(string text, string newGuid)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            string[] lines = text.Replace("\r\n", "\n").Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].TrimStart().StartsWith("guid:", StringComparison.Ordinal))
+                {
+                    int indentLength = lines[i].Length - lines[i].TrimStart().Length;
+                    lines[i] = new string(' ', indentLength) + "guid: " + newGuid;
+                    break;
+                }
+            }
+
+            return string.Join("\n", lines);
+        }
+
         private static string TransformScript(string source, string gameNamespace, string className, string saveClassName, string prefix)
         {
             return source
@@ -254,8 +337,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 .Replace(SampleBootstrapClass, className)
                 .Replace(SampleSaveClass, saveClassName)
                 .Replace("IdleAutoDefenseTemplateSample", prefix + "IdleAutoDefense")
-                .Replace("Idle Auto Defense Starter", prefix + " Idle Auto Defense")
-                .Replace("Content/starter-content.json and Scripts/BasicIdleAutoDefenseGameBootstrap.cs", "Content/starter-content.json and Scripts/" + className + ".cs");
+                .Replace("Idle Auto Defense Starter", prefix + " Idle Auto Defense");
         }
 
         private static string TransformReadme(string source, string displayName, string gameNamespace, string className)
@@ -311,7 +393,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "- Weapons\n" +
                    "- Projectiles\n" +
                    "- Stages\n" +
-                   "- Waves\n" +
+                   "- Spawn profiles\n" +
                    "- Run upgrades\n" +
                    "- Progression values\n" +
                    "- Monetization placements\n" +
@@ -320,9 +402,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "## Workflow\n\n" +
                    "1. Replace enemy visuals in `Prefabs/Enemies` or update the bootstrap prefab providers.\n" +
                    "2. Replace weapon and projectile visuals in `Prefabs/Weapons` and `Prefabs/Projectiles`.\n" +
-                   "3. Tune `Content/DefaultStages/stages.json` and `Content/DefaultWaves/stages-and-encounters.json`.\n" +
-                   "4. Tune `Content/DefaultUpgrades/common-run-upgrades.json`.\n" +
-                   "5. Tune rewards and offline progression in `Content/DefaultProgression/currencies-rewards-saves.json`.\n" +
+                   "3. Tune the enemy assets in `Content/Enemies`.\n" +
+                   "4. Tune the attack and tower assets in `Content/Attacks` and `Content/Weapons`.\n" +
+                   "5. Tune the spawn profiles and upgrades in `Content/Waves` and `Content/Upgrades`.\n" +
                    "6. Rename template IDs into your product namespace as content becomes product-owned.\n" +
                    "7. Keep Deucarian package source out of this folder.\n";
         }
@@ -338,9 +420,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "- Dependencies: kept in Deucarian packages; generated assembly references `Deucarian.TemplateGameIdleAutoDefense`.\n\n" +
                    "## Next Steps\n\n" +
                    "1. Open the created scene and press Play.\n" +
-                   "2. Replace placeholder visuals.\n" +
+                   "2. Replace starter visuals.\n" +
                    "3. Rename product content IDs.\n" +
-                   "4. Tune stages, waves, upgrades, rewards, and offline progression.\n" +
+                   "4. Tune enemies, attacks, towers, spawn profiles, and upgrades.\n" +
                    "5. Keep reusable framework code in Deucarian packages.\n";
         }
 
@@ -511,7 +593,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return (value ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
-        private readonly struct FileOperation
+        private sealed class FileOperation
         {
             public FileOperation(string destinationFullPath, byte[] contentBytes)
             {
@@ -520,7 +602,159 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             public string DestinationFullPath { get; }
-            public byte[] ContentBytes { get; }
+            public byte[] ContentBytes { get; set; }
+        }
+    }
+
+    [InitializeOnLoad]
+    internal static class IdleAutoDefenseGeneratedSceneOpenQueue
+    {
+        private const string PendingScenePathKey = "Deucarian.IdleAutoDefenseTemplate.PendingScenePath";
+        private const string PendingTargetRootKey = "Deucarian.IdleAutoDefenseTemplate.PendingTargetRoot";
+        private const string PendingBootstrapTypeKey = "Deucarian.IdleAutoDefenseTemplate.PendingBootstrapType";
+        private const string PendingAttemptCountKey = "Deucarian.IdleAutoDefenseTemplate.PendingAttemptCount";
+        private const int MaximumOpenAttempts = 300;
+        private const string ContentPackAssetRelativePath = "/Content/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset";
+        private const string ContentSetAssetRelativePath = "/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset";
+        private static bool _queued;
+
+        static IdleAutoDefenseGeneratedSceneOpenQueue()
+        {
+            QueuePendingOpen();
+        }
+
+        internal static void Queue(string sceneAssetPath, string targetRootAssetPath, string bootstrapTypeFullName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneAssetPath) ||
+                string.IsNullOrWhiteSpace(targetRootAssetPath) ||
+                string.IsNullOrWhiteSpace(bootstrapTypeFullName))
+            {
+                return;
+            }
+
+            SessionState.SetString(PendingScenePathKey, sceneAssetPath);
+            SessionState.SetString(PendingTargetRootKey, targetRootAssetPath);
+            SessionState.SetString(PendingBootstrapTypeKey, bootstrapTypeFullName);
+            SessionState.SetInt(PendingAttemptCountKey, 0);
+            QueuePendingOpen();
+        }
+
+        private static void QueuePendingOpen()
+        {
+            if (_queued || string.IsNullOrEmpty(SessionState.GetString(PendingScenePathKey, string.Empty))) return;
+            _queued = true;
+            EditorApplication.delayCall += TryOpenPendingScene;
+        }
+
+        private static void TryOpenPendingScene()
+        {
+            _queued = false;
+            string sceneAssetPath = SessionState.GetString(PendingScenePathKey, string.Empty);
+            if (string.IsNullOrEmpty(sceneAssetPath)) return;
+
+            int attempts = SessionState.GetInt(PendingAttemptCountKey, 0) + 1;
+            SessionState.SetInt(PendingAttemptCountKey, attempts);
+            if (attempts > MaximumOpenAttempts)
+            {
+                Clear();
+                return;
+            }
+
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                QueuePendingOpen();
+                return;
+            }
+
+            string bootstrapTypeFullName = SessionState.GetString(PendingBootstrapTypeKey, string.Empty);
+            if (!IsTypeAvailable(bootstrapTypeFullName))
+            {
+                QueuePendingOpen();
+                return;
+            }
+
+            string fullScenePath = AssetPathToFullPath(sceneAssetPath);
+            if (!File.Exists(fullScenePath))
+            {
+                Clear();
+                return;
+            }
+
+            string targetRootAssetPath = SessionState.GetString(PendingTargetRootKey, string.Empty);
+            var scene = EditorSceneManager.OpenScene(sceneAssetPath);
+            if (ReapplyGeneratedSceneContent(sceneAssetPath, targetRootAssetPath, bootstrapTypeFullName))
+                EditorSceneManager.SaveScene(scene);
+            Clear();
+        }
+
+        private static bool ReapplyGeneratedSceneContent(string sceneAssetPath, string targetRootAssetPath, string bootstrapTypeFullName)
+        {
+            GameContentPackAsset contentPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(targetRootAssetPath + ContentPackAssetRelativePath);
+            GameContentSetAsset contentSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(targetRootAssetPath + ContentSetAssetRelativePath);
+            if (contentPack == null || contentSet == null) return false;
+
+            bool changed = false;
+            MonoBehaviour[] behaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                MonoBehaviour behaviour = behaviours[i];
+                if (behaviour == null ||
+                    behaviour.gameObject == null ||
+                    !string.Equals(behaviour.gameObject.scene.path, sceneAssetPath, StringComparison.Ordinal) ||
+                    !string.Equals(behaviour.GetType().FullName, bootstrapTypeFullName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var serialized = new SerializedObject(behaviour);
+                bool behaviourChanged = false;
+                behaviourChanged |= AssignObjectReference(serialized, "_templateContentPack", contentPack);
+                behaviourChanged |= AssignObjectReference(serialized, "_templateContentSet", contentSet);
+                behaviourChanged |= AssignObjectReference(serialized, "_contentPack", contentPack);
+                behaviourChanged |= AssignObjectReference(serialized, "_contentSet", contentSet);
+                if (behaviourChanged)
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                changed |= behaviourChanged;
+            }
+
+            if (changed)
+                EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetSceneByPath(sceneAssetPath));
+            return changed;
+        }
+
+        private static bool AssignObjectReference(SerializedObject serialized, string propertyName, UnityEngine.Object value)
+        {
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            if (property == null || property.objectReferenceValue == value) return false;
+            property.objectReferenceValue = value;
+            return true;
+        }
+
+        private static bool IsTypeAvailable(string typeFullName)
+        {
+            if (string.IsNullOrWhiteSpace(typeFullName)) return false;
+            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                if (assemblies[i].GetType(typeFullName, false) != null)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string AssetPathToFullPath(string assetPath)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            return Path.GetFullPath(Path.Combine(projectRoot, assetPath.Replace('/', Path.DirectorySeparatorChar)));
+        }
+
+        private static void Clear()
+        {
+            SessionState.EraseString(PendingScenePathKey);
+            SessionState.EraseString(PendingTargetRootKey);
+            SessionState.EraseString(PendingBootstrapTypeKey);
+            SessionState.EraseInt(PendingAttemptCountKey);
         }
     }
 
@@ -535,14 +769,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public static void Open()
         {
-            var window = GetWindow<IdleAutoDefenseTemplateSetupWizardWindow>("Idle Auto Defense Setup");
+            var window = GetWindow<IdleAutoDefenseTemplateSetupWizardWindow>("Create Playable Idle Defense");
             window.minSize = new Vector2(430f, 280f);
             window.Show();
         }
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Create Game From Template", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Create Playable Game", EditorStyles.boldLabel);
             EditorGUILayout.Space();
             _targetRoot = EditorGUILayout.TextField("Target root", _targetRoot);
             using (new EditorGUILayout.HorizontalScope())
@@ -558,10 +792,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             _allowOverwrite = EditorGUILayout.Toggle("Allow overwrite", _allowOverwrite);
 
             EditorGUILayout.HelpBox(
-                "Copies the starter scene, content, prefabs, and bootstrap script into a project-owned folder. Deucarian package source stays in packages.",
+                "Creates a playable product-owned scene with authored content, prefabs, visuals, and a bootstrap script. Deucarian package source stays in packages.",
                 MessageType.Info);
 
-            if (GUILayout.Button("Create Game"))
+            if (GUILayout.Button("Create Playable Game"))
                 CreateGame();
 
             if (!string.IsNullOrEmpty(_lastSummary))

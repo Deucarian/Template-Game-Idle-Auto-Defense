@@ -2,9 +2,11 @@
 
 ## 0.1.1 - 2026-06-23
 
-- Added template-local editor menu utilities for opening the starter scene, resetting sample save data, and opening template docs.
-- Improved starter sample usability with visible spawn markers, clearer runtime object names, an enemy placeholder preview, simple status UI, and sample save reset coverage.
-- Expanded package and sample documentation for quick start, folder map, content replacement, wave tuning, reset flow, and troubleshooting.
+- Removed the public UPM sample path; generated product-owned games are now the single onboarding path.
+- Renamed the template menu to `Create Playable Game` and removed starter-scene and sample-save menu commands.
+- Added GUID remapping for copied template-source assets so generated games own their content references.
+- Improved generated starter usability with visible spawn lanes, weapon mounts, clearer runtime object names, simple status UI, and save/reset coverage.
+- Expanded package documentation for generated setup, content replacement, wave tuning, reset flow, and troubleshooting.
 
 ## 0.1.0 - 2026-06-23
 
