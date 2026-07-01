@@ -60,4 +60,4 @@ The reusable packages stay generic:
 
 ## Guardrail
 
-Moss and other product games should not copy reusable Deucarian package source into the game project. Start by editing content packs, prefabs, scene composition, product DTOs, and balance values. Fork the loop only after a product requirement cannot be expressed by content/balance or a narrow product bootstrap.
+Product games should not copy reusable Deucarian package source into the game project. Start by editing content packs, prefabs, scene composition, product DTOs, and balance values. Fork the loop only after a product requirement cannot be expressed by content/balance or a narrow product bootstrap.

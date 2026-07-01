@@ -30,7 +30,7 @@ For authored asset setup, use `Tools > Deucarian > Game Content Authoring` and t
 
 Reusable system code should remain in Deucarian packages: runtime services, catalogs, adapters, persistence, progression, spawning, navigation, weapons, projectiles, upgrades, and monetization abstractions.
 
-Product games can add thin bootstraps, scene composition, product DTOs, product prefabs, product content files, and product monetization override configs. Real ad SDK adapters and billing should live in future integration packages, not only in a product game. Moss can customize the flow later, but the template flow remains the default contract.
+Product games can add thin bootstraps, scene composition, product DTOs, product prefabs, product content files, and product monetization override configs. Real ad SDK adapters and billing should live in future integration packages, not only in a product game. Product-specific flow changes should stay intentional; the template flow remains the default contract.
 
 ## Asset-Flip Path
 
