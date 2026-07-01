@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Deucarian.Attacks.Authoring;
+using Deucarian.Editor;
 using Deucarian.GameContentAuthoring.Editor;
 using Deucarian.RunUpgrades.Authoring;
 using Deucarian.WeaponSystems.Authoring;
@@ -19,19 +20,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
     }
 
-    internal sealed class GameContentSetAuthoringProvider : IGameContentAuthoringProvider
+    internal sealed class GameContentSetAuthoringProvider : IGameContentAuthoringProvider, IGameContentAuthoringSurfaceProvider
     {
         private readonly GameContentSetAuthoringState _state = new GameContentSetAuthoringState();
         private readonly GameContentSetPreviewController _preview = new GameContentSetPreviewController();
+        private readonly GameContentSetProviderV2State _v2State = new GameContentSetProviderV2State();
+        private readonly GameContentSetProviderV2View _v2View = new GameContentSetProviderV2View();
 
         public string ProviderId => "com.deucarian.template.idle-auto-defense.game-content-set";
         public string DisplayName => "Game / Run Content Set";
         public string Description => "Create a playable idle auto-defense run recipe from authored attacks, enemies, waves, weapons, and upgrades.";
         public int SortOrder => 150;
         public bool Enabled => true;
-        public void OnSelected() { }
+        public void OnSelected()
+        {
+            _v2State.ResetProviderSession();
+        }
         public void DrawPreview(GameContentAuthoringPreviewContext context) { _preview.Draw(context, _state); }
-        public void StopPreview() { _preview.Stop(); }
+        public void StopPreview()
+        {
+            _preview.Stop();
+            _v2State.StopPreview();
+        }
+
+        public void DrawCustomAuthoringSurface(GameContentAuthoringSurfaceContext context)
+        {
+            _v2View.Draw(context, _state, _v2State);
+        }
 
         public void Draw(GameContentAuthoringContext context)
         {
@@ -454,6 +469,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return new GameContentAuthoringValidationResult(issues);
         }
 
+        public static GameContentAuthoringValidationResult ValidateForUpdate(GameContentSetAuthoringState state, GameContentSetAsset existingAsset)
+        {
+            GameContentSetAsset preview = BuildTransient(state);
+            try
+            {
+                var issues = ToSharedIssues(GameContentSetValidator.Validate(preview));
+                if (existingAsset == null)
+                {
+                    issues.Add(GameContentAuthoringValidationIssue.Error("ContentSet", "Select an existing content set before saving."));
+                }
+                else if (GameContentAuthoringEditorAssets.HasDuplicateIdExcept<GameContentSetAsset>(state.ContentSetId, existingAsset, item => item.Id))
+                {
+                    issues.Add(GameContentAuthoringValidationIssue.Error("ContentSet.Id", "Content set IDs must be unique. Rename this set before saving."));
+                }
+
+                return new GameContentAuthoringValidationResult(issues);
+            }
+            finally
+            {
+                DestroyTransient(preview);
+            }
+        }
+
         public static IReadOnlyList<string> GetPreviewLines(GameContentSetAuthoringState state)
         {
             return new[]
@@ -500,6 +538,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return new GameContentCreationResult(true, "Created content set at " + rootPath, AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(rootPath));
+        }
+
+        public static GameContentCreationResult UpdateExistingAsset(GameContentSetAsset root, GameContentSetAuthoringState state)
+        {
+            if (root == null)
+                return new GameContentCreationResult(false, "Select an existing content set before saving.", null);
+
+            GameContentAuthoringValidationResult report = ValidateForUpdate(state, root);
+            if (!report.IsValid)
+                return new GameContentCreationResult(false, "Fix validation errors before saving the content set.", root);
+
+            string path = AssetDatabase.GetAssetPath(root);
+            if (string.IsNullOrWhiteSpace(path))
+                return new GameContentCreationResult(false, "Content set must be saved as an asset before it can be edited here.", root);
+
+            Undo.RegisterCompleteObjectUndo(root, "Save Content Set");
+            root.Configure(
+                state.ContentSetId,
+                state.DisplayName,
+                state.Description,
+                state.Icon,
+                state.Banner,
+                state.StartingWeapon,
+                state.AvailableWeapons,
+                state.EnemyPool,
+                state.WaveSet,
+                state.UpgradePool,
+                state.StartingCredits,
+                state.StartingParts,
+                state.RewardMultiplier,
+                state.DifficultyMultiplier,
+                state.SessionLengthTicks,
+                state.Endless,
+                GameContentAuthoringEditorAssets.SplitCsv(state.TagsCsv));
+            EditorUtility.SetDirty(root);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return new GameContentCreationResult(true, "Saved content set at " + path, root);
         }
 
         public static void DestroyTransient(GameContentSetAsset asset)

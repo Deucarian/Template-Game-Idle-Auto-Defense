@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
+using Deucarian.Editor;
 using Deucarian.Encounters;
 using Deucarian.GameContentAuthoring.Editor;
 using Deucarian.IdleProgression;
@@ -678,6 +679,185 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void GameContentSetProvider_UsesCustomV2SurfaceWithoutMigratingContentPack()
+        {
+            var contentSetProvider = new GameContentSetAuthoringProvider();
+            var contentPackProvider = new GameContentPackAuthoringProvider();
+
+            Assert.That(contentSetProvider, Is.InstanceOf<IGameContentAuthoringSurfaceProvider>());
+            Assert.That(contentPackProvider, Is.Not.InstanceOf<IGameContentAuthoringSurfaceProvider>());
+            Assert.That(GameContentSetProviderV2PreviewModel.ExposesRedundantSelectButton, Is.False);
+            Assert.That(GetContentSetProviderV2State(contentSetProvider), Is.Not.Null);
+        }
+
+        [Test]
+        public void ContentSetProviderV2ListModel_ClassifiesCountsDurationAndSearch()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            try
+            {
+                GameContentSetProviderV2ListItem item = GameContentSetProviderV2ListItem.FromAssetForTests(contentSet);
+
+                Assert.That(item.HasStartingWeapon, Is.True);
+                Assert.That(item.WeaponCount, Is.EqualTo(contentSet.AvailableWeapons.Count));
+                Assert.That(item.WaveCount, Is.EqualTo(contentSet.WaveSet.Count));
+                Assert.That(item.EnemyCount, Is.GreaterThan(0));
+                Assert.That(item.DurationTicks, Is.GreaterThan(0));
+                Assert.That(item.Matches("basic-idle"), Is.True);
+                Assert.That(item.Matches(item.EnemyCount.ToString(System.Globalization.CultureInfo.InvariantCulture)), Is.True);
+            }
+            finally
+            {
+                GameContentSetAssetCreator.DestroyTransient(contentSet);
+            }
+        }
+
+        [Test]
+        public void ContentSetProviderV2Preview_ScopesAndChipsExposeDraftUnsavedAndDebug()
+        {
+            GameContentSetAuthoringState state = CreateValidContentSetAuthoringState();
+            var previewState = new GameContentSetProviderV2State
+            {
+                PreviewRenderMode = GameContentAuthoringActionPreviewRenderMode.Debug,
+                PreviewSpeed = 2f
+            };
+            GameContentSetAsset preview = GameContentSetAssetCreator.BuildTransient(state);
+            GameContentSetValidationReport report;
+            try
+            {
+                report = GameContentSetValidator.Validate(preview);
+            }
+            finally
+            {
+                GameContentSetAssetCreator.DestroyTransient(preview);
+            }
+
+            Assert.That(GameContentSetProviderV2PreviewModel.GetScopeLabel(true, false), Is.EqualTo("Draft"));
+            Assert.That(GameContentSetProviderV2PreviewModel.GetScopeLabel(false, true), Is.EqualTo("Unsaved"));
+            AssertChip(GameContentSetProviderV2PreviewModel.BuildChips(state, previewState, report), "Debug", DeucarianEditorStatus.Warning);
+            AssertChip(GameContentSetProviderV2PreviewModel.BuildChips(state, previewState, report), "2x", DeucarianEditorStatus.Info);
+            Assert.That(GameContentSetProviderV2View.BuildWeaponAttackSummary(state.StartingWeapon), Is.Not.EqualTo("Missing attack"));
+            Assert.That(GameContentSetProviderV2View.BuildEnemyMixSummary(state.WaveSet), Does.Contain("x"));
+        }
+
+        [Test]
+        public void ContentSetProviderV2Preview_DraftFieldChangesUpdateFingerprintAndPreview()
+        {
+            GameContentSetAuthoringState state = CreateValidContentSetAuthoringState();
+            string before = GameContentSetProviderV2View.BuildStateFingerprint(state);
+            int durationBefore = GameContentSetProviderV2View.ApproximateDuration(state.WaveSet);
+
+            state.StartingCredits += 25;
+            state.WaveSet.RemoveAt(state.WaveSet.Count - 1);
+            state.UpgradePool.Clear();
+            string after = GameContentSetProviderV2View.BuildStateFingerprint(state);
+
+            Assert.That(after, Is.Not.EqualTo(before));
+            Assert.That(GameContentSetProviderV2View.ApproximateDuration(state.WaveSet), Is.LessThanOrEqualTo(durationBefore));
+            Assert.That(GameContentSetProviderV2View.CountAssigned(state.UpgradePool), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void GameContentSetAssetCreator_UpdateExistingAssetSavesSelectedContentSet()
+        {
+            string rootFolder = "Assets/__ContentSetGcaV2EditTests_" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", Path.GetFileName(rootFolder));
+            try
+            {
+                GameContentSetAsset contentSet = CreateValidContentSet();
+                contentSet.hideFlags = HideFlags.None;
+                string assetPath = rootFolder + "/ContentSet.asset";
+                AssetDatabase.CreateAsset(contentSet, assetPath);
+                AssetDatabase.SaveAssets();
+                GameContentSetAsset asset = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(assetPath);
+                GameContentSetAuthoringState edit = GameContentSetProviderV2View.FromContentSetAsset(asset);
+                edit.DisplayName = "Saved Content Set";
+                edit.StartingCredits = 125;
+                edit.SessionLengthTicks = 240;
+                edit.TagsCsv = "saved, content-set";
+
+                GameContentCreationResult saved = GameContentSetAssetCreator.UpdateExistingAsset(asset, edit);
+
+                Assert.That(saved.Succeeded, Is.True, saved.Message);
+                Assert.That(asset.DisplayName, Is.EqualTo("Saved Content Set"));
+                Assert.That(asset.StartingCredits, Is.EqualTo(125));
+                Assert.That(asset.SessionLengthTicks, Is.EqualTo(240));
+                Assert.That(GameContentSetAssetCreator.ValidateForUpdate(GameContentSetProviderV2View.FromContentSetAsset(asset), asset).IsValid, Is.True);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(rootFolder);
+            }
+        }
+
+        [Test]
+        public void ContentSetProviderV2RevertReloadsSavedContentSetData()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            try
+            {
+                GameContentSetAuthoringState edit = GameContentSetProviderV2View.FromContentSetAsset(contentSet);
+                edit.DisplayName = "Unsaved Content Set";
+                edit.StartingCredits = 999;
+                edit.AvailableWeapons.RemoveAt(edit.AvailableWeapons.Count - 1);
+                string dirtyFingerprint = GameContentSetProviderV2View.BuildStateFingerprint(edit);
+
+                GameContentSetAuthoringState reverted = GameContentSetProviderV2View.FromContentSetAsset(contentSet);
+
+                Assert.That(GameContentSetProviderV2View.BuildStateFingerprint(reverted), Is.Not.EqualTo(dirtyFingerprint));
+                Assert.That(reverted.DisplayName, Is.EqualTo(contentSet.DisplayName));
+                Assert.That(reverted.StartingCredits, Is.EqualTo(contentSet.StartingCredits));
+                Assert.That(reverted.AvailableWeapons.Count, Is.EqualTo(contentSet.AvailableWeapons.Count));
+            }
+            finally
+            {
+                GameContentSetAssetCreator.DestroyTransient(contentSet);
+            }
+        }
+
+        [Test]
+        public void ContentSetProviderV2State_ProviderSwitchClearsDraftAndUnsavedPreviewState()
+        {
+            var provider = new GameContentSetAuthoringProvider();
+            GameContentSetProviderV2State state = GetContentSetProviderV2State(provider);
+            state.BeginCreate();
+            state.EditingState = new GameContentSetAuthoringState { DisplayName = "Dirty Content Set" };
+            state.EditingContext = new GameContentAuthoringObjectEditorContext(null, "saved");
+            state.PreviewStatus = "Previewing unsaved edit";
+
+            provider.OnSelected();
+
+            Assert.That(state.Creating, Is.False);
+            Assert.That(state.EditingState, Is.Null);
+            Assert.That(state.EditingContext, Is.Null);
+            Assert.That(state.PreviewStatus, Is.EqualTo("Preview idle"));
+        }
+
+        [Test]
+        public void GameContentSetAssetCreator_UpdateValidationBlocksMissingStartingWeaponAndWaves()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            try
+            {
+                GameContentSetAuthoringState edit = GameContentSetProviderV2View.FromContentSetAsset(contentSet);
+                edit.StartingWeapon = null;
+                edit.WaveSet.Clear();
+
+                GameContentAuthoringValidationResult validation = GameContentSetAssetCreator.ValidateForUpdate(edit, contentSet);
+                GameContentCreationResult saved = GameContentSetAssetCreator.UpdateExistingAsset(contentSet, edit);
+
+                Assert.That(validation.IsValid, Is.False);
+                Assert.That(FindIssue(validation, "StartingWeapon", GameContentAuthoringValidationSeverity.Error), Is.True);
+                Assert.That(FindIssue(validation, "WaveSet", GameContentAuthoringValidationSeverity.Error), Is.True);
+                Assert.That(saved.Succeeded, Is.False);
+            }
+            finally
+            {
+                GameContentSetAssetCreator.DestroyTransient(contentSet);
+            }
+        }
+
+        [Test]
         public void AssignedEnemyDefinitionsRejectDuplicatesAndFallbackWhenIncomplete()
         {
             EnemyDefinitionAsset[] enemies = CreateAssignedTemplateEnemiesWithPrefabs();
@@ -1330,6 +1510,41 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                         new WaveEntryRecipe(enemies[5], 1, 1, 16, 0, "perimeter-north")
                     })
             };
+        }
+
+        private static void AssertChip(IReadOnlyList<DeucarianEditorStatusChip> chips, string label, DeucarianEditorStatus status)
+        {
+            Assert.That(chips, Is.Not.Null);
+            for (int i = 0; i < chips.Count; i++)
+            {
+                if (!string.Equals(chips[i].Label, label, StringComparison.Ordinal))
+                    continue;
+
+                Assert.That(chips[i].Status, Is.EqualTo(status), "Preview chip " + label + " had the wrong status.");
+                return;
+            }
+
+            Assert.Fail("Expected preview chip '" + label + "' was not found.");
+        }
+
+        private static bool FindIssue(GameContentAuthoringValidationResult validation, string path, GameContentAuthoringValidationSeverity severity)
+        {
+            Assert.That(validation, Is.Not.Null);
+            for (int i = 0; i < validation.Issues.Count; i++)
+            {
+                GameContentAuthoringValidationIssue issue = validation.Issues[i];
+                if (issue.Severity == severity && string.Equals(issue.Path, path, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static GameContentSetProviderV2State GetContentSetProviderV2State(GameContentSetAuthoringProvider provider)
+        {
+            FieldInfo field = typeof(GameContentSetAuthoringProvider).GetField("_v2State", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, "GameContentSetAuthoringProvider._v2State was not found.");
+            return (GameContentSetProviderV2State)field.GetValue(provider);
         }
 
         private static GameContentSetAsset CreateValidContentSet(

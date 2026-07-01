@@ -22,6 +22,7 @@
   ],
   "dependencies": {
     "com.deucarian.auto-defense-suite": "0.1.0",
+    "com.deucarian.editor": "1.0.0",
     "com.deucarian.game-content-authoring": "0.1.0",
     "com.deucarian.gameplay-foundation": "0.1.0",
     "com.deucarian.monetization": "0.1.0"
