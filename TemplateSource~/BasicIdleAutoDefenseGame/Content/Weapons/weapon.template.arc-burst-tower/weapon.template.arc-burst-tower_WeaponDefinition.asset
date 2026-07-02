@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: weapon.template.arc-burst-tower_WeaponDefinition
   m_EditorClassIdentifier: Deucarian.WeaponSystems.Authoring::Deucarian.WeaponSystems.Authoring.WeaponDefinitionAsset
   _id: weapon.template.arc-burst-tower
-  _displayName: Template Arc Burst Tower
+  _displayName: Arc Tower
   _icon: {fileID: 21300000, guid: 995cca69f65020a4e89cf38b12720a0c, type: 3}
   _tags:
   - template

@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: upgrade.template.authored.damage-up_RunUpgradeDefinition
   m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
   _id: upgrade.template.authored.damage-up
-  _displayName: Authored Damage Increase
+  _displayName: Damage Boost
   _icon: {fileID: 21300000, guid: 2cdc5437e5d7e244d9342e4219984251, type: 3}
-  _description: Authored Damage Increase authored sample upgrade.
+  _description: Increases tower damage for the current run.
   _tags:
-  - template
-  - authored
+  - idle-auto-defense
+  - starter
   _economy: {fileID: 11400000, guid: 6ff6d8d16d9d33b43a71636d57696042, type: 2}
   _effects: {fileID: 11400000, guid: a1eb2640dca38444fa49a356ea3a92fa, type: 2}

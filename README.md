@@ -12,7 +12,7 @@ No Unity Package Manager sample import is required. The private template source 
 
 1. Install the template package.
 2. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game`.
-3. Choose a target folder under `Assets`, a namespace, and a game prefix.
+3. Choose a target folder under `Assets`, a content folder under `Assets/GameContent`, a namespace, and a game prefix.
 4. Open the created scene.
 5. Press Play.
 
@@ -24,9 +24,14 @@ The created folder includes:
 
 - `Scenes`: the playable idle auto-defense scene.
 - `Scripts`: a renamed bootstrap and save/reset helper in the chosen namespace.
-- `Content`: product-owned Game Content Authoring assets, content pack, and content set.
 - `Prefabs`, `Visuals`, and `Audio`: placeholder assets for replacing the starter look.
 - `Docs`: setup report and asset-flip checklist.
+
+The authored gameplay data is created separately under `Assets/GameContent/IdleAutoDefense` by default:
+
+- `Attacks`, `Enemies`, `Weapons`, `Waves`, and `Upgrades`: editable starter definitions.
+- `ContentSets`: the playable run recipe assigned by the generated scene.
+- `ContentPacks`: the package-style wrapper assigned by the generated scene.
 
 The generated scene references the generated content pack and content set. The controller should report `UsingAssignedContentSet == true` with zero content pack/set validation errors.
 
@@ -58,14 +63,15 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 ## Editing Content
 
-Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under the product folder. Replace placeholder visuals, tune waves/upgrades/progression, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
+Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace placeholder visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
 
 The starter content intentionally stays generic and reusable:
 
 - 4 enemies
 - 4 attacks
-- 4 upgrades
-- 4 spawn profiles
+- 4 tower weapons
+- 5 spawn profiles
+- 6 upgrades
 
 ## Package Boundary
 

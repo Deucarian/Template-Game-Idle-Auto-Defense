@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: attack.template.arc-burst_AttackDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackDefinitionAsset
   _id: attack.template.arc-burst
-  _displayName: Template Arc Burst
+  _displayName: Arc Burst
   _icon: {fileID: 21300000, guid: 995cca69f65020a4e89cf38b12720a0c, type: 3}
   _tags:
   - starter

@@ -4,7 +4,7 @@ Expected validation coverage:
 
 - Package import through the shared validation project.
 - No public Unity Package Manager sample entry.
-- Setup service creates product-owned `Scripts`, `Scenes`, `Content`, `Prefabs`, `Visuals`, `Audio`, and `Docs`.
+- Setup service creates product-owned `Scripts`, `Scenes`, `Prefabs`, `Visuals`, `Audio`, and `Docs` in the generated game root plus authored gameplay data under `Assets/GameContent`.
 - Generated scene references generated product-owned content assets, not template-source GUIDs.
 - Generated content pack and content set validate with zero errors.
 - Generated controller uses assigned content in Play Mode.

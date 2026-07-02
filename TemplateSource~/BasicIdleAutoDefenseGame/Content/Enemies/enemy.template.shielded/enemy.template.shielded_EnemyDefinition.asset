@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: enemy.template.shielded_EnemyDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
   _id: enemy.template.shielded
-  _displayName: Authored Shielded Enemy
+  _displayName: Shielded
   _icon: {fileID: 21300000, guid: 96386f24d345cb74682f9b491917e7d4, type: 3}
   _role: 0
   _tags:

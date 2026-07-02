@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: wave.template.authored.pressure_WaveDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveDefinitionAsset
   _id: wave.template.authored.pressure
-  _displayName: Authored Pressure
+  _displayName: Mixed Pressure
   _tags:
-  - template
-  - authored
+  - idle-auto-defense
+  - starter
   _schedule: {fileID: 11400000, guid: 7b6c39a3d133df34582d5a744be41f79, type: 2}
   _entries: {fileID: 11400000, guid: 873c0c407d0574b458a81b8070406db0, type: 2}
   _balancingNotes:

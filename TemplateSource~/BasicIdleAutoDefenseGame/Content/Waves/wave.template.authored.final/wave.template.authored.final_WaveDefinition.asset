@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: wave.template.authored.final_WaveDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveDefinitionAsset
   _id: wave.template.authored.final
-  _displayName: Authored Final
+  _displayName: Final Surge
   _tags:
-  - template
-  - authored
+  - idle-auto-defense
+  - starter
   _schedule: {fileID: 11400000, guid: d2286a5cb1c34b508cbd06116c5dc8b4, type: 2}
   _entries: {fileID: 11400000, guid: 33b506f8359a4ff08b907dbaa37ffbe5, type: 2}
   _balancingNotes:

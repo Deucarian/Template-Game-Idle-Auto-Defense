@@ -6,7 +6,7 @@ The private template source carries one neutral authored starter pack under:
 TemplateSource~/BasicIdleAutoDefenseGame/Content
 ```
 
-The setup wizard copies this content into the generated product folder and remaps GUIDs. Product teams should tune the generated assets, not the package source.
+The setup wizard copies this content into `Assets/GameContent/IdleAutoDefense` by default and remaps GUIDs. Scene files, scripts, docs, visuals, and audio still go into the chosen generated game root. Product teams should tune the generated authored assets, not the package source.
 
 | Folder | Purpose |
 | --- | --- |
@@ -18,4 +18,4 @@ The setup wizard copies this content into the generated product folder and remap
 | `ContentSets` | Playable run recipe assigned by the generated scene. |
 | `ContentPacks` | Wrapper assigned by the generated scene. |
 
-Starter tuning is intentionally readable, not commercial. Use it to verify spawning, targeting, attacks, upgrades, rewards, and save smoke before building a real product loop.
+The starter pack contains four generic attacks, four enemies, four tower weapons, five spawn profiles, six upgrades, one content set, and one content pack. Starter tuning is intentionally readable, not commercial. Use it to verify spawning, targeting, attacks, upgrades, rewards, and save smoke before building a real product loop.

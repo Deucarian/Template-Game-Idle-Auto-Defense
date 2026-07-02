@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: wave.template.authored.surge_WaveDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveDefinitionAsset
   _id: wave.template.authored.surge
-  _displayName: Authored Surge
+  _displayName: Tank Break
   _tags:
-  - template
-  - authored
+  - idle-auto-defense
+  - starter
   _schedule: {fileID: 11400000, guid: b3bc546ce64044818f79b9d1d3a5c62a, type: 2}
   _entries: {fileID: 11400000, guid: 3869b9f60c904ce49ce216899942eb89, type: 2}
   _balancingNotes:

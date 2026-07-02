@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: upgrade.template.authored.fire-rate-up_RunUpgradeDefinition
   m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
   _id: upgrade.template.authored.fire-rate-up
-  _displayName: Authored Fire-Rate Increase
+  _displayName: Fire Rate Boost
   _icon: {fileID: 21300000, guid: 88b303b490f9779479322398952617cc, type: 3}
-  _description: Authored Fire-Rate Increase authored sample upgrade.
+  _description: Increases tower firing cadence for the current run.
   _tags:
-  - template
-  - authored
+  - idle-auto-defense
+  - starter
   _economy: {fileID: 11400000, guid: e77afbfa99109d14abfe334992e33c90, type: 2}
   _effects: {fileID: 11400000, guid: 069e2025b21ccde4bb2fcb88013b01d8, type: 2}

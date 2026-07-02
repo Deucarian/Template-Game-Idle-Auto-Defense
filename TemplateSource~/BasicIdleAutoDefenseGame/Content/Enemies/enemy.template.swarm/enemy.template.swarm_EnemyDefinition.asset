@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: enemy.template.swarm_EnemyDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
   _id: enemy.template.swarm
-  _displayName: Authored Swarm Enemy
-  _icon: {fileID: 21300000, guid: 44676de806117b14e961844d1c0f9666, type: 3}
+  _displayName: Swarm
+  _icon: {fileID: 21300000, guid: 286eecbf49ec4c14b99d91edbf7015df, type: 3}
   _role: 3
   _tags:
   - template

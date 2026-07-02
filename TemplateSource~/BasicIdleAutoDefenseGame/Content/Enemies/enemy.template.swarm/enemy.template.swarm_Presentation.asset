@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c225f16410054f9d9d60394d24bc3412, type: 3}
   m_Name: enemy.template.swarm_Presentation
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyPresentationDefinitionAsset
-  _prefab: {fileID: 2947819508534350284, guid: 75703cc223e6a6d4b85b847f6c7ceb03, type: 3}
+  _prefab: {fileID: 7986550066026033189, guid: 846f86af421c1164aaf60f1dd3e26814, type: 3}
   _events:
   - _eventKind: 0
     _audioClip: {fileID: 8300000, guid: 2aedcc10cc75ef740b53f7d8c2578f4e, type: 3}

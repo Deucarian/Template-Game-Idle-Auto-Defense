@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: weapon.template.shard-launcher_WeaponDefinition
   m_EditorClassIdentifier: Deucarian.WeaponSystems.Authoring::Deucarian.WeaponSystems.Authoring.WeaponDefinitionAsset
   _id: weapon.template.shard-launcher
-  _displayName: Template Fire Wand
+  _displayName: Shard Launcher
   _icon: {fileID: 21300000, guid: e96cfdad6ad196a4f80477db2025bee8, type: 3}
   _tags:
   - projectile

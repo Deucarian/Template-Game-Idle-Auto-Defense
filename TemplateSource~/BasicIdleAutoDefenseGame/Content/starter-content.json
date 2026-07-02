@@ -36,6 +36,7 @@
   ],
   "spawnProfiles": [
     "wave.template.authored.opening",
+    "wave.template.authored.runner-pressure",
     "wave.template.authored.pressure",
     "wave.template.authored.surge",
     "wave.template.authored.final"
@@ -44,7 +45,9 @@
     "upgrade.template.authored.damage-up",
     "upgrade.template.authored.fire-rate-up",
     "upgrade.template.authored.range-up",
-    "upgrade.template.authored.projectile-speed-up"
+    "upgrade.template.authored.projectile-speed-up",
+    "upgrade.template.authored.core-reinforcement",
+    "upgrade.template.authored.credit-reward"
   ],
-  "notes": "The runtime uses authored Game Content assets in this folder. The setup wizard copies them into product-owned Assets folders and remaps their GUIDs."
+  "notes": "The runtime uses authored Game Content assets in this folder. The setup wizard copies them into product-owned Assets/GameContent folders and remaps their GUIDs."
 }

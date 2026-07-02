@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: enemy.template.tank_EnemyDefinition
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
   _id: enemy.template.tank
-  _displayName: Authored Tank Enemy
+  _displayName: Tank
   _icon: {fileID: 21300000, guid: 286eecbf49ec4c14b99d91edbf7015df, type: 3}
   _role: 2
   _tags:

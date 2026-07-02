@@ -16,4 +16,4 @@ Boot
 -> restart
 ```
 
-The generated scene is intentionally compact: enemies spawn from the perimeter, the player tower sits in the middle, visible direct/projectile mounts fire, and a small HUD shows run state, rewards, upgrade progress, and save controls. Advanced theme, economy, and product-specific flow should be added in the generated product folder once this starter loop is solid.
+The generated scene is intentionally compact: enemies spawn from the perimeter, the player tower sits in the middle, visible direct/projectile mounts fire, and a small HUD shows run state, rewards, upgrade progress, and save controls. Advanced theme, economy, and product-specific scene flow should be added in the generated game root; authored gameplay data should be tuned under `Assets/GameContent`.

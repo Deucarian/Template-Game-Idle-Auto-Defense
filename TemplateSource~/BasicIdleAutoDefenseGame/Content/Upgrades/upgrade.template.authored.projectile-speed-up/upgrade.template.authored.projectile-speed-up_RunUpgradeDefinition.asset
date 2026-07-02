@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: upgrade.template.authored.projectile-speed-up_RunUpgradeDefinition
   m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
   _id: upgrade.template.authored.projectile-speed-up
-  _displayName: Authored Projectile Speed
+  _displayName: Projectile Speed
   _icon: {fileID: 21300000, guid: 07d4fde820a1d1a418b2e0f48ca3ba5d, type: 3}
-  _description: Authored Projectile Speed authored sample upgrade.
+  _description: Increases projectile speed for the current run.
   _tags:
-  - template
-  - authored
+  - idle-auto-defense
+  - starter
   _economy: {fileID: 11400000, guid: 63cf6733d4cb5b14aa674189d8646f2d, type: 2}
   _effects: {fileID: 11400000, guid: 5e4843ec92658594b97490502022f0f5, type: 2}
