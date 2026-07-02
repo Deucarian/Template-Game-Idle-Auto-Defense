@@ -1359,7 +1359,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int EnemyPresentationEventCount { get; private set; }
         public int DamageNumberSpawnCount { get; private set; }
         public bool RuntimeUiDocumentReady => _runtimeUiDocument != null && _runtimeUiRoot != null && _damageNumberLayer != null;
-        public bool RuntimeUiThemeAssigned => _runtimePanelSettings != null && _runtimePanelSettings.themeStyleSheet != null;
+        public bool RuntimeUiThemeAssigned => _runtimePanelSettings != null && (_runtimePanelSettings.themeStyleSheet != null || RuntimeUiDirectStylesApplied);
+        public bool RuntimeUiDirectStylesApplied { get; private set; }
         public int RuntimeDamageNumberVisibleCount => _damageNumbers.Count;
         public float RuntimeUiRootResolvedWidth => ResolveRuntimePanelSize().x;
         public float RuntimeUiRootResolvedHeight => ResolveRuntimePanelSize().y;
@@ -1455,15 +1456,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     _runtimeUiObject.transform.SetParent(_root.transform, false);
             }
 
+            _runtimeUiObject.SetActive(true);
+            _runtimeUiObject.transform.SetAsLastSibling();
             _runtimePanelSettings ??= CreateRuntimePanelSettings();
             _runtimeUiDocument = _runtimeUiObject.GetComponent<UIDocument>();
             if (_runtimeUiDocument == null)
                 _runtimeUiDocument = _runtimeUiObject.AddComponent<UIDocument>();
             _runtimeUiDocument.panelSettings = _runtimePanelSettings;
+            _runtimeUiDocument.sortingOrder = 32767;
+            _runtimeUiDocument.enabled = true;
 
             _runtimeUiRoot = _runtimeUiDocument.rootVisualElement;
             _runtimeUiRoot.name = "idle-auto-defense-ui-root";
             ApplyRuntimeUiRootStyles(_runtimeUiRoot, PickingMode.Position);
+            RuntimeUiDirectStylesApplied = true;
 
             _damageNumberLayer = _runtimeUiRoot.Q<VisualElement>("damage-number-layer");
             if (_damageNumberLayer == null)
@@ -1493,19 +1499,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             PanelSettings settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.name = "Basic Idle Auto Defense Runtime Panel Settings";
-            settings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
             settings.referenceResolution = new Vector2Int((int)RuntimeUiFallbackWidth, (int)RuntimeUiFallbackHeight);
+            settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            settings.match = 0.5f;
             settings.scale = 1f;
-            settings.sortingOrder = 100;
+            settings.sortingOrder = 32767;
+            settings.clearColor = false;
+            settings.clearDepthStencil = false;
+            settings.colorClearValue = Color.clear;
+            settings.targetDisplay = 0;
+            settings.targetTexture = null;
             ThemeStyleSheet themeStyleSheet = ResolveRuntimeThemeStyleSheet();
-            if (themeStyleSheet == null)
-            {
-                _runtimeThemeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>();
-                _runtimeThemeStyleSheet.name = "Basic Idle Auto Defense Runtime Theme";
-                _runtimeThemeStyleSheet.hideFlags = HideFlags.HideAndDontSave;
-                themeStyleSheet = _runtimeThemeStyleSheet;
-            }
-
             if (themeStyleSheet != null)
                 settings.themeStyleSheet = themeStyleSheet;
             settings.hideFlags = HideFlags.HideAndDontSave;
@@ -1517,6 +1522,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (element == null) return;
             element.pickingMode = pickingMode;
             element.style.display = DisplayStyle.Flex;
+            element.style.visibility = Visibility.Visible;
+            element.style.opacity = 1f;
             element.style.position = Position.Absolute;
             element.style.left = 0;
             element.style.right = 0;
@@ -1526,7 +1533,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             element.style.height = Length.Percent(100);
             element.style.minWidth = RuntimeUiFallbackWidth;
             element.style.minHeight = RuntimeUiFallbackHeight;
+            element.style.backgroundColor = Color.clear;
             element.style.flexDirection = FlexDirection.Column;
+            element.style.flexGrow = 1f;
             element.style.overflow = Overflow.Visible;
         }
 
@@ -1548,6 +1557,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private static ThemeStyleSheet ResolveRuntimeThemeStyleSheet()
         {
+            ThemeStyleSheet packageTheme = Resources.Load<ThemeStyleSheet>("IdleAutoDefenseRuntimeTheme");
+            if (packageTheme != null)
+                return packageTheme;
+
             UnityEngine.Object[] loadedThemes = Resources.FindObjectsOfTypeAll(typeof(ThemeStyleSheet));
             foreach (UnityEngine.Object loadedTheme in loadedThemes)
             {
@@ -3315,6 +3328,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _runtimeUiObject = null;
             _runtimeUiRoot = null;
             _damageNumberLayer = null;
+            RuntimeUiDirectStylesApplied = false;
             _resolvedProjectileDefinitions = Array.Empty<ProjectileDefinition>();
             _pendingProjectileImpacts.Clear();
             _seenEnemyIds.Clear();

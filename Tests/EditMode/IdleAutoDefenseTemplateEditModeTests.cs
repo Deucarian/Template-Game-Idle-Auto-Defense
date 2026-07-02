@@ -1417,8 +1417,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(bootstrapPath, "UnityEngine.UIElements");
             AssertFileContains(bootstrapPath, "UiToolkitHudReady");
             AssertFileContains(bootstrapPath, "UiToolkitHudVisible");
+            AssertFileContains(bootstrapPath, "UiToolkitHudPaintReady");
             AssertFileContains(bootstrapPath, "UiToolkitHudLabelCount");
             AssertFileContains(bootstrapPath, "UiToolkitHudButtonCount");
+            AssertFileContains(bootstrapPath, "HudMinimumHeight");
             AssertFileContains(bootstrapPath, "RuntimeUiRoot");
             AssertFileContains(bootstrapPath, "ApplyRuntimeUiFont");
             AssertFileContains(bootstrapPath, "backgroundColor");
@@ -1429,10 +1431,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string runtimePath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseTemplate.cs");
             AssertFileContains(runtimePath, "RuntimeUiDocumentReady");
             AssertFileContains(runtimePath, "RuntimeUiThemeAssigned");
+            AssertFileContains(runtimePath, "RuntimeUiDirectStylesApplied");
             AssertFileContains(runtimePath, "RuntimeUiRootResolvedWidth");
             AssertFileContains(runtimePath, "RuntimeUiRootResolvedHeight");
             AssertFileContains(runtimePath, "ApplyRuntimeUiRootStyles");
             AssertFileContains(runtimePath, "ApplyRuntimeUiFont");
+            AssertFileContains(runtimePath, "Resources.Load<ThemeStyleSheet>(\"IdleAutoDefenseRuntimeTheme\")");
+            AssertFileContains(runtimePath, "PanelScaleMode.ScaleWithScreenSize");
+            AssertFileContains(runtimePath, "settings.sortingOrder = 32767");
+            AssertFileContains(runtimePath, "settings.clearColor = false");
+            AssertFileDoesNotContain(runtimePath, "ScriptableObject.CreateInstance<ThemeStyleSheet>()");
+            AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"));
+            AssertFileContains(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"), "unity-theme://default");
 
             AssertDirectoryExists(Path.Combine(templateSourceRoot, "Audio"));
             AssertDirectoryExists(Path.Combine(templateSourceRoot, "Visuals", "Prefabs"));
@@ -1663,6 +1673,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "WizardSmokeIdleAutoDefenseGameBootstrap");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "UnityEngine.UIElements");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "UiToolkitHudReady");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "UiToolkitHudPaintReady");
                 AssertFileDoesNotContain(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "OnGUI");
                 AssertFileDoesNotContain(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "GUILayout");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/WizardSmoke.IdleAutoDefense.asmdef"), "Deucarian.TemplateGameIdleAutoDefense");

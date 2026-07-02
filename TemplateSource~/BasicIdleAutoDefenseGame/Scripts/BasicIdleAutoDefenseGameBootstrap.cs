@@ -9,6 +9,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
 {
     public sealed class BasicIdleAutoDefenseGameBootstrap : IdleAutoDefenseTemplateController
     {
+        private const float HudWidth = 390f;
+        private const float HudMinimumHeight = 500f;
         [SerializeField] private GameContentPackAsset _templateContentPack;
         [SerializeField] private GameContentSetAsset _templateContentSet;
         private string _saveStatus = "No snapshot saved";
@@ -38,12 +40,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         public bool UiToolkitHudReady { get; private set; }
         public bool UiToolkitHudVisible => _hudRoot != null &&
             _hudRoot.resolvedStyle.display != DisplayStyle.None &&
-            _hudRoot.resolvedStyle.width > 1f &&
-            _hudRoot.resolvedStyle.height > 1f;
+            _hudRoot.resolvedStyle.visibility == Visibility.Visible &&
+            ResolveHudWidth() > 100f &&
+            ResolveHudHeight() > 100f;
+        public bool UiToolkitHudPaintReady => UiToolkitHudVisible &&
+            UiToolkitHudLabelCount >= 9 &&
+            UiToolkitHudButtonCount >= 9 &&
+            _hudRoot.resolvedStyle.backgroundColor.a > 0.5f;
         public int UiToolkitHudLabelCount => CountHudElements<Label>();
         public int UiToolkitHudButtonCount => CountHudElements<Button>();
-        public float UiToolkitHudResolvedWidth => _hudRoot == null ? 0f : _hudRoot.resolvedStyle.width;
-        public float UiToolkitHudResolvedHeight => _hudRoot == null ? 0f : _hudRoot.resolvedStyle.height;
+        public float UiToolkitHudResolvedWidth => ResolveHudWidth();
+        public float UiToolkitHudResolvedHeight => ResolveHudHeight();
 
         protected override void Awake()
         {
@@ -84,16 +91,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _hudRoot.style.position = Position.Absolute;
             _hudRoot.style.left = 12;
             _hudRoot.style.top = 12;
-            _hudRoot.style.width = 390;
-            _hudRoot.style.minWidth = 340;
-            _hudRoot.style.maxWidth = 430;
+            _hudRoot.style.width = HudWidth;
+            _hudRoot.style.minWidth = HudWidth;
+            _hudRoot.style.maxWidth = HudWidth;
+            _hudRoot.style.minHeight = HudMinimumHeight;
             _hudRoot.style.maxHeight = Length.Percent(96);
             _hudRoot.style.flexDirection = FlexDirection.Column;
+            _hudRoot.style.flexShrink = 0;
+            _hudRoot.style.opacity = 1f;
+            _hudRoot.style.visibility = Visibility.Visible;
             _hudRoot.style.overflow = Overflow.Visible;
-            _hudRoot.style.paddingLeft = 12;
-            _hudRoot.style.paddingRight = 12;
-            _hudRoot.style.paddingTop = 10;
-            _hudRoot.style.paddingBottom = 10;
+            _hudRoot.style.paddingLeft = 10;
+            _hudRoot.style.paddingRight = 10;
+            _hudRoot.style.paddingTop = 8;
+            _hudRoot.style.paddingBottom = 8;
             _hudRoot.style.backgroundColor = new Color(0.035f, 0.045f, 0.055f, 0.94f);
             _hudRoot.style.borderTopColor = new Color(0.25f, 0.88f, 1f, 0.95f);
             _hudRoot.style.borderBottomColor = new Color(0.18f, 0.28f, 0.34f, 0.95f);
@@ -109,8 +120,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _hudRoot.style.borderBottomRightRadius = 8;
             root.Insert(0, _hudRoot);
 
-            Label title = AddLabel(_hudRoot, "Idle Auto Defense", 22, FontStyle.Bold);
-            title.style.marginBottom = 6;
+            Label title = AddLabel(_hudRoot, "Idle Auto Defense", 20, FontStyle.Bold);
+            title.style.marginBottom = 4;
+            title.style.color = new Color(0.72f, 0.96f, 1f, 1f);
             _stateLabel = AddLabel(_hudRoot);
             _healthLabel = AddLabel(_hudRoot);
             _currencyLabel = AddLabel(_hudRoot);
@@ -153,11 +165,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         {
             if (_hudRoot == null) return;
 
-            _stateLabel.text = "State: " + RuntimeStateName;
-            _healthLabel.text = "Tower HP: " + ObjectiveHealthText + "  Lives: " + ObjectiveLivesRemaining;
-            _currencyLabel.text = "Credits: " + RuntimeCurrency.ToString(CultureInfo.InvariantCulture);
+            _stateLabel.text = "State: " + RuntimeStateName + "  Time: " + SurvivalSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
+            _healthLabel.text = "Tower HP: " + ObjectiveHealthText + "  Lives: " + ObjectiveLivesRemaining +
+                "  Credits: " + RuntimeCurrency.ToString(CultureInfo.InvariantCulture);
+            _currencyLabel.text = string.Empty;
+            _currencyLabel.style.display = DisplayStyle.None;
             _rewardLabel.text = "Banked: " + EncounterRewardCredits.ToString(CultureInfo.InvariantCulture) + " credits / " + EncounterRewardParts.ToString(CultureInfo.InvariantCulture) + " parts";
-            _timeLabel.text = "Time: " + SurvivalSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
+            _timeLabel.text = string.Empty;
+            _timeLabel.style.display = DisplayStyle.None;
             _waveLabel.text = "Wave: " + CurrentSpawnProfileName;
             _enemyLabel.text = "Enemies: " + ActiveEnemyCount + " active / " + SpawnedCount + " spawned";
             _killLabel.text = "Kills: " + (DirectOrCombatKillCount + ProjectileAdapterKillCount).ToString(CultureInfo.InvariantCulture) +
@@ -195,8 +210,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             var row = new VisualElement();
             row.style.width = Length.Percent(100);
             row.style.flexDirection = FlexDirection.Row;
-            row.style.marginTop = 2;
-            row.style.marginBottom = 2;
+            row.style.marginTop = 1;
+            row.style.marginBottom = 1;
             parent.Add(row);
             return row;
         }
@@ -210,8 +225,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             label.style.unityFontStyleAndWeight = fontStyle;
             label.style.unityTextAlign = TextAnchor.MiddleLeft;
             label.style.whiteSpace = WhiteSpace.Normal;
-            label.style.minHeight = Mathf.Max(18, fontSize + 5);
-            label.style.marginTop = 1;
+            label.style.minHeight = Mathf.Max(16, fontSize + 4);
+            label.style.marginTop = 0;
             label.style.marginBottom = 1;
             parent.Add(label);
             return label;
@@ -220,8 +235,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private static void AddSectionTitle(VisualElement parent, string text)
         {
             Label label = AddLabel(parent, text, 14, FontStyle.Bold);
-            label.style.marginTop = 8;
-            label.style.marginBottom = 3;
+            label.style.marginTop = 6;
+            label.style.marginBottom = 2;
             label.style.color = new Color(0.65f, 0.9f, 1f);
         }
 
@@ -229,14 +244,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         {
             var button = new Button(clicked) { text = text };
             ApplyRuntimeUiFont(button);
-            button.style.height = 30;
-            button.style.minHeight = 30;
-            button.style.marginTop = 2;
-            button.style.marginBottom = 2;
+            button.style.height = 27;
+            button.style.minHeight = 27;
+            button.style.minWidth = 112;
+            button.style.marginTop = 1;
+            button.style.marginBottom = 1;
             button.style.marginLeft = 1;
             button.style.marginRight = 1;
             button.style.flexGrow = 1;
-            button.style.fontSize = 12;
+            button.style.fontSize = 11;
             button.style.color = Color.white;
             button.style.unityFontStyleAndWeight = FontStyle.Bold;
             button.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -257,6 +273,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             button.style.paddingRight = 8;
             parent.Add(button);
             return button;
+        }
+
+        private float ResolveHudWidth()
+        {
+            if (_hudRoot == null) return 0f;
+            float resolved = _hudRoot.resolvedStyle.width;
+            if (!float.IsNaN(resolved) && resolved > 1f) return resolved;
+            return HudWidth;
+        }
+
+        private float ResolveHudHeight()
+        {
+            if (_hudRoot == null) return 0f;
+            float resolved = _hudRoot.resolvedStyle.height;
+            if (!float.IsNaN(resolved) && resolved > 1f) return resolved;
+            return HudMinimumHeight;
         }
 
         private static void SetUpgradeButton(Button button, string label, int rank, int cost, bool enabled)

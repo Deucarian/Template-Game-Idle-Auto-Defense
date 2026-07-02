@@ -104,6 +104,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.NotNull(controller.Root);
             Assert.True(controller.RuntimeUiDocumentReady);
             Assert.True(controller.RuntimeUiThemeAssigned);
+            Assert.True(controller.RuntimeUiDirectStylesApplied);
+            Assert.AreEqual(32767, document.sortingOrder);
+            Assert.AreEqual(32767, document.panelSettings.sortingOrder);
+            Assert.AreEqual(PanelScaleMode.ScaleWithScreenSize, document.panelSettings.scaleMode);
+            Assert.IsFalse(document.panelSettings.clearColor);
+            Assert.IsFalse(document.panelSettings.clearDepthStencil);
             Assert.AreEqual(DisplayStyle.Flex, controller.Root.resolvedStyle.display);
             Assert.That(controller.RuntimeUiRootResolvedWidth, Is.GreaterThan(100f));
             Assert.That(controller.RuntimeUiRootResolvedHeight, Is.GreaterThan(100f));
