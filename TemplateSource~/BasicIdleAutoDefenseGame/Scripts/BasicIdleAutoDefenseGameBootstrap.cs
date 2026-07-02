@@ -39,7 +39,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
 
         protected override void Awake()
         {
-            ConfigureContentPack(_templateContentPack, _templateContentSet);
+            if (_templateContentPack != null || _templateContentSet != null)
+                ConfigureContentPack(_templateContentPack, _templateContentSet);
             base.Awake();
             BuildUiToolkitHud();
             RefreshUiToolkitHud();
