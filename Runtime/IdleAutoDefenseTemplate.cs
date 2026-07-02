@@ -95,7 +95,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
             AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 160, DamageType, 0.45f, 55, 2),
+                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 120, DamageType, 0.45f, 45, 2),
                 CreateSampleSpawnRing(),
                 enemies,
                 mounts,
