@@ -95,7 +95,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
             AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 80, DamageType, 0.45f, 30, 2),
+                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 160, DamageType, 0.45f, 55, 2),
                 CreateSampleSpawnRing(),
                 enemies,
                 mounts,
@@ -104,7 +104,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public static AutoDefenseSpawnRingDefinition CreateSampleSpawnRing()
         {
-            const float radius = 13.5f;
+            const float radius = 18.5f;
             return new AutoDefenseSpawnRingDefinition(radius, new[]
             {
                 new AutoDefenseSpawnChannelDefinition(new WorldSpawnChannelId("perimeter-north"), 0f),
@@ -331,8 +331,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Shard Launcher",
                     WeaponFireMode.Projectile,
                     shard,
-                    24,
-                    5.5f,
+                    30,
+                    5.2f,
                     ShardProjectileId.Value,
                     buildCost: 35,
                     upgradeGroupId: "upgrade.group.template.shard",
@@ -342,8 +342,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Pulse Beam",
                     WeaponFireMode.DirectAttack,
                     pulse,
-                    34,
-                    5f,
+                    48,
+                    5.6f,
                     buildCost: 25,
                     upgradeGroupId: "upgrade.group.template.pulse",
                     tags: new[] { "template", "hitscan", "tower" }),
@@ -352,8 +352,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Arc Burst Module",
                     WeaponFireMode.DirectAttack,
                     arc,
-                    62,
-                    4.25f,
+                    76,
+                    4.4f,
                     buildCost: 65,
                     upgradeGroupId: "upgrade.group.template.arc",
                     tags: new[] { "template", "area", "tower" }),
@@ -362,8 +362,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Homing Pulse Module",
                     WeaponFireMode.Projectile,
                     homing,
-                    44,
-                    5.25f,
+                    60,
+                    6.6f,
                     HomingPulseProjectileId.Value,
                     buildCost: 55,
                     upgradeGroupId: "upgrade.group.template.homing",
@@ -466,12 +466,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 12f, 0.82f, 1, 2f, DamageType.Value, 0.28f, tags: new[] { "template", "swarm" }),
-                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 16f, 1.18f, 1, 3f, DamageType.Value, 0.27f, tags: new[] { "template", "runner" }),
-                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 46f, 0.55f, 3, 6f, DamageType.Value, 0.48f, tags: new[] { "template", "tank" }),
-                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 30f, 0.72f, 2, 4f, DamageType.Value, 0.38f, tags: new[] { "template", "shielded" }),
-                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 95f, 0.62f, 5, 14f, DamageType.Value, 0.54f, tags: new[] { "template", "elite" }),
-                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 220f, 0.42f, 12, 30f, DamageType.Value, 0.82f, tags: new[] { "template", "boss" })
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 16f, 0.72f, 1, 3f, DamageType.Value, 0.28f, tags: new[] { "template", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 20f, 1.02f, 2, 4f, DamageType.Value, 0.27f, tags: new[] { "template", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 56f, 0.48f, 4, 8f, DamageType.Value, 0.48f, tags: new[] { "template", "tank" }),
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 34f, 0.66f, 3, 5f, DamageType.Value, 0.38f, tags: new[] { "template", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 120f, 0.56f, 8, 20f, DamageType.Value, 0.54f, tags: new[] { "template", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 280f, 0.36f, 18, 40f, DamageType.Value, 0.82f, tags: new[] { "template", "boss" })
             };
         }
 
@@ -557,8 +557,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     0,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 5, 1, 0, 42, "perimeter-north"),
-                        new WaveEntryRecipe(enemies[1], 2, 1, 60, 54, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[0], 4, 1, 0, 42, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 1, 1, 60, 54, "perimeter-east"),
                         new WaveEntryRecipe(enemies[2], 1, 1, 155, 0, "perimeter-northwest")
                     },
                     new[] { "template", "opening" }),
@@ -568,8 +568,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     175,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[1], 5, 1, 0, 44, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[0], 5, 1, 34, 42, "perimeter-northeast", 1)
+                        new WaveEntryRecipe(enemies[1], 4, 1, 0, 44, "perimeter-southeast", 1),
+                        new WaveEntryRecipe(enemies[0], 4, 1, 34, 42, "perimeter-northeast", 1)
                     },
                     new[] { "template", "runner-pressure" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -578,9 +578,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     295,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[3], 3, 1, 0, 54, "perimeter-south", 1),
-                        new WaveEntryRecipe(enemies[2], 2, 1, 45, 52, "perimeter-west", 2),
-                        new WaveEntryRecipe(enemies[1], 5, 1, 80, 38, "perimeter-northeast", 2)
+                        new WaveEntryRecipe(enemies[3], 2, 1, 0, 54, "perimeter-south", 1),
+                        new WaveEntryRecipe(enemies[2], 1, 1, 45, 52, "perimeter-west", 2),
+                        new WaveEntryRecipe(enemies[1], 3, 1, 80, 38, "perimeter-northeast", 2)
                     },
                     new[] { "template", "pressure" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -589,9 +589,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     425,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 6, 1, 0, 36, "perimeter-southwest", 1),
-                        new WaveEntryRecipe(enemies[1], 4, 1, 48, 44, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[3], 3, 1, 95, 56, "perimeter-west", 2)
+                        new WaveEntryRecipe(enemies[0], 4, 1, 0, 36, "perimeter-southwest", 1),
+                        new WaveEntryRecipe(enemies[1], 3, 1, 48, 44, "perimeter-southeast", 1),
+                        new WaveEntryRecipe(enemies[3], 2, 1, 95, 56, "perimeter-west", 2)
                     },
                     new[] { "template", "tank-break" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -601,8 +601,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     new[]
                     {
                         new WaveEntryRecipe(enemies[4], 1, 1, 0, 0, "perimeter-northwest", 3),
-                        new WaveEntryRecipe(enemies[1], 4, 1, 42, 42, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[3], 2, 1, 86, 56, "perimeter-south", 2)
+                        new WaveEntryRecipe(enemies[1], 3, 1, 42, 42, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[3], 1, 1, 86, 56, "perimeter-south", 2)
                     },
                     new[] { "template", "elite" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -611,9 +611,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     680,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[2], 3, 1, 0, 62, "perimeter-north", 2),
-                        new WaveEntryRecipe(enemies[3], 3, 1, 38, 56, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[1], 5, 1, 90, 42, "perimeter-southwest", 3)
+                        new WaveEntryRecipe(enemies[2], 2, 1, 0, 62, "perimeter-north", 2),
+                        new WaveEntryRecipe(enemies[3], 2, 1, 38, 56, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[1], 3, 1, 90, 42, "perimeter-southwest", 3)
                     },
                     new[] { "template", "final" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -624,7 +624,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     {
                         new WaveEntryRecipe(enemies[5], 1, 1, 0, 0, "perimeter-south", 4),
                         new WaveEntryRecipe(enemies[4], 1, 1, 70, 0, "perimeter-northeast", 3),
-                        new WaveEntryRecipe(enemies[1], 6, 1, 95, 34, "perimeter-northwest", 3)
+                        new WaveEntryRecipe(enemies[1], 4, 1, 95, 34, "perimeter-northwest", 3)
                     },
                     new[] { "template", "boss" })
             };
@@ -719,7 +719,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     DamageType.Value,
                     5.5f,
                     0,
-                    5f,
+                    5.6f,
                     AttackRecipeTargetingMode.Nearest),
                 AttackDefinitionAsset.CreateTransient(
                     ShardAttackId.Value,
@@ -728,11 +728,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     DamageType.Value,
                     3.5f,
                     0,
-                    5.5f,
+                    5.2f,
                     AttackRecipeTargetingMode.Strongest,
                     projectileDefinitionId: ShardProjectileId.Value,
                     projectileSpawnableId: ProjectileSpawnableId.Value,
-                    projectileSpeed: 4.8f,
+                    projectileSpeed: 4.2f,
                     projectileLifetimeTicks: 150,
                     pierceCount: 0),
                 AttackDefinitionAsset.CreateTransient(
@@ -740,22 +740,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Arc Burst",
                     AttackRecipeDeliveryMode.Area,
                     DamageType.Value,
-                    7,
-                    34,
-                    4.25f,
+                    7f,
+                    76,
+                    4.4f,
                     AttackRecipeTargetingMode.Strongest),
                 AttackDefinitionAsset.CreateTransient(
                     HomingPulseAttackId.Value,
                     "Homing Pulse",
                     AttackRecipeDeliveryMode.Projectile,
                     DamageType.Value,
-                    8,
+                    8f,
                     0,
-                    5.25f,
+                    6.6f,
                     AttackRecipeTargetingMode.LowestHealth,
                     projectileDefinitionId: HomingPulseProjectileId.Value,
                     projectileSpawnableId: HomingPulseProjectileId.Value,
-                    projectileSpeed: 4.6f,
+                    projectileSpeed: 4.4f,
                     projectileLifetimeTicks: 150,
                     homing: true,
                     pierceCount: 1)
@@ -1024,7 +1024,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 var weaponId = new WeaponDefinitionId(id);
                 var mountId = new AutoDefenseMountId("mount.template." + SanitizeRuntimeSegment(id));
                 var slotId = new WeaponSlotId("slot.template." + SanitizeRuntimeSegment(id));
-                mounts[i] = new AutoDefenseMountDefinition(mountId, new Vector3(start + spacing * i, 0f, 0f), slotId, weaponId);
+                mounts[i] = new AutoDefenseMountDefinition(mountId, new Vector3(start + spacing * i, 0f, 0f), slotId, weaponId, enabled: false);
             }
 
             return mounts;
@@ -1388,21 +1388,28 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     {
         private readonly SpawnRequest[] _spawnBuffer = new SpawnRequest[16];
         private const long DefaultRuntimeStartingCredits = 60;
-        private const long KillRewardCredits = 6;
+        private const long KillRewardCredits = 8;
         private const int PassiveIncomeIntervalTicks = 90;
-        private const int ManualTowerBaseCooldownTicks = 24;
-        private const int ManualTowerMinimumCooldownTicks = 12;
+        private const int ManualTowerBaseCooldownTicks = 30;
+        private const int ManualTowerMinimumCooldownTicks = 16;
         private const double ManualTowerBaseDamage = 3.5d;
         private const double ManualTowerDamageRankBonus = 1.75d;
-        private const double ManualTowerRangeRankBonus = 0.45d;
+        private const double ManualTowerBaseRange = 5.2d;
+        private const double ManualTowerRangeRankBonus = 0.4d;
+        private const double ManualTowerMaximumRange = 8.5d;
+        private const double PulseBeamModuleBaseRange = 5.6d;
+        private const double ArcBurstModuleBaseRange = 4.4d;
+        private const double HomingPulseModuleBaseRange = 6.6d;
+        private const double ModuleRangeRankBonus = 0.35d;
         private const double SampleProjectileFinishThreshold = 3d;
-        private const float TemplateSpawnLaneRadius = 13.5f;
-        private const int PulseBeamModuleUnlockCost = 30;
-        private const int ArcBurstModuleUnlockCost = 40;
-        private const int HomingPulseModuleUnlockCost = 35;
-        private const int PulseBeamModuleCooldownTicks = 34;
-        private const int ArcBurstModuleCooldownTicks = 62;
-        private const int HomingPulseModuleCooldownTicks = 44;
+        private const float TemplateSpawnLaneRadius = 18.5f;
+        private const float TemplateVisibleArenaRadius = 14.75f;
+        private const int PulseBeamModuleUnlockCost = 25;
+        private const int ArcBurstModuleUnlockCost = 30;
+        private const int HomingPulseModuleUnlockCost = 30;
+        private const int PulseBeamModuleCooldownTicks = 48;
+        private const int ArcBurstModuleCooldownTicks = 76;
+        private const int HomingPulseModuleCooldownTicks = 60;
         private const int MinimumProjectileImpactDelayTicks = 12;
         private const int MaximumProjectileImpactDelayTicks = 44;
         private const string KenneyResourceRoot = "Kenney/IdleAutoDefense/";
@@ -1478,6 +1485,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private int _arcBurstBonus;
         private int _homingPulseBonus;
         private double _rewardDamageMultiplierBonus;
+        private float _minimumEnemySpawnDistance = float.MaxValue;
+        private float _closestEnemyDistanceToObjective = float.MaxValue;
 
         public AutoDefenseRuntime Runtime => _runtime;
         public MonetizationSession MonetizationSession
@@ -1502,6 +1511,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int AttackAudioPlayCount { get; private set; }
         public int EnemyPresentationEventCount { get; private set; }
         public int DamageNumberSpawnCount { get; private set; }
+        public int EnemyDamageSurvivedCount { get; private set; }
+        public int RangeRejectedTargetCount { get; private set; }
+        public int EnemiesSpawnedBeyondStartingRangeCount { get; private set; }
+        public int EliteOrBossSpawnCount { get; private set; }
+        public float MinimumEnemySpawnDistance => _minimumEnemySpawnDistance == float.MaxValue ? 0f : _minimumEnemySpawnDistance;
+        public float ClosestEnemyDistanceToObjective => _closestEnemyDistanceToObjective == float.MaxValue ? 0f : _closestEnemyDistanceToObjective;
         public bool RuntimeUiDocumentReady => _runtimeUiDocument != null && _runtimeUiRoot != null && _damageNumberLayer != null;
         public bool RuntimeUiThemeAssigned => _runtimePanelSettings != null && (_runtimePanelSettings.themeStyleSheet != null || RuntimeUiDirectStylesApplied);
         public bool RuntimeUiDirectStylesApplied { get; private set; }
@@ -1525,6 +1540,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int SelectedUpgradeCount { get; private set; }
         public int RewardDraftOpenedCount { get; private set; }
         public int RewardDraftSelectionCount { get; private set; }
+        public float FirstRewardDraftSeconds { get; private set; } = -1f;
         public int LevelUpRewardDraftCount { get; private set; }
         public int EliteRewardDraftCount { get; private set; }
         public int BossRewardDraftCount { get; private set; }
@@ -1595,6 +1611,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " Drafts=" + RewardDraftOpenedCount +
             " Modules=" + UnlockedModuleCount +
             " ObjectiveHits=" + ObjectiveDamageEvents +
+            " RangeRejects=" + RangeRejectedTargetCount +
+            " ClosestEnemy=" + ClosestEnemyDistanceToObjective.ToString("0.0", CultureInfo.InvariantCulture) +
             " Currency=" + RuntimeCurrency +
             " Level=" + CommanderLevel +
             " Time=" + SurvivalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
@@ -1802,7 +1820,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _enemyPrefab = CreatePrefab("Template Idle Enemy Runtime Prefab", PrimitiveType.Capsule, Color.red, "Art/enemy_basic_green", new Vector3(1.25f, 1.25f, 1f));
             _projectilePrefab = CreatePrefab("Template Idle Projectile Runtime Prefab", PrimitiveType.Sphere, Color.magenta, "Art/projectile_rocket", new Vector3(0.55f, 0.55f, 1f));
 
-            var poseResolver = new AutoDefensePerimeterPoseResolver(definition.Objective, definition.SpawnRing);
+            var poseResolver = new TemplateJitteredPerimeterPoseResolver(definition.Objective, definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
                 new SpawnableCatalog(CreateEnemySpawnables(_resolvedEnemyDefinitions)),
                 poseResolver,
@@ -2001,6 +2019,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 EmitDamageNumber(CreateTowerMuzzlePosition(Vector3.zero), result.ReachedObjective, new Color(1f, 0.25f, 0.18f), "-");
             }
             AutoDefenseRuntimeSnapshot afterCombat = _runtime.CreateSnapshot();
+            ObserveEnemyPressure(afterCombat);
             EmitDirectWeaponPresentation(result.WeaponFireResult, beforeCombat, afterCombat);
             EmitMissingKillFeedback(beforeCombat, afterCombat, result.Killed, null);
 
@@ -2161,7 +2180,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int shot = 0; shot < shotCount; shot++)
             {
                 AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
-                if (!TrySelectPriorityEnemy(snapshot, out AutoDefenseEnemySnapshot selected)) break;
+                if (!TrySelectPriorityEnemyWithinRange(snapshot, ResolveManualTowerRange(), out AutoDefenseEnemySnapshot selected)) break;
                 if (TryLaunchVisibleProjectileAtEnemy(selected, attack, damageAmount)) continue;
                 if (!TryDamageEnemyWithPresentation(selected, attack, damageAmount, out bool killed)) continue;
                 if (!killed) continue;
@@ -2182,36 +2201,49 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 {
                     _pulseBeamModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(ResolveModuleDamage(5.5d + DamageUpgradeRank * 1.25d + RangeUpgradeRank * 0.5d), 1 + _pulseBeamBonus, BasicIdleAutoDefenseGame.PulseAttackId.Value);
+                    kills += TryKillPriorityEnemies(
+                        ResolveModuleDamage(5.5d + DamageUpgradeRank * 1.25d + RangeUpgradeRank * 0.5d),
+                        1 + _pulseBeamBonus,
+                        BasicIdleAutoDefenseGame.PulseAttackId.Value,
+                        ResolveModuleRange(PulseBeamModuleBaseRange));
                 }
             }
 
             if (ArcBurstUnlocked)
             {
                 _arcBurstModuleCooldownTicks += Math.Max(1, ticks);
-                if (_arcBurstModuleCooldownTicks >= Math.Max(38, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3))
+                if (_arcBurstModuleCooldownTicks >= Math.Max(46, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3))
                 {
                     _arcBurstModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(ResolveModuleDamage(7d + DamageUpgradeRank * 1.5d), 2 + _arcBurstBonus, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value);
+                    kills += TryKillPriorityEnemies(
+                        ResolveModuleDamage(7d + DamageUpgradeRank * 1.5d),
+                        2 + _arcBurstBonus,
+                        BasicIdleAutoDefenseGame.ArcBurstAttackId.Value,
+                        ResolveModuleRange(ArcBurstModuleBaseRange));
                 }
             }
 
             if (HomingPulseUnlocked)
             {
                 _homingPulseModuleCooldownTicks += Math.Max(1, ticks);
-                if (_homingPulseModuleCooldownTicks >= Math.Max(28, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
+                if (_homingPulseModuleCooldownTicks >= Math.Max(36, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
                 {
                     _homingPulseModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(ResolveModuleDamage(8d + DamageUpgradeRank * 1.5d + RangeUpgradeRank * 0.5d), 1 + _homingPulseBonus, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, preferProjectileVisual: true);
+                    kills += TryKillPriorityEnemies(
+                        ResolveModuleDamage(8d + DamageUpgradeRank * 1.5d + RangeUpgradeRank * 0.5d),
+                        1 + _homingPulseBonus,
+                        BasicIdleAutoDefenseGame.HomingPulseAttackId.Value,
+                        ResolveModuleRange(HomingPulseModuleBaseRange),
+                        preferProjectileVisual: true);
                 }
             }
 
             return kills;
         }
 
-        private int TryKillPriorityEnemies(double damageThreshold, int maxKills, string attackId, bool preferProjectileVisual = false)
+        private int TryKillPriorityEnemies(double damageThreshold, int maxKills, string attackId, double range, bool preferProjectileVisual = false)
         {
             if (_runtime == null || maxKills <= 0) return 0;
             int kills = 0;
@@ -2219,18 +2251,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int attempt = 0; attempt < maxKills; attempt++)
             {
                 AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
-                AutoDefenseEnemySnapshot selected = default;
-                bool hasSelected = false;
-                for (int i = 0; i < snapshot.Enemies.Count; i++)
-                {
-                    AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
-                    if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
-                    if (hasSelected && enemy.ObjectiveProgress <= selected.ObjectiveProgress) continue;
-                    selected = enemy;
-                    hasSelected = true;
-                }
-
-                if (!hasSelected) break;
+                if (!TrySelectPriorityEnemyWithinRange(snapshot, range, out AutoDefenseEnemySnapshot selected)) break;
                 if (preferProjectileVisual && TryLaunchVisibleProjectileAtEnemy(selected, attack, damageThreshold)) continue;
                 if (!TryDamageEnemyWithPresentation(selected, attack, damageThreshold, out bool killed)) break;
                 if (killed)
@@ -2464,7 +2485,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EmitEnemyPresentationEvent(activeEnemy, EnemyPresentationEventKind.OnHit);
             EmitDamageNumber(impactPosition, appliedDamage, ResolveAttackColor(attack), "-");
 
-            if (remainingBefore - appliedDamage > 0.001d) return true;
+            if (remainingBefore - appliedDamage > 0.001d)
+            {
+                EnemyDamageSurvivedCount++;
+                return true;
+            }
             if (!TryKillEnemyAfterFeedback(activeEnemy)) return true;
             killed = true;
             return true;
@@ -2514,6 +2539,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return hasSelected;
         }
 
+        private bool TrySelectPriorityEnemyWithinRange(AutoDefenseRuntimeSnapshot snapshot, double range, out AutoDefenseEnemySnapshot selected)
+        {
+            selected = default;
+            if (snapshot == null || snapshot.Enemies.Count == 0) return false;
+            bool hasSelected = false;
+            bool sawActiveEnemy = false;
+            float maxRange = (float)Math.Max(0.1d, range);
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
+                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                sawActiveEnemy = true;
+                if (Vector3.Distance(enemy.Position, Vector3.zero) > maxRange) continue;
+                if (hasSelected && enemy.ObjectiveProgress <= selected.ObjectiveProgress) continue;
+                selected = enemy;
+                hasSelected = true;
+            }
+
+            if (!hasSelected && sawActiveEnemy)
+                RangeRejectedTargetCount++;
+            return hasSelected;
+        }
+
         private double ResolveManualTowerDamage()
         {
             double baseDamage = ManualTowerBaseDamage +
@@ -2521,6 +2569,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 RangeUpgradeRank * ManualTowerRangeRankBonus +
                 DirectDamageBonus;
             return ResolveModuleDamage(baseDamage);
+        }
+
+        private double ResolveManualTowerRange()
+        {
+            return Math.Min(ManualTowerMaximumRange, ManualTowerBaseRange + RangeUpgradeRank * ManualTowerRangeRankBonus);
+        }
+
+        private double ResolveModuleRange(double baseRange)
+        {
+            return Math.Min(ManualTowerMaximumRange + 1d, baseRange + RangeUpgradeRank * ModuleRangeRankBonus);
         }
 
         private double ResolveModuleDamage(double baseDamage)
@@ -2740,6 +2798,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (choices.Length == 0) return;
             _activeRewardDraftKind = kind;
             _rewardDraftChoices = choices;
+            if (FirstRewardDraftSeconds < 0f)
+                FirstRewardDraftSeconds = SurvivalSeconds;
             RewardDraftOpenedCount++;
             if (kind == IdleAutoDefenseRewardDraftKind.LevelUp) LevelUpRewardDraftCount++;
             else if (kind == IdleAutoDefenseRewardDraftKind.EliteDefeated) EliteRewardDraftCount++;
@@ -2967,7 +3027,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
                 if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
                 if (!_seenEnemyIds.Add(enemy.Id)) continue;
+                float distance = Vector3.Distance(enemy.Position, Vector3.zero);
+                _minimumEnemySpawnDistance = Mathf.Min(_minimumEnemySpawnDistance, distance);
+                if (distance > ManualTowerBaseRange + 0.5d)
+                    EnemiesSpawnedBeyondStartingRangeCount++;
+                if (IsEliteEnemy(enemy) || IsBossEnemy(enemy))
+                    EliteOrBossSpawnCount++;
                 EmitEnemyPresentationEvent(enemy, EnemyPresentationEventKind.OnSpawn);
+            }
+        }
+
+        private void ObserveEnemyPressure(AutoDefenseRuntimeSnapshot snapshot)
+        {
+            if (snapshot == null) return;
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
+                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                _closestEnemyDistanceToObjective = Mathf.Min(_closestEnemyDistanceToObjective, Vector3.Distance(enemy.Position, Vector3.zero));
             }
         }
 
@@ -3902,24 +3979,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void CreatePlayAreaMarkers()
         {
             CreatePrimitive("Shard Launcher Module", PrimitiveType.Cube, new Vector3(0f, 0.35f, 0.9f), new Vector3(0.45f, 0.28f, 0.45f), new Color(1f, 0.45f, 0.1f), "Art/tower_projectile_red", false, new Vector3(0f, 0.38f, -0.04f), new Vector3(0.7f, 0.7f, 1f));
-            CreatePrimitive("Spawn Edge North", PrimitiveType.Cube, new Vector3(0f, 0.03f, TemplateSpawnLaneRadius), new Vector3(0.7f, 0.06f, 0.7f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge Northeast", PrimitiveType.Cube, new Vector3(9.55f, 0.03f, 9.55f), new Vector3(0.55f, 0.06f, 0.55f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge East", PrimitiveType.Cube, new Vector3(TemplateSpawnLaneRadius, 0.03f, 0f), new Vector3(0.7f, 0.06f, 0.7f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge Southeast", PrimitiveType.Cube, new Vector3(9.55f, 0.03f, -9.55f), new Vector3(0.55f, 0.06f, 0.55f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge South", PrimitiveType.Cube, new Vector3(0f, 0.03f, -TemplateSpawnLaneRadius), new Vector3(0.7f, 0.06f, 0.7f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge Southwest", PrimitiveType.Cube, new Vector3(-9.55f, 0.03f, -9.55f), new Vector3(0.55f, 0.06f, 0.55f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge West", PrimitiveType.Cube, new Vector3(-TemplateSpawnLaneRadius, 0.03f, 0f), new Vector3(0.7f, 0.06f, 0.7f), new Color(0.95f, 0.82f, 0.26f));
-            CreatePrimitive("Spawn Edge Northwest", PrimitiveType.Cube, new Vector3(-9.55f, 0.03f, 9.55f), new Vector3(0.55f, 0.06f, 0.55f), new Color(0.95f, 0.82f, 0.26f));
+            Color warningStrip = new Color(0.95f, 0.68f, 0.18f, 0.95f);
+            CreatePrimitive("Outer Spawn Zone North", PrimitiveType.Cube, new Vector3(0f, 0.03f, TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip);
+            CreatePrimitive("Outer Spawn Zone East", PrimitiveType.Cube, new Vector3(TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip);
+            CreatePrimitive("Outer Spawn Zone South", PrimitiveType.Cube, new Vector3(0f, 0.03f, -TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip);
+            CreatePrimitive("Outer Spawn Zone West", PrimitiveType.Cube, new Vector3(-TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip);
         }
 
         private void CreateArenaBackdrop()
         {
             if (_root == null) return;
-            CreatePrimitive("Kenney Grass Field", PrimitiveType.Cube, new Vector3(0f, -0.18f, 0f), new Vector3(29f, 0.03f, 29f), new Color(0.14f, 0.34f, 0.18f), "Art/ground_grass", true, Vector3.zero, new Vector3(28f, 28f, 1f));
-            CreatePrimitive("North Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.15f, 7.4f), new Vector3(3f, 0.035f, 14f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4f, 12f, 1f));
-            CreatePrimitive("East Dirt Approach", PrimitiveType.Cube, new Vector3(7.4f, -0.145f, 0f), new Vector3(14f, 0.035f, 3f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(12f, 4f, 1f));
-            CreatePrimitive("South Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.14f, -7.4f), new Vector3(3f, 0.035f, 14f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4f, 12f, 1f));
-            CreatePrimitive("West Dirt Approach", PrimitiveType.Cube, new Vector3(-7.4f, -0.135f, 0f), new Vector3(14f, 0.035f, 3f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(12f, 4f, 1f));
+            CreatePrimitive("Kenney Grass Field", PrimitiveType.Cube, new Vector3(0f, -0.18f, 0f), new Vector3(39f, 0.03f, 39f), new Color(0.14f, 0.34f, 0.18f), "Art/ground_grass", true, Vector3.zero, new Vector3(38f, 38f, 1f));
+            CreatePrimitive("North Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.15f, 10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f));
+            CreatePrimitive("East Dirt Approach", PrimitiveType.Cube, new Vector3(10.2f, -0.145f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
+            CreatePrimitive("South Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.14f, -10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f));
+            CreatePrimitive("West Dirt Approach", PrimitiveType.Cube, new Vector3(-10.2f, -0.135f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
         }
 
         private static bool AttachKenneySprite(GameObject instance, string artPath, bool groundSprite, Vector3 localPosition, Vector3 localScale)
@@ -4014,6 +4088,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AttackAudioPlayCount = 0;
             EnemyPresentationEventCount = 0;
             DamageNumberSpawnCount = 0;
+            EnemyDamageSurvivedCount = 0;
+            RangeRejectedTargetCount = 0;
+            EnemiesSpawnedBeyondStartingRangeCount = 0;
+            EliteOrBossSpawnCount = 0;
+            FirstRewardDraftSeconds = -1f;
             ProjectileAdapterKillCount = 0;
             InvalidAssignedRecipeCount = 0;
             InvalidAssignedEnemyCount = 0;
@@ -4085,6 +4164,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _arcBurstBonus = 0;
             _homingPulseBonus = 0;
             _rewardDamageMultiplierBonus = 0d;
+            _minimumEnemySpawnDistance = float.MaxValue;
+            _closestEnemyDistanceToObjective = float.MaxValue;
             ClearDamageNumbers();
         }
 
@@ -4155,6 +4236,91 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < _damageNumbers.Count; i++)
                 _damageNumbers[i].Label?.RemoveFromHierarchy();
             _damageNumbers.Clear();
+        }
+
+        private sealed class TemplateJitteredPerimeterPoseResolver : IAutoDefensePoseResolver, ISpawnPoseResolver
+        {
+            private const float AngleJitterDegrees = 17.5f;
+            private const float RadiusJitter = 2.5f;
+            private readonly AutoDefenseObjectiveDefinition _objective;
+            private readonly Dictionary<WorldSpawnChannelId, AutoDefenseSpawnChannelDefinition> _channels = new Dictionary<WorldSpawnChannelId, AutoDefenseSpawnChannelDefinition>();
+            private readonly float _radius;
+
+            public TemplateJitteredPerimeterPoseResolver(AutoDefenseObjectiveDefinition objective, AutoDefenseSpawnRingDefinition ring)
+            {
+                _objective = objective ?? throw new ArgumentNullException(nameof(objective));
+                if (ring == null) throw new ArgumentNullException(nameof(ring));
+                _radius = ring.Radius;
+                for (int i = 0; i < ring.Channels.Count; i++)
+                    _channels.Add(ring.Channels[i].Id, ring.Channels[i]);
+            }
+
+            public bool TryResolvePose(WorldSpawnChannelId channelId, out SpawnPose pose)
+            {
+                return TryResolvePose(channelId, 0L, 0, string.Empty, out pose);
+            }
+
+            public SpawnPoseResult TryResolvePose(WorldSpawnRequest request)
+            {
+                return TryResolvePose(request.ChannelId, request.Sequence, request.Context.Tick, request.Context.GroupId, out SpawnPose pose)
+                    ? SpawnPoseResult.Success(pose)
+                    : SpawnPoseResult.Failure("Unknown auto-defense channel: " + request.ChannelId);
+            }
+
+            private bool TryResolvePose(WorldSpawnChannelId channelId, long sequence, int tick, string groupId, out SpawnPose pose)
+            {
+                if (!_channels.TryGetValue(channelId, out AutoDefenseSpawnChannelDefinition channel))
+                {
+                    pose = default;
+                    return false;
+                }
+
+                int hash = StableHash(channelId.Value);
+                hash = CombineHash(hash, StableHash(groupId));
+                hash = CombineHash(hash, sequence.GetHashCode());
+                hash = CombineHash(hash, tick);
+                float angleOffset = (Hash01(hash) * 2f - 1f) * AngleJitterDegrees;
+                float distanceOffset = Hash01(CombineHash(hash, 7919)) * RadiusJitter;
+                float radians = (channel.AngleDegrees + angleOffset) * Mathf.Deg2Rad;
+                Vector3 direction = new Vector3(Mathf.Sin(radians), 0f, Mathf.Cos(radians));
+                float distance = _radius + distanceOffset;
+                pose = new SpawnPose(_objective.Position + direction * distance, Quaternion.LookRotation(-direction, Vector3.up));
+                return true;
+            }
+
+            private static int CombineHash(int current, int value)
+            {
+                unchecked { return (current * 397) ^ value; }
+            }
+
+            private static float Hash01(int hash)
+            {
+                unchecked
+                {
+                    uint value = (uint)hash;
+                    value ^= value >> 16;
+                    value *= 2246822519u;
+                    value ^= value >> 13;
+                    value *= 3266489917u;
+                    value ^= value >> 16;
+                    return (value & 0x00FFFFFFu) / 16777215f;
+                }
+            }
+
+            private static int StableHash(string value)
+            {
+                unchecked
+                {
+                    int hash = 5381;
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        for (int i = 0; i < value.Length; i++)
+                            hash = ((hash << 5) + hash) ^ value[i];
+                    }
+
+                    return hash;
+                }
+            }
         }
 
         private struct PendingProjectileImpact

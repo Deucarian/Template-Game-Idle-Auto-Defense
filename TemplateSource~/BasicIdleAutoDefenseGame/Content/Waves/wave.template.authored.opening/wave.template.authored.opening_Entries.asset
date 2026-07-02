@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
   _entries:
   - _enemy: {fileID: 11400000, guid: a4faad016e5ca2f4080cbecc93bb55cb, type: 2}
-    _count: 5
+    _count: 4
     _batchSize: 1
     _initialDelayTicks: 0
     _intervalTicks: 42
     _spawnChannelId: perimeter-north
     _scalingTier: 0
   - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
-    _count: 2
+    _count: 1
     _batchSize: 1
     _initialDelayTicks: 60
     _intervalTicks: 54

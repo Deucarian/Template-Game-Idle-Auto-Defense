@@ -32,11 +32,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
             Assert.AreEqual("template-core", definition.Objective.Id.Value);
             Assert.AreEqual(8, definition.SpawnRing.Channels.Count);
+            Assert.That(definition.SpawnRing.Radius, Is.GreaterThanOrEqualTo(18f));
             Assert.AreEqual(6, definition.Enemies.Count);
             Assert.AreEqual(4, definition.Mounts.Count);
             Assert.AreEqual(4, definition.WeaponModules.Count);
             Assert.IsTrue(definition.Mounts[0].HasWeapon);
             Assert.IsTrue(definition.Mounts[1].HasWeapon);
+            Assert.IsFalse(definition.Mounts[0].Enabled);
+            Assert.IsFalse(definition.Mounts[1].Enabled);
             Assert.AreEqual(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId, definition.Enemies[0].SpawnableId);
             Assert.AreEqual(BasicIdleAutoDefenseGame.BossEnemySpawnableId, definition.Enemies[5].SpawnableId);
         }
@@ -78,6 +81,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateAttackDefinitions(recipes).Length);
             Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateProjectileDefinitions(recipes).Length);
             Assert.AreEqual(0, recipes[1].CreateStatusDefinitions().Length);
+            Assert.That(recipes[1].Mechanics.Range, Is.LessThan(5.5f));
+            Assert.That(recipes[1].Mechanics.DamageAmount, Is.LessThan(4f));
+            Assert.That(recipes[1].Delivery.ProjectileSpeed, Is.InRange(4f, 4.5f));
         }
 
         [Test]
@@ -98,6 +104,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(WeaponFireMode.Projectile, weapons[3].Stats.FireMode);
             Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateWeaponDefinitions(weapons).Length);
             Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateDefinition(null, weapons).WeaponModules.Count);
+            Assert.That(weapons[0].Stats.CooldownTicks, Is.EqualTo(30));
+            Assert.That(weapons[0].Stats.Range, Is.LessThan(5.5f));
+            Assert.That(weapons[3].Stats.Range, Is.GreaterThan(weapons[2].Stats.Range));
 
             Assert.AreEqual(6, upgrades.Length);
             Assert.AreEqual("upgrade.template.damage-up", upgrades[0].Id);
@@ -1494,8 +1503,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.shard");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_projectilePrefab: {fileID: 0");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_projectilePrefab: {fileID: 0");
-            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_projectileSpeed: 4.8");
-            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_projectileSpeed: 4.6");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_projectileSpeed: 4.2");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_projectileSpeed: 4.4");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_mode: 1");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_beamVfxPrefab: {fileID: 0");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_impactVfxPrefab: {fileID: 0");
@@ -1506,10 +1515,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.elite", "enemy.template.elite_Presentation.asset"), "_audioClip: {fileID: 8300000");
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.boss", "enemy.template.boss_Presentation.asset"), "_vfxPrefab: {fileID:");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.fire-orb");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.shard-launcher", "weapon.template.shard-launcher_Stats.asset"), "_cooldownTicks: 24");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_Stats.asset"), "_cooldownTicks: 34");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.arc-burst-tower", "weapon.template.arc-burst-tower_Stats.asset"), "_cooldownTicks: 62");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.homing-spire", "weapon.template.homing-spire_Stats.asset"), "_cooldownTicks: 44");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.shard-launcher", "weapon.template.shard-launcher_Stats.asset"), "_cooldownTicks: 30");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_Stats.asset"), "_cooldownTicks: 48");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.arc-burst-tower", "weapon.template.arc-burst-tower_Stats.asset"), "_cooldownTicks: 76");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.homing-spire", "weapon.template.homing-spire_Stats.asset"), "_cooldownTicks: 60");
 
             string bootstrapPath = Path.Combine(templateSourceRoot, "Scripts", "BasicIdleAutoDefenseGameBootstrap.cs");
             AssertFileContains(bootstrapPath, "UnityEngine.UIElements");
@@ -1648,7 +1657,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
-                Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
+                Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(3), controller.StatusSummary);
                 Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
                 Assert.AreEqual(0, controller.DraftTickCount);
                 Assert.That(controller.EncounterRewardCredits, Is.GreaterThanOrEqualTo(60));
@@ -1656,7 +1665,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
                 controller.RestartRun(CreateFailCapablePressureEncounterDefinition());
                 controller.RewardDraftPausesCombat = false;
-                StepUntilTerminal(controller, 720, chooseRewardDrafts: false);
+                StepUntilTerminal(controller, 1400, chooseRewardDrafts: false);
                 Assert.IsTrue(controller.EncounterFailed, "The template should still support fail-capable pressure runs.");
 
                 controller.SimulateOfflineReward(DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddHours(1));

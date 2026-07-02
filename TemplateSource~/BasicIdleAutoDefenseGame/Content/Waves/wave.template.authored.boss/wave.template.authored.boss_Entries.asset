@@ -28,7 +28,7 @@ MonoBehaviour:
     _spawnChannelId: perimeter-northeast
     _scalingTier: 3
   - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
-    _count: 6
+    _count: 4
     _batchSize: 1
     _initialDelayTicks: 95
     _intervalTicks: 34

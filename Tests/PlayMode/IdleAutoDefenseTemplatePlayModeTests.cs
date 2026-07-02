@@ -27,6 +27,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             }
 
             Assert.That(controller.SpawnedCount, Is.GreaterThanOrEqualTo(4));
+            Assert.That(controller.EnemiesSpawnedBeyondStartingRangeCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.MinimumEnemySpawnDistance, Is.GreaterThan(17f), controller.StatusSummary);
+            Assert.That(controller.RangeRejectedTargetCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.EnemyDamageSurvivedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ClosestEnemyDistanceToObjective, Is.GreaterThan(0f).And.LessThan(8f), controller.StatusSummary);
             Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0));
             Assert.That(controller.ProjectileVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ProjectileMotionObservedCount, Is.GreaterThan(0), controller.StatusSummary);
@@ -36,9 +41,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
-            Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
+            Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(3), controller.StatusSummary);
             Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.RewardDraftSelectionCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.FirstRewardDraftSeconds, Is.GreaterThan(0f).And.LessThan(90f), controller.StatusSummary);
+            Assert.That(controller.EliteOrBossSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
             Assert.True(controller.PulseBeamUnlocked, "Smoke should unlock Pulse Beam.");
             Assert.True(controller.ArcBurstUnlocked, "Smoke should unlock Arc Burst.");
@@ -49,7 +56,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.EncounterRewardParts, Is.GreaterThanOrEqualTo(3));
 
             controller.RestartRun(BasicIdleAutoDefenseGame.CreateBossPulseEncounterDefinition());
-            for (int i = 0; i < 720; i++)
+            for (int i = 0; i < 1400; i++)
             {
                 BuyAvailableLivePurchases(controller);
                 controller.Step(1, 0.05f);
@@ -86,6 +93,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 
             Assert.AreEqual(0, controller.SelectedUpgradeCount);
             Assert.IsFalse(controller.PulseBeamUnlocked);
+            Assert.That(controller.RangeRejectedTargetCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.EnemyDamageSurvivedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ClosestEnemyDistanceToObjective, Is.GreaterThan(0f).And.LessThan(2f), controller.StatusSummary);
             Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ObjectiveDamageEvents, Is.GreaterThan(0), controller.StatusSummary);
             Assert.True(controller.EncounterFailed, "No-upgrade sample run should be able to lose. " + controller.StatusSummary);
@@ -118,7 +128,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.RuntimeUiRootResolvedWidth, Is.GreaterThan(100f));
             Assert.That(controller.RuntimeUiRootResolvedHeight, Is.GreaterThan(100f));
 
-            for (int i = 0; i < 300; i++)
+            for (int i = 0; i < 720; i++)
             {
                 controller.Step(1, 0.05f);
                 if (controller.DamageNumberSpawnCount > 0 && controller.RuntimeDamageNumberVisibleCount > 0)
