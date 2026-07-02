@@ -20,7 +20,7 @@ This package provides a starter idle auto-defense game template built on `com.de
 - Progression currency reward application.
 - Save/load smoke coverage for profile, run, and settings data.
 - Corrupted primary save recovery and migration smoke coverage.
-- Primitive placeholder visuals for the core, mounts, enemies, and projectiles.
+- Curated Kenney CC0 placeholder visuals, UI accents, and feedback audio for the playable sample.
 
 ## Import Workflow
 

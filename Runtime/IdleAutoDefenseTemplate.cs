@@ -179,6 +179,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
+        private AudioSource _feedbackAudio;
+        private AudioClip _shootClip;
+        private AudioClip _hitClip;
+        private AudioClip _killClip;
+        private AudioClip _upgradeClip;
+        private AudioClip _rewardClip;
+        private Texture2D _hudButtonTexture;
+        private Texture2D _hudTargetIcon;
+        private Texture2D _hudTrophyIcon;
+        private GUIStyle _hudTitleStyle;
+        private GUIStyle _hudLabelStyle;
+        private GUIStyle _hudSmallStyle;
 
         public AutoDefenseRuntime Runtime => _runtime;
         public int SpawnedCount { get; private set; }
@@ -219,12 +231,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
 
             _root = new GameObject("BasicIdleAutoDefenseGame");
-            CreatePrimitive("Template Core", PrimitiveType.Cube, definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan);
+            BuildSampleBackdrop();
+            BuildFeedbackPresentation();
+            CreatePrimitive("Template Core", PrimitiveType.Cube, definition.Objective.Position, new Vector3(1.1f, 0.6f, 1.1f), Color.cyan, "Art/build_pad_target", new Vector2(1.45f, 1.45f));
             for (int i = 0; i < definition.Mounts.Count; i++)
-                CreatePrimitive(definition.Mounts[i].Id.Value, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow);
+            {
+                string towerPath = i == 0 ? "Art/tower_direct_green" : "Art/tower_projectile_red";
+                CreatePrimitive(definition.Mounts[i].Id.Value, PrimitiveType.Cube, definition.Objective.Position + definition.Mounts[i].LocalOffset, new Vector3(0.45f, 0.35f, 0.45f), Color.yellow, towerPath, new Vector2(1.1f, 1.1f));
+            }
 
-            _enemyPrefab = CreatePrefab("TemplateIdleEnemyPrefab", PrimitiveType.Capsule, Color.red);
-            _projectilePrefab = CreatePrefab("TemplateIdleProjectilePrefab", PrimitiveType.Sphere, Color.magenta);
+            _enemyPrefab = CreatePrefab("TemplateIdleEnemyPrefab", PrimitiveType.Capsule, Color.red, "Art/enemy_basic_green", new Vector2(0.82f, 0.82f));
+            _projectilePrefab = CreatePrefab("TemplateIdleProjectilePrefab", PrimitiveType.Sphere, Color.magenta, "Art/projectile_rocket", new Vector2(0.52f, 0.52f));
 
             var poseResolver = new AutoDefensePerimeterPoseResolver(definition.Objective, definition.SpawnRing);
             _enemySpawning = new WorldSpawnService(
@@ -297,6 +314,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 ProjectileLaunchResult launch = _projectiles.Launch(result.ProjectileLaunches[i]);
                 if (!launch.Succeeded) continue;
                 ProjectileLaunchCount++;
+                PlayFeedback(_shootClip);
                 TryApplySampleProjectileHit();
             }
 
@@ -313,10 +331,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (DraftTickCount % 30 != 0) return;
             _currentDraft = RunUpgradeDraftService.Generate(_upgradeCatalog, _upgradeState, new RunUpgradeDraftRequest(3, 20260623, DraftTickCount / 30));
             if (_currentDraft.Choices.Count == 0) return;
-            RunUpgradeSelectionResult selected = _upgradeState.Select(_upgradeCatalog, _currentDraft.Choices[0].Id);
+                RunUpgradeSelectionResult selected = _upgradeState.Select(_upgradeCatalog, _currentDraft.Choices[0].Id);
             if (!selected.Succeeded) return;
             SelectedUpgradeCount++;
             ApplyUpgrade(_currentDraft.Choices[0]);
+            PlayFeedback(_upgradeClip);
         }
 
         private void ApplyUpgrade(RunUpgradeDefinition upgrade)
@@ -342,6 +361,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (enemy.Health <= DirectDamageBonus && _runtime.TryKillEnemy(enemy.Id))
                 {
                     DirectOrCombatKillCount++;
+                    PlayFeedback(_killClip);
                     return;
                 }
             }
@@ -357,6 +377,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (_runtime.TryKillEnemy(enemy.Id))
                 {
                     ProjectileAdapterKillCount++;
+                    PlayFeedback(_hitClip);
                     return;
                 }
             }
@@ -370,18 +391,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _completionRewardApplied = true;
             EncounterRewardCredits = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value;
             EncounterRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
+            PlayFeedback(_rewardClip);
         }
 
-        private GameObject CreatePrefab(string name, PrimitiveType primitiveType, Color color)
+        private GameObject CreatePrefab(string name, PrimitiveType primitiveType, Color color, string texturePath, Vector2 textureSize)
         {
             GameObject prefab = GameObject.CreatePrimitive(primitiveType);
             prefab.name = name;
             ApplyColor(prefab, color);
+            AttachTopDownSprite(prefab, texturePath, textureSize, 0.72f, hideSourceRenderer: true);
             prefab.SetActive(false);
             return prefab;
         }
 
-        private GameObject CreatePrimitive(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color)
+        private GameObject CreatePrimitive(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color, string texturePath, Vector2 textureSize)
         {
             GameObject instance = GameObject.CreatePrimitive(primitiveType);
             instance.name = name;
@@ -389,13 +412,212 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             instance.transform.position = position;
             instance.transform.localScale = scale;
             ApplyColor(instance, color);
+            AttachTopDownSprite(instance, texturePath, textureSize, 0.38f, hideSourceRenderer: true);
             return instance;
+        }
+
+        private void BuildSampleBackdrop()
+        {
+            CreateTexturedPlane("Kenney Grass Field", "Art/ground_grass", Vector3.down * 0.04f, new Vector2(18f, 18f), Color.white);
+            CreateTexturedPlane("Kenney North Path", "Art/path_dirt", new Vector3(0f, 0f, 4.8f), new Vector2(2.8f, 8f), new Color(1f, 1f, 1f, 0.95f));
+            CreateTexturedPlane("Kenney South Path", "Art/path_dirt", new Vector3(0f, 0f, -4.8f), new Vector2(2.8f, 8f), new Color(1f, 1f, 1f, 0.95f));
+            CreateTexturedPlane("Kenney East Path", "Art/path_dirt", new Vector3(4.8f, 0.01f, 0f), new Vector2(8f, 2.8f), new Color(1f, 1f, 1f, 0.95f));
+            CreateTexturedPlane("Kenney West Path", "Art/path_dirt", new Vector3(-4.8f, 0.01f, 0f), new Vector2(8f, 2.8f), new Color(1f, 1f, 1f, 0.95f));
+        }
+
+        private void BuildFeedbackPresentation()
+        {
+            GameObject audioObject = new GameObject("Idle Auto Defense Feedback Audio");
+            audioObject.transform.SetParent(_root.transform, false);
+            _feedbackAudio = audioObject.AddComponent<AudioSource>();
+            _feedbackAudio.playOnAwake = false;
+            _feedbackAudio.spatialBlend = 0f;
+            _feedbackAudio.volume = 0.32f;
+            _shootClip = LoadAudio("laserSmall_000");
+            _hitClip = LoadAudio("impactMetal_000");
+            _killClip = LoadAudio("explosionCrunch_000");
+            _upgradeClip = LoadAudio("select_001");
+            _rewardClip = LoadAudio("confirmation_001");
+        }
+
+        private static AudioClip LoadAudio(string name)
+        {
+            return Resources.Load<AudioClip>("Kenney/IdleAutoDefense/Audio/" + name);
+        }
+
+        private void PlayFeedback(AudioClip clip)
+        {
+            if (_feedbackAudio != null && clip != null)
+            {
+                _feedbackAudio.PlayOneShot(clip);
+            }
+        }
+
+        private void CreateTexturedPlane(string name, string texturePath, Vector3 position, Vector2 size, Color tint)
+        {
+            Texture2D texture = LoadTexture(texturePath);
+            if (texture == null)
+            {
+                return;
+            }
+
+            GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            plane.name = name;
+            plane.transform.SetParent(_root.transform, false);
+            plane.transform.position = position;
+            plane.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            plane.transform.localScale = new Vector3(size.x, size.y, 1f);
+            Renderer renderer = plane.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = CreateTextureMaterial(texture, tint);
+            }
+
+            Collider collider = plane.GetComponent<Collider>();
+            if (collider != null)
+            {
+                UnityEngine.Object.Destroy(collider);
+            }
+        }
+
+        private static bool AttachTopDownSprite(GameObject target, string texturePath, Vector2 size, float yOffset, bool hideSourceRenderer)
+        {
+            Texture2D texture = LoadTexture(texturePath);
+            if (target == null || texture == null)
+            {
+                return false;
+            }
+
+            GameObject sprite = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            sprite.name = target.name + " Kenney Sprite";
+            sprite.transform.SetParent(target.transform, false);
+            sprite.transform.localPosition = Vector3.up * yOffset;
+            sprite.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            sprite.transform.localScale = new Vector3(size.x, size.y, 1f);
+            Renderer spriteRenderer = sprite.GetComponent<Renderer>();
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.sharedMaterial = CreateTextureMaterial(texture, Color.white);
+            }
+
+            Collider spriteCollider = sprite.GetComponent<Collider>();
+            if (spriteCollider != null)
+            {
+                UnityEngine.Object.Destroy(spriteCollider);
+            }
+
+            Renderer sourceRenderer = target.GetComponent<Renderer>();
+            if (hideSourceRenderer && sourceRenderer != null)
+            {
+                sourceRenderer.enabled = false;
+            }
+
+            return true;
+        }
+
+        private static Texture2D LoadTexture(string path)
+        {
+            return Resources.Load<Texture2D>("Kenney/IdleAutoDefense/" + path);
+        }
+
+        private static Material CreateTextureMaterial(Texture2D texture, Color tint)
+        {
+            Shader shader = Shader.Find("Unlit/Transparent") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Standard");
+            var material = new Material(shader);
+            material.mainTexture = texture;
+            material.color = tint;
+            return material;
         }
 
         private static void ApplyColor(GameObject instance, Color color)
         {
             Renderer renderer = instance.GetComponent<Renderer>();
             if (renderer != null) renderer.sharedMaterial = new Material(Shader.Find("Standard")) { color = color };
+        }
+
+        private void OnGUI()
+        {
+            if (_runtime == null)
+            {
+                return;
+            }
+
+            EnsureHudStyles();
+            Rect panel = new Rect(16f, 16f, 344f, 190f);
+            DrawTexturedPanel(panel);
+            GUI.Label(new Rect(panel.x + 16f, panel.y + 12f, panel.width - 32f, 22f), "Idle Auto Defense", _hudTitleStyle);
+            DrawHudBar(new Rect(panel.x + 16f, panel.y + 44f, panel.width - 32f, 18f), "Core", (float)(_runtime.Objective.Health.CurrentHealth / _runtime.Objective.Health.MaximumHealth), new Color(0.28f, 0.9f, 0.96f));
+            GUI.Label(new Rect(panel.x + 16f, panel.y + 72f, panel.width - 32f, 22f), $"Enemies {SpawnedCount}  Kills {DirectOrCombatKillCount + ProjectileAdapterKillCount}  Hits {ObjectiveDamageEvents}", _hudLabelStyle);
+            GUI.Label(new Rect(panel.x + 16f, panel.y + 96f, panel.width - 32f, 22f), $"Upgrades {SelectedUpgradeCount}  Projectile x{ProjectileSpeedMultiplier:0.0}  Delay +{EnemySpawnDelayTicks}", _hudLabelStyle);
+            GUI.Label(new Rect(panel.x + 16f, panel.y + 120f, panel.width - 32f, 22f), $"Credits {EncounterRewardCredits + OfflineRewardCredits}  Parts {EncounterRewardParts + OfflineRewardParts}", _hudLabelStyle);
+
+            if (_hudTargetIcon != null)
+            {
+                GUI.DrawTexture(new Rect(panel.x + panel.width - 58f, panel.y + 12f, 32f, 32f), _hudTargetIcon, ScaleMode.ScaleToFit, true);
+            }
+
+            if ((EncounterCompleted || EncounterFailed) && _hudTrophyIcon != null)
+            {
+                GUI.DrawTexture(new Rect(panel.x + panel.width - 58f, panel.y + 54f, 32f, 32f), _hudTrophyIcon, ScaleMode.ScaleToFit, true);
+            }
+
+            Rect button = new Rect(panel.x + 16f, panel.y + 150f, 168f, 28f);
+            if (GUI.Button(button, "Claim idle reward"))
+            {
+                SimulateOfflineReward(DateTimeOffset.UtcNow.AddMinutes(-45), DateTimeOffset.UtcNow);
+                PlayFeedback(_rewardClip);
+            }
+        }
+
+        private void EnsureHudStyles()
+        {
+            if (_hudTitleStyle != null)
+            {
+                return;
+            }
+
+            _hudButtonTexture = LoadTexture("UI/button_rectangle_depth_gloss");
+            _hudTargetIcon = LoadTexture("UI/icon_target");
+            _hudTrophyIcon = LoadTexture("UI/icon_trophy");
+            _hudTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 17,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.85f, 0.96f, 1f) }
+            };
+            _hudLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                normal = { textColor = Color.white }
+            };
+            _hudSmallStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                normal = { textColor = new Color(0.8f, 0.9f, 0.95f) }
+            };
+        }
+
+        private void DrawTexturedPanel(Rect rect)
+        {
+            Color oldColor = GUI.color;
+            GUI.color = new Color(0.07f, 0.11f, 0.14f, 0.88f);
+            GUI.Box(rect, GUIContent.none);
+            GUI.color = oldColor;
+            if (_hudButtonTexture != null)
+            {
+                GUI.DrawTexture(new Rect(rect.x + rect.width - 112f, rect.y + rect.height - 44f, 88f, 30f), _hudButtonTexture, ScaleMode.StretchToFill, true);
+            }
+        }
+
+        private void DrawHudBar(Rect rect, string label, float value, Color fill)
+        {
+            GUI.Box(rect, GUIContent.none);
+            Rect fillRect = new Rect(rect.x + 2f, rect.y + 2f, Mathf.Max(0f, rect.width - 4f) * Mathf.Clamp01(value), rect.height - 4f);
+            Color oldColor = GUI.color;
+            GUI.color = fill;
+            GUI.DrawTexture(fillRect, Texture2D.whiteTexture);
+            GUI.color = oldColor;
+            GUI.Label(rect, label + " " + Mathf.RoundToInt(Mathf.Clamp01(value) * 100f).ToString() + "%", _hudSmallStyle);
         }
 
         private void OnDestroy()

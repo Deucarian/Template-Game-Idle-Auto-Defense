@@ -10,6 +10,7 @@ The scene contains a bootstrap object that creates:
 - one direct weapon mount
 - one projectile weapon mount
 - deterministic run upgrade drafts
+- curated Kenney CC0 visuals, HUD accents, and feedback audio
 - save/load, offline reward, progression reward, and corrupted save recovery smoke paths
 
-All visible gameplay objects are primitive placeholders. Replace them with real content in the `Prefabs` and `Content` folders when turning the template into a production game.
+The sample keeps simple runtime colliders for deterministic package import, but visible gameplay presentation uses curated Kenney CC0 assets under `Resources/Kenney`. Replace those resources or add project-specific prefabs in `Prefabs` and `Content` when turning the template into a production game.
