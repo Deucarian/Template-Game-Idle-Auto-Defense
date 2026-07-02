@@ -4,6 +4,7 @@ using Deucarian.IdleProgression;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 {
@@ -88,6 +89,39 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             UnityEngine.Object.Destroy(host);
         }
 
+        [UnityTest]
+        public IEnumerator BasicIdleAutoDefenseRuntimeUiToolkitPanelHasVisibleBoundsAndDamageNumbers()
+        {
+            GameObject host = new GameObject("idle-auto-defense-template-ui-toolkit-probe");
+            var controller = host.AddComponent<RuntimeUiProbeController>();
+            controller.enabled = false;
+
+            UIDocument document = controller.RuntimeDocument;
+            yield return null;
+
+            Assert.NotNull(document);
+            Assert.NotNull(document.panelSettings);
+            Assert.NotNull(controller.Root);
+            Assert.True(controller.RuntimeUiDocumentReady);
+            Assert.True(controller.RuntimeUiThemeAssigned);
+            Assert.AreEqual(DisplayStyle.Flex, controller.Root.resolvedStyle.display);
+            Assert.That(controller.RuntimeUiRootResolvedWidth, Is.GreaterThan(100f));
+            Assert.That(controller.RuntimeUiRootResolvedHeight, Is.GreaterThan(100f));
+
+            for (int i = 0; i < 300; i++)
+            {
+                controller.Step(1, 0.05f);
+                if (controller.DamageNumberSpawnCount > 0 && controller.RuntimeDamageNumberVisibleCount > 0)
+                    break;
+                if (i % 15 == 0) yield return null;
+            }
+
+            Assert.That(controller.DamageNumberSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.RuntimeDamageNumberVisibleCount, Is.GreaterThan(0), controller.StatusSummary);
+
+            UnityEngine.Object.Destroy(host);
+        }
+
         private static void BuyAvailableLivePurchases(IdleAutoDefenseTemplateController controller)
         {
             if (controller.CanPurchasePulseBeamModule) controller.TryPurchasePulseBeamModule();
@@ -98,6 +132,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             if (controller.CanPurchaseHomingPulseModule) controller.TryPurchaseHomingPulseModule();
             if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
                 controller.TryPurchaseRepairUpgrade();
+        }
+
+        private sealed class RuntimeUiProbeController : IdleAutoDefenseTemplateController
+        {
+            public UIDocument RuntimeDocument => EnsureRuntimeUiDocument();
+            public VisualElement Root => RuntimeUiRoot;
         }
     }
 }

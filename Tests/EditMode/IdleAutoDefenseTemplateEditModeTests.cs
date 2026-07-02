@@ -1416,9 +1416,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string bootstrapPath = Path.Combine(templateSourceRoot, "Scripts", "BasicIdleAutoDefenseGameBootstrap.cs");
             AssertFileContains(bootstrapPath, "UnityEngine.UIElements");
             AssertFileContains(bootstrapPath, "UiToolkitHudReady");
+            AssertFileContains(bootstrapPath, "UiToolkitHudVisible");
+            AssertFileContains(bootstrapPath, "UiToolkitHudLabelCount");
+            AssertFileContains(bootstrapPath, "UiToolkitHudButtonCount");
             AssertFileContains(bootstrapPath, "RuntimeUiRoot");
+            AssertFileContains(bootstrapPath, "ApplyRuntimeUiFont");
+            AssertFileContains(bootstrapPath, "backgroundColor");
+            AssertFileContains(bootstrapPath, "borderTopColor");
             AssertFileDoesNotContain(bootstrapPath, "OnGUI");
             AssertFileDoesNotContain(bootstrapPath, "GUILayout");
+
+            string runtimePath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseTemplate.cs");
+            AssertFileContains(runtimePath, "RuntimeUiDocumentReady");
+            AssertFileContains(runtimePath, "RuntimeUiThemeAssigned");
+            AssertFileContains(runtimePath, "RuntimeUiRootResolvedWidth");
+            AssertFileContains(runtimePath, "RuntimeUiRootResolvedHeight");
+            AssertFileContains(runtimePath, "ApplyRuntimeUiRootStyles");
+            AssertFileContains(runtimePath, "ApplyRuntimeUiFont");
 
             AssertDirectoryExists(Path.Combine(templateSourceRoot, "Audio"));
             AssertDirectoryExists(Path.Combine(templateSourceRoot, "Visuals", "Prefabs"));

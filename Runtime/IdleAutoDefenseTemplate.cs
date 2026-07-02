@@ -1286,6 +1286,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const int HomingPulseModuleCooldownTicks = 34;
         private const int MinimumProjectileImpactDelayTicks = 8;
         private const int MaximumProjectileImpactDelayTicks = 36;
+        private const float RuntimeUiFallbackWidth = 1280f;
+        private const float RuntimeUiFallbackHeight = 720f;
         private AutoDefenseRuntime _runtime;
         private EncounterRuntime _encounter;
         private ProjectileRuntime _projectiles;
@@ -1356,6 +1358,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int AttackAudioPlayCount { get; private set; }
         public int EnemyPresentationEventCount { get; private set; }
         public int DamageNumberSpawnCount { get; private set; }
+        public bool RuntimeUiDocumentReady => _runtimeUiDocument != null && _runtimeUiRoot != null && _damageNumberLayer != null;
+        public bool RuntimeUiThemeAssigned => _runtimePanelSettings != null && _runtimePanelSettings.themeStyleSheet != null;
+        public int RuntimeDamageNumberVisibleCount => _damageNumbers.Count;
+        public float RuntimeUiRootResolvedWidth => ResolveRuntimePanelSize().x;
+        public float RuntimeUiRootResolvedHeight => ResolveRuntimePanelSize().y;
         public int InvalidAssignedRecipeCount { get; private set; }
         public int InvalidAssignedEnemyCount { get; private set; }
         public int InvalidAssignedWaveCount { get; private set; }
@@ -1456,22 +1463,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             _runtimeUiRoot = _runtimeUiDocument.rootVisualElement;
             _runtimeUiRoot.name = "idle-auto-defense-ui-root";
-            _runtimeUiRoot.style.position = Position.Absolute;
-            _runtimeUiRoot.style.left = 0;
-            _runtimeUiRoot.style.right = 0;
-            _runtimeUiRoot.style.top = 0;
-            _runtimeUiRoot.style.bottom = 0;
+            ApplyRuntimeUiRootStyles(_runtimeUiRoot, PickingMode.Position);
 
             _damageNumberLayer = _runtimeUiRoot.Q<VisualElement>("damage-number-layer");
             if (_damageNumberLayer == null)
             {
                 _damageNumberLayer = new VisualElement { name = "damage-number-layer", pickingMode = PickingMode.Ignore };
-                _damageNumberLayer.style.position = Position.Absolute;
-                _damageNumberLayer.style.left = 0;
-                _damageNumberLayer.style.right = 0;
-                _damageNumberLayer.style.top = 0;
-                _damageNumberLayer.style.bottom = 0;
+                ApplyRuntimeUiRootStyles(_damageNumberLayer, PickingMode.Ignore);
                 _runtimeUiRoot.Add(_damageNumberLayer);
+            }
+            else
+            {
+                ApplyRuntimeUiRootStyles(_damageNumberLayer, PickingMode.Ignore);
             }
 
             return _runtimeUiDocument;
@@ -1491,6 +1494,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             PanelSettings settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.name = "Basic Idle Auto Defense Runtime Panel Settings";
             settings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            settings.referenceResolution = new Vector2Int((int)RuntimeUiFallbackWidth, (int)RuntimeUiFallbackHeight);
             settings.scale = 1f;
             settings.sortingOrder = 100;
             ThemeStyleSheet themeStyleSheet = ResolveRuntimeThemeStyleSheet();
@@ -1506,6 +1510,40 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 settings.themeStyleSheet = themeStyleSheet;
             settings.hideFlags = HideFlags.HideAndDontSave;
             return settings;
+        }
+
+        private static void ApplyRuntimeUiRootStyles(VisualElement element, PickingMode pickingMode)
+        {
+            if (element == null) return;
+            element.pickingMode = pickingMode;
+            element.style.display = DisplayStyle.Flex;
+            element.style.position = Position.Absolute;
+            element.style.left = 0;
+            element.style.right = 0;
+            element.style.top = 0;
+            element.style.bottom = 0;
+            element.style.width = Length.Percent(100);
+            element.style.height = Length.Percent(100);
+            element.style.minWidth = RuntimeUiFallbackWidth;
+            element.style.minHeight = RuntimeUiFallbackHeight;
+            element.style.flexDirection = FlexDirection.Column;
+            element.style.overflow = Overflow.Visible;
+        }
+
+        protected static void ApplyRuntimeUiFont(VisualElement element)
+        {
+            if (element == null) return;
+            Font font = ResolveRuntimeUiFont();
+            if (font != null)
+                element.style.unityFont = font;
+        }
+
+        private static Font ResolveRuntimeUiFont()
+        {
+            Font legacyRuntimeFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (legacyRuntimeFont != null)
+                return legacyRuntimeFont;
+            return Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
         private static ThemeStyleSheet ResolveRuntimeThemeStyleSheet()
@@ -2393,9 +2431,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             var label = new Label(text) { pickingMode = PickingMode.Ignore };
             label.name = "damage-number";
             label.style.position = Position.Absolute;
+            ApplyRuntimeUiFont(label);
             label.style.unityFontStyleAndWeight = FontStyle.Bold;
             label.style.fontSize = 24;
             label.style.color = color;
+            label.style.backgroundColor = new Color(0f, 0f, 0f, 0.28f);
+            label.style.borderTopLeftRadius = 12;
+            label.style.borderTopRightRadius = 12;
+            label.style.borderBottomLeftRadius = 12;
+            label.style.borderBottomRightRadius = 12;
             label.style.unityTextOutlineColor = new Color(0f, 0f, 0f, 0.85f);
             label.style.unityTextOutlineWidth = 2f;
             label.style.width = 90;
@@ -2441,18 +2485,38 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             number.Label.style.top = point.y - 56f - elapsedSeconds * 48f;
         }
 
-        private static Vector2 WorldToRuntimePanelPoint(Vector3 worldPosition)
+        private Vector2 WorldToRuntimePanelPoint(Vector3 worldPosition)
         {
+            Vector2 panelSize = ResolveRuntimePanelSize();
             Camera camera = Camera.main;
             if (camera == null)
                 camera = FindFirstObjectByType<Camera>();
             if (camera == null)
-                return new Vector2(Screen.width * 0.5f, Screen.height * 0.45f);
+                return new Vector2(panelSize.x * 0.5f, panelSize.y * 0.45f);
 
             Vector3 screen = camera.WorldToScreenPoint(worldPosition);
             if (screen.z < 0f)
-                return new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            return new Vector2(screen.x, Screen.height - screen.y);
+                return new Vector2(panelSize.x * 0.5f, panelSize.y * 0.5f);
+
+            float screenWidth = Screen.width > 1 ? Screen.width : panelSize.x;
+            float screenHeight = Screen.height > 1 ? Screen.height : panelSize.y;
+            float x = screenWidth <= 0f ? panelSize.x * 0.5f : screen.x / screenWidth * panelSize.x;
+            float y = screenHeight <= 0f ? panelSize.y * 0.5f : (screenHeight - screen.y) / screenHeight * panelSize.y;
+            return new Vector2(
+                Mathf.Clamp(x, 16f, Mathf.Max(16f, panelSize.x - 16f)),
+                Mathf.Clamp(y, 16f, Mathf.Max(16f, panelSize.y - 16f)));
+        }
+
+        private Vector2 ResolveRuntimePanelSize()
+        {
+            EnsureRuntimeUiDocument();
+            float width = _runtimeUiRoot != null ? _runtimeUiRoot.resolvedStyle.width : 0f;
+            float height = _runtimeUiRoot != null ? _runtimeUiRoot.resolvedStyle.height : 0f;
+            if (float.IsNaN(width) || width <= 1f)
+                width = Screen.width > 1 ? Screen.width : RuntimeUiFallbackWidth;
+            if (float.IsNaN(height) || height <= 1f)
+                height = Screen.height > 1 ? Screen.height : RuntimeUiFallbackHeight;
+            return new Vector2(width, height);
         }
 
         private AudioClip GetFallbackPresentationClip()

@@ -36,6 +36,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private Button _restartButton;
 
         public bool UiToolkitHudReady { get; private set; }
+        public bool UiToolkitHudVisible => _hudRoot != null &&
+            _hudRoot.resolvedStyle.display != DisplayStyle.None &&
+            _hudRoot.resolvedStyle.width > 1f &&
+            _hudRoot.resolvedStyle.height > 1f;
+        public int UiToolkitHudLabelCount => CountHudElements<Label>();
+        public int UiToolkitHudButtonCount => CountHudElements<Button>();
+        public float UiToolkitHudResolvedWidth => _hudRoot == null ? 0f : _hudRoot.resolvedStyle.width;
+        public float UiToolkitHudResolvedHeight => _hudRoot == null ? 0f : _hudRoot.resolvedStyle.height;
 
         protected override void Awake()
         {
@@ -71,16 +79,30 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             VisualElement root = RuntimeUiRoot;
             _hudRoot?.RemoveFromHierarchy();
             _hudRoot = new VisualElement { name = "idle-auto-defense-hud" };
+            _hudRoot.pickingMode = PickingMode.Position;
+            _hudRoot.style.display = DisplayStyle.Flex;
             _hudRoot.style.position = Position.Absolute;
             _hudRoot.style.left = 12;
             _hudRoot.style.top = 12;
-            _hudRoot.style.width = 370;
-            _hudRoot.style.maxWidth = Length.Percent(42);
+            _hudRoot.style.width = 390;
+            _hudRoot.style.minWidth = 340;
+            _hudRoot.style.maxWidth = 430;
+            _hudRoot.style.maxHeight = Length.Percent(96);
+            _hudRoot.style.flexDirection = FlexDirection.Column;
+            _hudRoot.style.overflow = Overflow.Visible;
             _hudRoot.style.paddingLeft = 12;
             _hudRoot.style.paddingRight = 12;
             _hudRoot.style.paddingTop = 10;
             _hudRoot.style.paddingBottom = 10;
-            _hudRoot.style.backgroundColor = new Color(0.04f, 0.05f, 0.06f, 0.86f);
+            _hudRoot.style.backgroundColor = new Color(0.035f, 0.045f, 0.055f, 0.94f);
+            _hudRoot.style.borderTopColor = new Color(0.25f, 0.88f, 1f, 0.95f);
+            _hudRoot.style.borderBottomColor = new Color(0.18f, 0.28f, 0.34f, 0.95f);
+            _hudRoot.style.borderLeftColor = new Color(0.18f, 0.28f, 0.34f, 0.95f);
+            _hudRoot.style.borderRightColor = new Color(0.18f, 0.28f, 0.34f, 0.95f);
+            _hudRoot.style.borderTopWidth = 3;
+            _hudRoot.style.borderBottomWidth = 1;
+            _hudRoot.style.borderLeftWidth = 1;
+            _hudRoot.style.borderRightWidth = 1;
             _hudRoot.style.borderTopLeftRadius = 8;
             _hudRoot.style.borderTopRightRadius = 8;
             _hudRoot.style.borderBottomLeftRadius = 8;
@@ -171,7 +193,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private static VisualElement AddRow(VisualElement parent)
         {
             var row = new VisualElement();
+            row.style.width = Length.Percent(100);
             row.style.flexDirection = FlexDirection.Row;
+            row.style.marginTop = 2;
+            row.style.marginBottom = 2;
             parent.Add(row);
             return row;
         }
@@ -179,9 +204,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private static Label AddLabel(VisualElement parent, string text = "", int fontSize = 13, FontStyle fontStyle = FontStyle.Normal)
         {
             var label = new Label(text);
+            ApplyRuntimeUiFont(label);
             label.style.color = new Color(0.92f, 0.96f, 1f);
             label.style.fontSize = fontSize;
             label.style.unityFontStyleAndWeight = fontStyle;
+            label.style.unityTextAlign = TextAnchor.MiddleLeft;
+            label.style.whiteSpace = WhiteSpace.Normal;
+            label.style.minHeight = Mathf.Max(18, fontSize + 5);
             label.style.marginTop = 1;
             label.style.marginBottom = 1;
             parent.Add(label);
@@ -199,11 +228,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private static Button AddButton(VisualElement parent, Action clicked, string text = "")
         {
             var button = new Button(clicked) { text = text };
-            button.style.height = 28;
+            ApplyRuntimeUiFont(button);
+            button.style.height = 30;
+            button.style.minHeight = 30;
             button.style.marginTop = 2;
             button.style.marginBottom = 2;
+            button.style.marginLeft = 1;
+            button.style.marginRight = 1;
             button.style.flexGrow = 1;
+            button.style.fontSize = 12;
+            button.style.color = Color.white;
             button.style.unityFontStyleAndWeight = FontStyle.Bold;
+            button.style.unityTextAlign = TextAnchor.MiddleCenter;
+            button.style.backgroundColor = new Color(0.12f, 0.23f, 0.30f, 0.98f);
+            button.style.borderTopColor = new Color(0.38f, 0.78f, 0.9f, 1f);
+            button.style.borderBottomColor = new Color(0.05f, 0.12f, 0.16f, 1f);
+            button.style.borderLeftColor = new Color(0.25f, 0.48f, 0.56f, 1f);
+            button.style.borderRightColor = new Color(0.25f, 0.48f, 0.56f, 1f);
+            button.style.borderTopWidth = 1;
+            button.style.borderBottomWidth = 1;
+            button.style.borderLeftWidth = 1;
+            button.style.borderRightWidth = 1;
+            button.style.borderTopLeftRadius = 5;
+            button.style.borderTopRightRadius = 5;
+            button.style.borderBottomLeftRadius = 5;
+            button.style.borderBottomRightRadius = 5;
+            button.style.paddingLeft = 8;
+            button.style.paddingRight = 8;
             parent.Add(button);
             return button;
         }
@@ -212,12 +263,37 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         {
             button.text = label + "  Lv " + rank.ToString(CultureInfo.InvariantCulture) + "  " + cost.ToString(CultureInfo.InvariantCulture);
             button.SetEnabled(enabled);
+            ApplyButtonState(button, enabled, false);
         }
 
         private static void SetModuleButton(Button button, string label, bool unlocked, int cost, bool enabled)
         {
             button.text = label + "  " + (unlocked ? "Unlocked" : cost.ToString(CultureInfo.InvariantCulture));
             button.SetEnabled(enabled);
+            ApplyButtonState(button, enabled, unlocked);
+        }
+
+        private static void ApplyButtonState(Button button, bool enabled, bool complete)
+        {
+            if (button == null) return;
+            button.style.opacity = enabled || complete ? 1f : 0.68f;
+            button.style.color = enabled || complete ? Color.white : new Color(0.76f, 0.82f, 0.86f, 1f);
+            button.style.backgroundColor = complete
+                ? new Color(0.12f, 0.34f, 0.22f, 0.98f)
+                : enabled
+                    ? new Color(0.12f, 0.23f, 0.30f, 0.98f)
+                    : new Color(0.08f, 0.11f, 0.13f, 0.95f);
+            button.style.borderTopColor = complete
+                ? new Color(0.45f, 1f, 0.72f, 1f)
+                : new Color(0.38f, 0.78f, 0.9f, 1f);
+        }
+
+        private int CountHudElements<T>() where T : VisualElement
+        {
+            if (_hudRoot == null) return 0;
+            int count = 0;
+            _hudRoot.Query<T>().ForEach(_ => count++);
+            return count;
         }
     }
 
