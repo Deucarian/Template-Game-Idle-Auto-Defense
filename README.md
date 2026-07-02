@@ -13,7 +13,7 @@ No Unity Package Manager sample import is required. The private template source 
 1. Install the template package.
 2. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game`.
 3. Choose a target folder under `Assets`, a content folder under `Assets/GameContent`, a namespace, and a game prefix.
-4. Open the created scene.
+4. Open `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`.
 5. Press Play.
 
 The generated scene opens into a complete starter loop: a tower in the center, enemies spawning outside view, automatic attacks, currency rewards, buyable upgrades, tower damage, loss state, HUD, save, reset, and restart.
@@ -22,10 +22,13 @@ The generated scene opens into a complete starter loop: a tower in the center, e
 
 The created folder includes:
 
-- `Scenes`: the playable idle auto-defense scene.
 - `Scripts`: a renamed bootstrap and save/reset helper in the chosen namespace.
-- `Prefabs`, `Visuals`, and `Audio`: placeholder assets for replacing the starter look.
+- `Prefabs`, `Visuals`, `Audio`, and `Resources`: placeholder assets for replacing the starter look, including copied Kenney CC0 sample assets.
 - `Docs`: setup report and asset-flip checklist.
+
+The playable scene is generated in a fixed top-level folder so it is easy to find:
+
+- `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`
 
 The authored gameplay data is created separately under `Assets/GameContent/IdleAutoDefense` by default:
 
@@ -51,8 +54,10 @@ TemplateSource~/BasicIdleAutoDefenseGame
 |   |-- Weapons
 |   `-- starter-content.json
 |-- Prefabs
+|-- Resources
+|   `-- Kenney
 |-- Scenes
-|   `-- BasicIdleAutoDefenseGame.unity
+|   `-- OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity
 |-- Scripts
 |   `-- BasicIdleAutoDefenseGameBootstrap.cs
 |-- Visuals
@@ -65,13 +70,15 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace placeholder visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
 
+During play, the sample controller turns kills, wave progress, elite kills, and boss kills into a visible three-choice reward draft. Normal choices unlock or improve owned tower weapons; after three normal investments in a weapon, Epic choices can appear for that weapon, and after three Epic investments a Legendary choice can appear. Keep the authored weapons, attacks, enemies, waves, and starter upgrades under `Assets/GameContent`; use `IdleAutoDefenseRewardDraftSettings` on the generated controller for XP pacing, rarity weights, unlock weighting, progression thresholds, and projectile retarget tolerance. Use the generated controller's reward draft catalog for the actual unlock, normal, Epic, Legendary, and base reward entries.
+
 The starter content intentionally stays generic and reusable:
 
-- 4 enemies
+- 6 enemies, including elite and boss enemies
 - 4 attacks
 - 4 tower weapons
-- 5 spawn profiles
-- 6 upgrades
+- 7 spawn profiles, including authored elite and boss waves
+- 6 authored starter upgrades plus runtime three-choice reward drafts
 
 ## Package Boundary
 

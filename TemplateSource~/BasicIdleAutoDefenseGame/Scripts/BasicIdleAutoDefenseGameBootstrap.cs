@@ -24,6 +24,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private Label _enemyLabel;
         private Label _killLabel;
         private Label _purchaseLabel;
+        private Label _buildLabel;
+        private Label _draftLabel;
+        private Label _choiceFeedbackLabel;
+        private VisualElement _draftOverlay;
+        private VisualElement _draftOverlayPanel;
+        private Label _draftOverlayTitle;
+        private Label _draftOverlaySubtitle;
+        private VisualElement _draftPanel;
+        private readonly Button[] _draftButtons = new Button[3];
         private Label _saveLabel;
         private Label _resultLabel;
         private Button _damageButton;
@@ -33,9 +42,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private Button _pulseButton;
         private Button _arcButton;
         private Button _homingButton;
+        private Button _testLevelRewardButton;
+        private Button _testBossRewardButton;
         private Button _saveButton;
         private Button _resetButton;
         private Button _restartButton;
+        private string _choiceFeedback = string.Empty;
+        private float _choiceFeedbackUntil;
 
         public bool UiToolkitHudReady { get; private set; }
         public bool UiToolkitHudVisible => _hudRoot != null &&
@@ -65,6 +78,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         {
             if (UiToolkitHudReady)
                 RefreshUiToolkitHud();
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            if (!RewardDraftActive) return;
+            if (Input.GetKeyDown(KeyCode.Alpha1)) TryChooseRewardAndRefresh(0);
+            else if (Input.GetKeyDown(KeyCode.Alpha2)) TryChooseRewardAndRefresh(1);
+            else if (Input.GetKeyDown(KeyCode.Alpha3)) TryChooseRewardAndRefresh(2);
         }
 
         private void SaveSnapshot(string reason)
@@ -132,6 +154,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _enemyLabel = AddLabel(_hudRoot);
             _killLabel = AddLabel(_hudRoot);
             _purchaseLabel = AddLabel(_hudRoot);
+            _buildLabel = AddLabel(_hudRoot);
+
+            AddSectionTitle(_hudRoot, "Rewards");
+            _draftLabel = AddLabel(_hudRoot);
+            _choiceFeedbackLabel = AddLabel(_hudRoot, string.Empty, 14, FontStyle.Bold);
 
             AddSectionTitle(_hudRoot, "Upgrades");
             _damageButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseDamageUpgrade));
@@ -143,6 +170,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _pulseButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchasePulseBeamModule));
             _arcButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseArcBurstModule));
             _homingButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseHomingPulseModule));
+
+            AddSectionTitle(_hudRoot, "Test Rewards");
+            VisualElement testRow = AddRow(_hudRoot);
+            _testLevelRewardButton = AddButton(testRow, () => RequestRewardAndRefresh(IdleAutoDefenseRewardDraftKind.LevelUp), "Reward Now");
+            _testBossRewardButton = AddButton(testRow, () => RequestRewardAndRefresh(IdleAutoDefenseRewardDraftKind.BossDefeated), "Boss Reward");
 
             AddSectionTitle(_hudRoot, "Save");
             _saveLabel = AddLabel(_hudRoot);
@@ -159,6 +191,89 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             }, "Restart Run");
 
             UiToolkitHudReady = true;
+            BuildRewardDraftOverlay(root);
+        }
+
+        private void BuildRewardDraftOverlay(VisualElement root)
+        {
+            _draftOverlay?.RemoveFromHierarchy();
+            _draftOverlay = new VisualElement { name = "reward-draft-overlay" };
+            _draftOverlay.pickingMode = PickingMode.Position;
+            _draftOverlay.style.display = DisplayStyle.None;
+            _draftOverlay.style.position = Position.Absolute;
+            _draftOverlay.style.left = 0;
+            _draftOverlay.style.top = 0;
+            _draftOverlay.style.right = 0;
+            _draftOverlay.style.bottom = 0;
+            _draftOverlay.style.flexDirection = FlexDirection.Column;
+            _draftOverlay.style.justifyContent = Justify.Center;
+            _draftOverlay.style.alignItems = Align.Center;
+            _draftOverlay.style.backgroundColor = new Color(0.005f, 0.01f, 0.015f, 0.74f);
+            _draftOverlay.style.paddingLeft = 32;
+            _draftOverlay.style.paddingRight = 32;
+            _draftOverlay.style.paddingTop = 26;
+            _draftOverlay.style.paddingBottom = 26;
+            root.Add(_draftOverlay);
+
+            _draftOverlayPanel = new VisualElement { name = "reward-draft-cards" };
+            _draftOverlayPanel.style.width = Length.Percent(92);
+            _draftOverlayPanel.style.maxWidth = 1060;
+            _draftOverlayPanel.style.minHeight = 390;
+            _draftOverlayPanel.style.flexDirection = FlexDirection.Column;
+            _draftOverlayPanel.style.paddingLeft = 22;
+            _draftOverlayPanel.style.paddingRight = 22;
+            _draftOverlayPanel.style.paddingTop = 18;
+            _draftOverlayPanel.style.paddingBottom = 22;
+            _draftOverlayPanel.style.backgroundColor = new Color(0.035f, 0.045f, 0.06f, 0.98f);
+            _draftOverlayPanel.style.borderTopWidth = 4;
+            _draftOverlayPanel.style.borderBottomWidth = 2;
+            _draftOverlayPanel.style.borderLeftWidth = 2;
+            _draftOverlayPanel.style.borderRightWidth = 2;
+            _draftOverlayPanel.style.borderTopColor = new Color(0.45f, 0.95f, 1f, 1f);
+            _draftOverlayPanel.style.borderBottomColor = new Color(0.12f, 0.24f, 0.30f, 1f);
+            _draftOverlayPanel.style.borderLeftColor = new Color(0.20f, 0.42f, 0.50f, 1f);
+            _draftOverlayPanel.style.borderRightColor = new Color(0.20f, 0.42f, 0.50f, 1f);
+            _draftOverlayPanel.style.borderTopLeftRadius = 10;
+            _draftOverlayPanel.style.borderTopRightRadius = 10;
+            _draftOverlayPanel.style.borderBottomLeftRadius = 10;
+            _draftOverlayPanel.style.borderBottomRightRadius = 10;
+            _draftOverlay.Add(_draftOverlayPanel);
+
+            _draftOverlayTitle = AddLabel(_draftOverlayPanel, "Choose an Upgrade", 30, FontStyle.Bold);
+            _draftOverlayTitle.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _draftOverlayTitle.style.color = new Color(0.78f, 0.96f, 1f, 1f);
+            _draftOverlaySubtitle = AddLabel(_draftOverlayPanel, string.Empty, 16, FontStyle.Bold);
+            _draftOverlaySubtitle.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _draftOverlaySubtitle.style.color = new Color(0.92f, 0.96f, 1f, 1f);
+
+            _draftPanel = new VisualElement { name = "reward-draft-card-row" };
+            _draftPanel.style.flexDirection = FlexDirection.Row;
+            _draftPanel.style.width = Length.Percent(100);
+            _draftPanel.style.marginTop = 18;
+            _draftPanel.style.alignItems = Align.Stretch;
+            _draftOverlayPanel.Add(_draftPanel);
+
+            for (int i = 0; i < _draftButtons.Length; i++)
+            {
+                int index = i;
+                _draftButtons[i] = AddButton(_draftPanel, () => TryChooseRewardAndRefresh(index));
+                _draftButtons[i].name = "reward-card-" + (i + 1).ToString(CultureInfo.InvariantCulture);
+                _draftButtons[i].style.height = 232;
+                _draftButtons[i].style.minHeight = 232;
+                _draftButtons[i].style.flexBasis = 0;
+                _draftButtons[i].style.flexGrow = 1;
+                _draftButtons[i].style.marginLeft = 7;
+                _draftButtons[i].style.marginRight = 7;
+                _draftButtons[i].style.fontSize = 17;
+                _draftButtons[i].style.whiteSpace = WhiteSpace.Normal;
+                _draftButtons[i].style.unityTextAlign = TextAnchor.MiddleLeft;
+                _draftButtons[i].style.paddingLeft = 18;
+                _draftButtons[i].style.paddingRight = 18;
+                _draftButtons[i].style.borderTopWidth = 5;
+                _draftButtons[i].style.borderBottomWidth = 3;
+                _draftButtons[i].style.borderLeftWidth = 3;
+                _draftButtons[i].style.borderRightWidth = 3;
+            }
         }
 
         private void RefreshUiToolkitHud()
@@ -179,6 +294,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
                 "  Projectiles: " + ProjectileLaunchCount.ToString(CultureInfo.InvariantCulture);
             _purchaseLabel.text = "Purchases: " + SelectedUpgradeCount.ToString(CultureInfo.InvariantCulture) +
                 "  Modules: " + UnlockedModuleCount.ToString(CultureInfo.InvariantCulture) + "/4  Tower Hits: " + ObjectiveDamageEvents.ToString(CultureInfo.InvariantCulture);
+            _buildLabel.text = "Build: Shard Launcher" +
+                (PulseBeamUnlocked ? " + Pulse Beam" : string.Empty) +
+                (ArcBurstUnlocked ? " + Arc Burst" : string.Empty) +
+                (HomingPulseUnlocked ? " + Homing Pulse" : string.Empty) +
+                "  Level " + CommanderLevel.ToString(CultureInfo.InvariantCulture) +
+                "  Drafts " + RewardDraftSelectionCount.ToString(CultureInfo.InvariantCulture);
+            bool showFeedback = !string.IsNullOrEmpty(_choiceFeedback) && Time.realtimeSinceStartup < _choiceFeedbackUntil;
+            _choiceFeedbackLabel.text = showFeedback ? _choiceFeedback : string.Empty;
+            _choiceFeedbackLabel.style.display = showFeedback ? DisplayStyle.Flex : DisplayStyle.None;
+            _choiceFeedbackLabel.style.color = new Color(1f, 0.88f, 0.35f, 1f);
+            RefreshRewardDraftPanel();
 
             SetUpgradeButton(_damageButton, "Damage", DamageUpgradeRank, DamageUpgradeCost, CanPurchaseDamageUpgrade);
             SetUpgradeButton(_attackSpeedButton, "Fire Rate", AttackSpeedUpgradeRank, AttackSpeedUpgradeCost, CanPurchaseAttackSpeedUpgrade);
@@ -188,6 +314,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             SetModuleButton(_pulseButton, "Pulse Beam", PulseBeamUnlocked, PulseBeamUnlockCost, CanPurchasePulseBeamModule);
             SetModuleButton(_arcButton, "Arc Burst", ArcBurstUnlocked, ArcBurstUnlockCost, CanPurchaseArcBurstModule);
             SetModuleButton(_homingButton, "Homing Pulse", HomingPulseUnlocked, HomingPulseUnlockCost, CanPurchaseHomingPulseModule);
+            _testLevelRewardButton.SetEnabled(!RewardDraftActive);
+            _testBossRewardButton.SetEnabled(!RewardDraftActive);
 
             _saveLabel.text = "Save: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty);
             _saveButton.SetEnabled(true);
@@ -203,6 +331,71 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         {
             purchase?.Invoke();
             RefreshUiToolkitHud();
+        }
+
+        private void TryChooseRewardAndRefresh(int choiceIndex)
+        {
+            string selectedName = RewardDraftActive && choiceIndex >= 0 && choiceIndex < RewardDraftChoices.Count
+                ? RewardDraftChoices[choiceIndex].DisplayName
+                : string.Empty;
+            if (TryChooseRewardDraftChoice(choiceIndex))
+            {
+                _choiceFeedback = "Selected: " + selectedName;
+                _choiceFeedbackUntil = Time.realtimeSinceStartup + 3.5f;
+            }
+
+            RefreshUiToolkitHud();
+        }
+
+        private void RequestRewardAndRefresh(IdleAutoDefenseRewardDraftKind kind)
+        {
+            RequestRewardDraft(kind);
+            RefreshUiToolkitHud();
+        }
+
+        private void RefreshRewardDraftPanel()
+        {
+            if (_draftLabel == null || _draftOverlay == null || _draftPanel == null) return;
+            bool active = RewardDraftActive;
+            _draftLabel.text = active
+                ? "REWARD READY: choose 1 / 2 / 3 or click a card"
+                : "Level " + CommanderLevel.ToString(CultureInfo.InvariantCulture) +
+                  "  XP " + CommanderExperience.ToString(CultureInfo.InvariantCulture) + "/" + ExperienceToNextLevel.ToString(CultureInfo.InvariantCulture);
+            _draftOverlay.style.display = active ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_draftOverlayTitle != null)
+                _draftOverlayTitle.text = active ? ActiveRewardDraftKindName + " Reward" : "Choose an Upgrade";
+            if (_draftOverlaySubtitle != null)
+                _draftOverlaySubtitle.text = "Level " + CommanderLevel.ToString(CultureInfo.InvariantCulture) +
+                    "  XP " + CommanderExperience.ToString(CultureInfo.InvariantCulture) + "/" + ExperienceToNextLevel.ToString(CultureInfo.InvariantCulture) +
+                    (active ? "  -  Click a card or press 1 / 2 / 3" : string.Empty);
+            for (int i = 0; i < _draftButtons.Length; i++)
+            {
+                Button button = _draftButtons[i];
+                if (button == null) continue;
+                if (!active || i >= RewardDraftChoices.Count)
+                {
+                    button.style.display = DisplayStyle.None;
+                    button.SetEnabled(false);
+                    continue;
+                }
+
+                IdleAutoDefenseRewardDraftChoice choice = RewardDraftChoices[i];
+                button.style.display = DisplayStyle.Flex;
+                button.text = choice.HotkeyLabel + "\n" +
+                    choice.RarityName.ToUpperInvariant() + "  -  " + choice.TypeName + "\n\n" +
+                    choice.DisplayName + "\n" +
+                    choice.TargetName + "\n\n" +
+                    choice.EffectDescription;
+                button.SetEnabled(true);
+                Color rarityColor = ResolveRarityColor(choice.Rarity);
+                button.style.backgroundColor = new Color(rarityColor.r * 0.18f, rarityColor.g * 0.18f, rarityColor.b * 0.18f, 0.98f);
+                button.style.borderTopColor = rarityColor;
+                button.style.borderBottomColor = rarityColor;
+                button.style.borderLeftColor = rarityColor;
+                button.style.borderRightColor = rarityColor;
+                button.style.color = Color.white;
+                button.style.opacity = 1f;
+            }
         }
 
         private static VisualElement AddRow(VisualElement parent)
@@ -318,6 +511,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             button.style.borderTopColor = complete
                 ? new Color(0.45f, 1f, 0.72f, 1f)
                 : new Color(0.38f, 0.78f, 0.9f, 1f);
+        }
+
+        private static Color ResolveRarityColor(IdleAutoDefenseRewardRarity rarity)
+        {
+            if (rarity == IdleAutoDefenseRewardRarity.Legendary) return new Color(1f, 0.78f, 0.16f, 1f);
+            if (rarity == IdleAutoDefenseRewardRarity.Epic) return new Color(0.78f, 0.42f, 1f, 1f);
+            if (rarity == IdleAutoDefenseRewardRarity.Rare) return new Color(0.25f, 0.65f, 1f, 1f);
+            if (rarity == IdleAutoDefenseRewardRarity.Uncommon) return new Color(0.35f, 1f, 0.55f, 1f);
+            return new Color(0.92f, 0.96f, 1f, 1f);
         }
 
         private int CountHudElements<T>() where T : VisualElement

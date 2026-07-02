@@ -14,7 +14,7 @@ Create the product-owned game folder from the template:
 Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game
 ```
 
-Choose a target folder under `Assets`, a content folder under `Assets/GameContent`, a C# namespace, and a game prefix. The wizard copies scene files, scripts, docs, visuals, and audio into the target folder, copies authored gameplay data into the content folder, remaps copied asset GUIDs across both roots, renames the bootstrap script, opens the created scene if requested, and writes `Docs/setup-report.md`.
+Choose a target folder under `Assets`, a content folder under `Assets/GameContent`, a C# namespace, and a game prefix. The wizard copies scripts, docs, visuals, audio, and runtime resources into the target folder, copies authored gameplay data into the content folder, creates the playable scene at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`, remaps copied asset GUIDs across the generated roots, renames the bootstrap script, opens the created scene if requested, and writes `Docs/setup-report.md`.
 
 Troubleshooting:
 

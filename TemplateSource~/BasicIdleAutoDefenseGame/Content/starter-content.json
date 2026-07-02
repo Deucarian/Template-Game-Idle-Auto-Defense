@@ -3,24 +3,30 @@
   "contentSet": "contentset.template.basic-idle-auto-defense",
   "objective": {
     "id": "template-core",
-    "maximumHealth": 42,
-    "lives": 4,
+    "maximumHealth": 80,
+    "lives": 30,
     "contactRadius": 0.45
   },
   "spawnRing": {
-    "radius": 9,
+    "radius": 13.5,
     "channels": [
       "perimeter-north",
+      "perimeter-northeast",
       "perimeter-east",
+      "perimeter-southeast",
       "perimeter-south",
-      "perimeter-west"
+      "perimeter-southwest",
+      "perimeter-west",
+      "perimeter-northwest"
     ]
   },
   "enemies": [
     "enemy.template.swarm",
     "enemy.template.runner",
     "enemy.template.tank",
-    "enemy.template.shielded"
+    "enemy.template.shielded",
+    "enemy.template.elite",
+    "enemy.template.boss"
   ],
   "attacks": [
     "attack.template.pulse-cannon",
@@ -39,7 +45,9 @@
     "wave.template.authored.runner-pressure",
     "wave.template.authored.pressure",
     "wave.template.authored.surge",
-    "wave.template.authored.final"
+    "wave.template.authored.elite",
+    "wave.template.authored.final",
+    "wave.template.authored.boss"
   ],
   "upgrades": [
     "upgrade.template.authored.damage-up",

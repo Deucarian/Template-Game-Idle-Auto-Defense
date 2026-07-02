@@ -5,10 +5,10 @@ It contains the authored assets consumed by the generated scene:
 
 - `ContentPacks` owns the starter pack.
 - `ContentSets` owns the playable run recipe.
-- `Enemies` contains four generic enemy definitions: Swarm, Runner, Tank, and Shielded.
+- `Enemies` contains six generic enemy definitions: Swarm, Runner, Tank, Shielded, Elite, and Boss.
 - `Attacks` contains four generic attack recipes: Pulse Beam, Shard Projectile, Arc Burst, and Homing Pulse.
 - `Weapons` contains four tower weapon definitions paired with those attacks.
-- `Waves` contains five spawn profiles: Opening Wave, Runner Pressure, Mixed Pressure, Tank Break, and Final Surge.
+- `Waves` contains seven spawn profiles: Opening Wave, Runner Pressure, Mixed Pressure, Tank Break, Elite Pressure, Final Surge, and Boss Push.
 - `Upgrades` contains six run upgrades: Damage Boost, Fire Rate Boost, Range Boost, Projectile Speed, Core Reinforcement, and Credit Reward.
 - `starter-content.json` mirrors those IDs for quick inspection.
 

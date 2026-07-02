@@ -19,10 +19,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     public sealed class IdleAutoDefenseTemplateSetupRequest
     {
-        public string TargetRootAssetPath = "Assets/Games/MyIdleAutoDefense";
+        public string TargetRootAssetPath = "Assets/IdleAutoDefense";
         public string ContentRootAssetPath = "Assets/GameContent/IdleAutoDefense";
-        public string GameNamespace = "MyCompany.MyIdleAutoDefense";
-        public string GamePrefix = "MyIdle";
+        public string GameNamespace = "IdleAutoDefenseGame";
+        public string GamePrefix = "Basic";
         public bool AllowOverwrite;
         public bool OpenCreatedScene;
         public bool RefreshAssetDatabase = true;
@@ -63,7 +63,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             if (Status == IdleAutoDefenseTemplateSetupStatus.BlockedByExistingFiles)
-                return "Setup blocked because existing files would be overwritten. Enable overwrite only after reviewing the target and content folders.";
+                return "Setup blocked because existing files would be overwritten. Enable overwrite only after reviewing the target and content folders." +
+                    "\nBlocked files:\n" + string.Join("\n", BlockedFiles);
 
             return Messages.Count == 0 ? "Setup failed." : string.Join("\n", Messages);
         }
@@ -72,7 +73,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
     public static class IdleAutoDefenseTemplateSetupService
     {
         private const string TemplateSourceFolderName = "BasicIdleAutoDefenseGame";
-        private const string SampleSceneName = "BasicIdleAutoDefenseGame.unity";
+        private const string SampleSceneName = "OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity";
+        private const string VisibleSceneRootAssetPath = "Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame";
         private const string SampleScriptName = "BasicIdleAutoDefenseGameBootstrap.cs";
         private const string SampleBootstrapClass = "BasicIdleAutoDefenseGameBootstrap";
         private const string SampleSaveClass = "BasicIdleAutoDefenseSampleSave";
@@ -115,7 +117,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 string sourceRoot = FindTemplateSourceRoot();
                 string className = prefix + "IdleAutoDefenseGameBootstrap";
                 string saveClassName = prefix + "IdleAutoDefenseSave";
-                string sceneAssetPath = targetRoot + "/Scenes/" + prefix + "IdleAutoDefense.unity";
+                string sceneAssetPath = VisibleSceneRootAssetPath + "/" + SampleSceneName;
                 string reportAssetPath = targetRoot + "/Docs/setup-report.md";
                 result.CreatedSceneAssetPath = sceneAssetPath;
                 result.SetupReportAssetPath = reportAssetPath;
@@ -132,6 +134,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"), true, guidMap);
                 AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Visuals"), Path.Combine(targetFullRoot, "Visuals"), true, guidMap);
                 AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Audio"), Path.Combine(targetFullRoot, "Audio"), true, guidMap);
+                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Resources"), Path.Combine(targetFullRoot, "Resources"), true, guidMap);
+                string packageRoot = Directory.GetParent(Directory.GetParent(sourceRoot).FullName).FullName;
+                string thirdPartyNoticesPath = Path.Combine(packageRoot, "ThirdPartyNotices.md");
+                if (FileExists(thirdPartyNoticesPath))
+                {
+                    AddTextOperation(
+                        operations,
+                        Path.Combine(targetFullRoot, "Docs", "ThirdPartyNotices.md"),
+                        ReadAllText(thirdPartyNoticesPath));
+                }
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "README.md"),
@@ -178,8 +190,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 CreateDirectory(targetFullRoot, result);
                 CreateDirectory(contentFullRoot, result);
                 CreateDirectory(Path.Combine(targetFullRoot, "Scripts"), result);
-                CreateDirectory(Path.Combine(targetFullRoot, "Scenes"), result);
                 CreateDirectory(Path.Combine(targetFullRoot, "Docs"), result);
+                CreateDirectory(AssetPathToFullPath(VisibleSceneRootAssetPath), result);
 
                 for (int i = 0; i < operations.Count; i++)
                 {
@@ -193,8 +205,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 result.Status = IdleAutoDefenseTemplateSetupStatus.Succeeded;
                 result.AddMessage("Created product-owned Idle Auto Defense starter folder.");
                 string generatedBootstrapTypeName = gameNamespace + "." + className;
-                if (request.OpenCreatedScene && request.RefreshAssetDatabase && !string.IsNullOrEmpty(sceneAssetPath))
-                    IdleAutoDefenseGeneratedSceneOpenQueue.Queue(sceneAssetPath, contentRoot, generatedBootstrapTypeName);
                 if (request.RefreshAssetDatabase) AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 if (request.OpenCreatedScene && !string.IsNullOrEmpty(sceneAssetPath) && !request.RefreshAssetDatabase)
                     EditorSceneManager.OpenScene(sceneAssetPath);
@@ -787,10 +797,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     public sealed class IdleAutoDefenseTemplateSetupWizardWindow : EditorWindow
     {
-        private string _targetRoot = "Assets/Games/MyIdleAutoDefense";
+        private string _targetRoot = "Assets/IdleAutoDefense";
         private string _contentRoot = "Assets/GameContent/IdleAutoDefense";
-        private string _gameNamespace = "MyCompany.MyIdleAutoDefense";
-        private string _gamePrefix = "MyIdle";
+        private string _gameNamespace = "IdleAutoDefenseGame";
+        private string _gamePrefix = "Basic";
         private bool _openScene = true;
         private bool _allowOverwrite;
         private string _lastSummary = string.Empty;
@@ -821,7 +831,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             _allowOverwrite = EditorGUILayout.Toggle("Allow overwrite", _allowOverwrite);
 
             EditorGUILayout.HelpBox(
-                "Creates a playable product-owned scene with authored content under Assets/GameContent, prefabs, visuals, and a bootstrap script. Deucarian package source stays in packages.",
+                "Creates a visible playable scene under Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame, authored content under Assets/GameContent, and product-owned scripts, resources, visuals, audio, and docs under the target root. Deucarian package source stays in packages.",
                 MessageType.Info);
 
             if (GUILayout.Button("Create Playable Game"))

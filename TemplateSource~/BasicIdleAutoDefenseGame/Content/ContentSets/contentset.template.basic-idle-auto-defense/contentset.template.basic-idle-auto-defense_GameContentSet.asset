@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: contentset.template.basic-idle-auto-defense
   _displayName: Basic Idle Auto Defense Content Set
   _description: Playable generated-game starter round with four generic attacks,
-    four enemies, five spawn profiles, six upgrades, and starter placeholder VFX,
+    six enemies, seven spawn profiles, six upgrades, and starter placeholder VFX,
     icons, and audio.
   _icon: {fileID: 21300000, guid: 030ed80cce432184ea60781e960c5cb5, type: 3}
   _banner: {fileID: 2800000, guid: 251693a7ff26afe44ae62250f856b7a1, type: 3}
@@ -30,12 +30,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
   - {fileID: 11400000, guid: e22bfeeb5c23be44c8e41a8e66cd779b, type: 2}
   - {fileID: 11400000, guid: 4602ef84828b8e24cafb0c6f599eef6b, type: 2}
+  - {fileID: 11400000, guid: d26d6941ca7242cb908816ba9502bf24, type: 2}
+  - {fileID: 11400000, guid: ef25c56e691d497fb84075ca427989b8, type: 2}
   _waveSet:
   - {fileID: 11400000, guid: 139ea81c2ca6259408bcf0527b568e74, type: 2}
   - {fileID: 11400000, guid: 9bfe6c935b0d4599b65986b90fca9e3a, type: 2}
   - {fileID: 11400000, guid: 5d70da8f6532ba943864e8ceae03d767, type: 2}
   - {fileID: 11400000, guid: df211f7653b74b708cb8648b4c0d0c21, type: 2}
+  - {fileID: 11400000, guid: d0b884e8b4a74e4eac54796e5003f919, type: 2}
   - {fileID: 11400000, guid: 03d0c000098e49699eb86ed1176892d4, type: 2}
+  - {fileID: 11400000, guid: 7df0e750dfab40b28145ffcbd4951cdb, type: 2}
   _upgradePool:
   - {fileID: 11400000, guid: 08b80f10347264245903e41ac6b98210, type: 2}
   - {fileID: 11400000, guid: e390eddb27da0c84c8224c67756aeac5, type: 2}
@@ -47,7 +51,7 @@ MonoBehaviour:
   _startingParts: 1
   _rewardMultiplier: 1.1
   _difficultyMultiplier: 1
-  _sessionLengthTicks: 620
+  _sessionLengthTicks: 980
   _endless: 0
   _tags:
   - idle-auto-defense

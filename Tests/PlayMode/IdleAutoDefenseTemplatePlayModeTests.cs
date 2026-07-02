@@ -17,7 +17,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
 
-            for (int i = 0; i < 1200; i++)
+            for (int i = 0; i < 2200; i++)
             {
                 BuyAvailableLivePurchases(controller);
                 controller.Step(1, 0.05f);
@@ -30,12 +30,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0));
             Assert.That(controller.ProjectileVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ProjectileMotionObservedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ProjectileDamageAppliedCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.DamageNumberSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
             Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
+            Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.RewardDraftSelectionCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
             Assert.True(controller.PulseBeamUnlocked, "Smoke should unlock Pulse Beam.");
             Assert.True(controller.ArcBurstUnlocked, "Smoke should unlock Arc Burst.");
@@ -71,8 +74,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             GameObject host = new GameObject("idle-auto-defense-template-no-upgrade-smoke");
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
+            controller.RewardDraftPausesCombat = false;
 
-            for (int i = 0; i < 1200; i++)
+            for (int i = 0; i < 2200; i++)
             {
                 controller.Step(1, 0.05f);
                 if (controller.EncounterCompleted || controller.EncounterFailed)
@@ -130,14 +134,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 
         private static void BuyAvailableLivePurchases(IdleAutoDefenseTemplateController controller)
         {
+            if (controller.RewardDraftActive)
+                controller.TryChooseRewardDraftChoice(0);
             if (controller.CanPurchasePulseBeamModule) controller.TryPurchasePulseBeamModule();
-            if (controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();
-            if (controller.CanPurchaseAttackSpeedUpgrade) controller.TryPurchaseAttackSpeedUpgrade();
             if (controller.CanPurchaseArcBurstModule) controller.TryPurchaseArcBurstModule();
-            if (controller.CanPurchaseRangeUpgrade) controller.TryPurchaseRangeUpgrade();
             if (controller.CanPurchaseHomingPulseModule) controller.TryPurchaseHomingPulseModule();
+
+            if (!controller.PulseBeamUnlocked || !controller.ArcBurstUnlocked || !controller.HomingPulseUnlocked)
+            {
+                if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.55d && controller.CanPurchaseRepairUpgrade)
+                    controller.TryPurchaseRepairUpgrade();
+                return;
+            }
+
             if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
                 controller.TryPurchaseRepairUpgrade();
+            if (controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();
+            if (controller.CanPurchaseAttackSpeedUpgrade) controller.TryPurchaseAttackSpeedUpgrade();
+            if (controller.CanPurchaseRangeUpgrade) controller.TryPurchaseRangeUpgrade();
         }
 
         private sealed class RuntimeUiProbeController : IdleAutoDefenseTemplateController

@@ -15,8 +15,8 @@ MonoBehaviour:
   _fireMode: 0
   _attack: {fileID: 11400000, guid: ff5db2c8adfb0cb448612621e6e0b615, type: 2}
   _projectileDefinitionId:
-  _cooldownTicks: 46
-  _range: 3.75
+  _cooldownTicks: 62
+  _range: 4.25
   _burstCount: 1
   _volleyCount: 1
   _spreadDegrees: 0
