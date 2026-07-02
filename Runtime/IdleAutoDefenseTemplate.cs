@@ -1448,6 +1448,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject _projectilePrefab;
         private GameObject _root;
         private readonly Dictionary<string, GameObject> _runtimeEnemyPrefabs = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, GameObject> _runtimeProjectilePrefabs = new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
         private ProjectileDefinition[] _resolvedProjectileDefinitions = Array.Empty<ProjectileDefinition>();
         private readonly List<PendingProjectileImpact> _pendingProjectileImpacts = new List<PendingProjectileImpact>();
         private readonly HashSet<long> _seenEnemyIds = new HashSet<long>();
@@ -1471,6 +1472,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private AudioSource _runtimeAudioSource;
         private AudioClip _fallbackPresentationClip;
         private bool _fallbackPresentationClipIsRuntimeOwned;
+        private Camera _shakeCamera;
+        private Vector3 _shakeCameraBaseLocalPosition;
+        private bool _shakeCameraBaseCaptured;
+        private float _cameraShakeSecondsRemaining;
+        private float _cameraShakeDuration;
+        private float _cameraShakeMagnitude;
         private MonetizationSession _monetizationSession;
         private int _manualTowerCooldownTicks;
         private int _passiveIncomeTicks;
@@ -1993,6 +2000,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (RewardDraftActive && RewardDraftPausesCombat)
             {
                 UpdateDamageNumbers(deltaSeconds);
+                UpdateCameraShake(deltaSeconds);
                 return;
             }
 
@@ -2016,7 +2024,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (result.ReachedObjective > 0)
             {
                 ObjectiveDamageEvents += result.ReachedObjective;
-                EmitDamageNumber(CreateTowerMuzzlePosition(Vector3.zero), result.ReachedObjective, new Color(1f, 0.25f, 0.18f), "-");
+                Vector3 towerImpactPosition = CreateTowerMuzzlePosition(Vector3.zero);
+                EmitDamageNumber(towerImpactPosition, result.ReachedObjective, new Color(1f, 0.25f, 0.18f), "-");
+                EmitKenneySpriteBurst("Tower Damage Burst", "Art/impact_flame", towerImpactPosition, new Color(1f, 0.18f, 0.08f), 1.1f, 0.46f, 0.25f, 52);
+                TriggerCameraShake(0.2f, 0.13f);
             }
             AutoDefenseRuntimeSnapshot afterCombat = _runtime.CreateSnapshot();
             ObserveEnemyPressure(afterCombat);
@@ -2060,6 +2071,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AwardExperienceForCompletedWaves();
             ApplyEncounterRewardIfTerminal();
             UpdateDamageNumbers(deltaSeconds);
+            UpdateCameraShake(deltaSeconds);
         }
 
         public bool TryPurchaseDamageUpgrade()
@@ -2733,6 +2745,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void RecordEnemyDefeatedForRewards(AutoDefenseEnemySnapshot enemy)
         {
             if (enemy.Id <= 0 || !_rewardedEnemyDefeatIds.Add(enemy.Id)) return;
+            EmitKenneySpriteBurst("Credit Pickup Burst", "Art/currency_coin_gold", CreateEnemyAimPosition(enemy.Position), new Color(1f, 0.88f, 0.18f), 0.62f, 0.72f, 0.72f, 65);
             if (IsBossEnemy(enemy))
             {
                 AddCommanderExperience(RewardDraftSettings.BossEnemyExperience);
@@ -3060,19 +3073,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EnemyDefinitionAsset definition = FindEnemyDefinitionForPresentation(enemy.SpawnableId);
             bool emittedVfx = false;
             bool emittedAudio = false;
+            Vector3 position = CreateEnemyAimPosition(enemy.Position);
             if (definition != null &&
                 definition.Presentation != null &&
                 definition.Presentation.TryGetEvent(eventKind, out EnemyPresentationEventRecipe recipe))
             {
-                Vector3 position = CreateEnemyAimPosition(enemy.Position);
                 emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position);
                 emittedAudio = PlayPresentationAudio(recipe.AudioClip);
             }
 
             if (!emittedVfx)
-                EmitFallbackPresentationVfx(CreateEnemyAimPosition(enemy.Position), ResolveEnemyEventColor(eventKind), 0.34f);
+                EmitFallbackPresentationVfx(position, ResolveEnemyEventColor(eventKind), 0.34f);
             if (!emittedAudio)
                 PlayPresentationAudio(null);
+            EmitKenneyEnemyEventBurst(position, eventKind);
         }
 
         private void EmitAttackEvent(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind, Vector3 eventPosition)
@@ -3092,6 +3106,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 EmitFallbackPresentationVfx(eventPosition, ResolveAttackColor(attack), ResolveAttackEventScale(eventKind));
             if (!emittedAudio && eventKind != AttackPresentationEventKind.OnTick)
                 PlayPresentationAudio(null);
+            EmitKenneyAttackEventBurst(attack, eventKind, eventPosition);
         }
 
         private bool EmitPresentationVfx(GameObject prefab, Vector3 position)
@@ -3117,6 +3132,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void EmitFallbackPresentationVfx(Vector3 position, Color color, float scale)
         {
             if (_root == null) return;
+            if (EmitKenneySpriteBurst("Kenney Presentation Burst", "Art/impact_flame", position, color, Mathf.Max(0.45f, scale * 1.8f), 0.42f, 0.18f, 50))
+            {
+                AttackVfxSpawnCount++;
+                return;
+            }
+
             GameObject instance = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             instance.name = "Template Presentation VFX";
             instance.transform.SetParent(_root.transform, false);
@@ -3137,15 +3158,75 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             line.positionCount = 2;
             line.SetPosition(0, origin);
             line.SetPosition(1, destination);
-            line.startWidth = 0.07f;
-            line.endWidth = 0.02f;
+            line.startWidth = 0.12f;
+            line.endWidth = 0.035f;
             Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Standard");
             if (shader != null)
                 line.material = new Material(shader) { color = color };
             line.startColor = color;
             line.endColor = new Color(color.r, color.g, color.b, 0.2f);
             AttackVfxSpawnCount++;
-            DestroyPresentationObject(tracer, 0.2f);
+            DestroyPresentationObject(tracer, 0.32f);
+        }
+
+        private void EmitKenneyEnemyEventBurst(Vector3 position, EnemyPresentationEventKind eventKind)
+        {
+            if (eventKind == EnemyPresentationEventKind.OnSpawn)
+            {
+                EmitKenneySpriteBurst("Enemy Spawn Ring", "Art/build_pad_target", position + Vector3.down * 0.25f, new Color(0.35f, 1f, 0.55f, 0.9f), 0.72f, 0.36f, 0.05f, 18);
+                return;
+            }
+
+            if (eventKind == EnemyPresentationEventKind.OnHit)
+            {
+                EmitKenneySpriteBurst("Enemy Hit Spark", "Art/impact_flame", position, new Color(1f, 0.92f, 0.22f), 0.52f, 0.34f, 0.18f, 60);
+                TriggerCameraShake(0.045f, 0.025f);
+                return;
+            }
+
+            if (eventKind == EnemyPresentationEventKind.OnDeath)
+            {
+                EmitKenneySpriteBurst("Enemy Death Pop", "Art/impact_flame", position, new Color(1f, 0.24f, 0.08f), 1.08f, 0.58f, 0.42f, 62);
+                TriggerCameraShake(0.12f, 0.065f);
+            }
+        }
+
+        private void EmitKenneyAttackEventBurst(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind, Vector3 eventPosition)
+        {
+            Color color = ResolveAttackColor(attack);
+            if (eventKind == AttackPresentationEventKind.OnFire)
+            {
+                EmitKenneySpriteBurst("Muzzle Flash", "Art/impact_flame", CreateTowerMuzzlePosition(Vector3.zero), color, 0.45f, 0.26f, 0.1f, 58);
+                return;
+            }
+
+            if (eventKind == AttackPresentationEventKind.OnImpact)
+            {
+                EmitKenneySpriteBurst("Attack Impact Pop", "Art/impact_flame", eventPosition, color, 0.72f, 0.42f, 0.2f, 61);
+                TriggerCameraShake(0.06f, 0.035f);
+            }
+        }
+
+        private bool EmitKenneySpriteBurst(string name, string artPath, Vector3 position, Color color, float scale, float duration, float rise, int sortingOrder)
+        {
+            if (_root == null || string.IsNullOrWhiteSpace(artPath)) return false;
+            Sprite sprite = Resources.Load<Sprite>(KenneyResourceRoot + artPath);
+            if (sprite == null) return false;
+
+            GameObject instance = new GameObject(name);
+            instance.transform.SetParent(_root.transform, false);
+            instance.transform.position = position;
+            instance.transform.localScale = Vector3.one * Mathf.Max(0.05f, scale);
+            SpriteRenderer renderer = instance.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.color = color;
+            renderer.sortingOrder = sortingOrder;
+            var billboard = instance.AddComponent<KenneyBillboardVisual>();
+            billboard.Configure(true);
+            var burst = instance.AddComponent<KenneySpriteBurstVisual>();
+            burst.Configure(renderer, Mathf.Max(0.1f, duration), Mathf.Max(0f, rise), instance.transform.localScale);
+            DestroyPresentationObject(instance, Mathf.Max(0.12f, duration) + 0.08f);
+            return true;
         }
 
         private bool PlayPresentationAudio(AudioClip clip)
@@ -3276,6 +3357,63 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new Vector2(
                 Mathf.Clamp(x, 16f, Mathf.Max(16f, panelSize.x - 16f)),
                 Mathf.Clamp(y, 16f, Mathf.Max(16f, panelSize.y - 16f)));
+        }
+
+        private void TriggerCameraShake(float durationSeconds, float magnitude)
+        {
+            if (durationSeconds <= 0f || magnitude <= 0f) return;
+            _cameraShakeSecondsRemaining = Mathf.Max(_cameraShakeSecondsRemaining, durationSeconds);
+            _cameraShakeDuration = Mathf.Max(_cameraShakeDuration, durationSeconds);
+            _cameraShakeMagnitude = Mathf.Max(_cameraShakeMagnitude, magnitude);
+        }
+
+        private void UpdateCameraShake(float deltaSeconds)
+        {
+            if (_cameraShakeSecondsRemaining <= 0f)
+            {
+                RestoreShakenCamera();
+                return;
+            }
+
+            Camera camera = ResolveShakeCamera();
+            if (camera == null) return;
+            float safeDelta = Mathf.Max(0.016f, deltaSeconds);
+            _cameraShakeSecondsRemaining = Mathf.Max(0f, _cameraShakeSecondsRemaining - safeDelta);
+            float duration = Mathf.Max(0.001f, _cameraShakeDuration);
+            float normalized = Mathf.Clamp01(_cameraShakeSecondsRemaining / duration);
+            float magnitude = _cameraShakeMagnitude * normalized * normalized;
+            float phase = SurvivalSeconds * 58.7f + _cameraShakeSecondsRemaining * 19.3f;
+            Vector3 offset = new Vector3(
+                Mathf.Sin(phase) * magnitude,
+                Mathf.Cos(phase * 0.7f) * magnitude * 0.35f,
+                Mathf.Sin(phase * 1.37f) * magnitude * 0.45f);
+            camera.transform.localPosition = _shakeCameraBaseLocalPosition + offset;
+            if (_cameraShakeSecondsRemaining <= 0f)
+            {
+                _cameraShakeMagnitude = 0f;
+                _cameraShakeDuration = 0f;
+                RestoreShakenCamera();
+            }
+        }
+
+        private Camera ResolveShakeCamera()
+        {
+            if (_shakeCamera == null)
+                _shakeCamera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+            if (_shakeCamera == null) return null;
+            if (!_shakeCameraBaseCaptured)
+            {
+                _shakeCameraBaseLocalPosition = _shakeCamera.transform.localPosition;
+                _shakeCameraBaseCaptured = true;
+            }
+
+            return _shakeCamera;
+        }
+
+        private void RestoreShakenCamera()
+        {
+            if (_shakeCamera == null || !_shakeCameraBaseCaptured) return;
+            _shakeCamera.transform.localPosition = _shakeCameraBaseLocalPosition;
         }
 
         private Vector2 ResolveRuntimePanelSize()
@@ -3453,9 +3591,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject GetProjectilePrefab(ProjectileDefinition definition)
         {
             AttackDefinitionAsset attack = FindAttackRecipeForProjectile(definition);
-            if (attack != null && attack.Delivery != null && attack.Delivery.ProjectilePrefab != null)
-                return attack.Delivery.ProjectilePrefab;
-            return _projectilePrefab;
+            string key = definition == null || definition.Id.IsEmpty ? "projectile.default" : definition.Id.Value;
+            if (_runtimeProjectilePrefabs.TryGetValue(key, out GameObject cached) && cached != null)
+                return cached;
+
+            GameObject authoredPrefab = attack != null && attack.Delivery != null ? attack.Delivery.ProjectilePrefab : null;
+            Color color = ResolveAttackColor(attack);
+            GameObject prefab = CreateRuntimeVisualPrefab(
+                "Kenney Projectile Runtime Prefab " + key,
+                authoredPrefab ?? _projectilePrefab,
+                PrimitiveType.Sphere,
+                color,
+                "Art/projectile_rocket",
+                new Vector3(0f, 0f, -0.02f),
+                new Vector3(0.72f, 0.72f, 1f),
+                true,
+                35);
+            _runtimeProjectilePrefabs[key] = prefab;
+            return prefab;
         }
 
         private static int CalculateProjectileImpactDelayTicks(Vector3 origin, Vector3 destination, float speed)
@@ -3531,6 +3684,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
             for (int i = 0; i < colliders.Length; i++)
                 colliders[i].enabled = false;
+        }
+
+        private static void HideMeshRenderers(GameObject instance)
+        {
+            if (instance == null) return;
+            MeshRenderer[] renderers = instance.GetComponentsInChildren<MeshRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+                renderers[i].enabled = false;
         }
 
         private static void DestroyPresentationObject(GameObject instance, float delaySeconds)
@@ -3918,8 +4079,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private GameObject GetEnemyPrefab(EnemyDefinitionAsset enemy)
         {
-            if (enemy != null && enemy.Presentation != null && enemy.Presentation.Prefab != null)
-                return enemy.Presentation.Prefab;
             string id = enemy == null ? string.Empty : enemy.Id;
             if (string.IsNullOrWhiteSpace(id)) return _enemyPrefab;
             if (_runtimeEnemyPrefabs.TryGetValue(id, out GameObject cached) && cached != null)
@@ -3928,7 +4087,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             string artPath = ResolveEnemyKenneyArtPath(id);
             Color color = ResolveEnemyFallbackColor(id);
             Vector3 spriteScale = ResolveEnemySpriteScale(id);
-            GameObject prefab = CreatePrefab("Template Idle Enemy Runtime Prefab " + id, PrimitiveType.Capsule, color, artPath, spriteScale);
+            GameObject authoredPrefab = enemy != null && enemy.Presentation != null ? enemy.Presentation.Prefab : null;
+            GameObject prefab = CreateRuntimeVisualPrefab(
+                "Kenney Enemy Runtime Prefab " + id,
+                authoredPrefab ?? _enemyPrefab,
+                PrimitiveType.Capsule,
+                color,
+                artPath,
+                new Vector3(0f, 0.62f, -0.08f),
+                spriteScale,
+                false,
+                24);
             _runtimeEnemyPrefabs[id] = prefab;
             return prefab;
         }
@@ -3951,7 +4120,32 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             GameObject prefab = GameObject.CreatePrimitive(primitiveType);
             prefab.name = name;
             ApplyColor(prefab, color);
-            AttachKenneySprite(prefab, kenneyArtPath, false, new Vector3(0f, 0.55f, -0.06f), spriteScale ?? Vector3.one);
+            if (AttachKenneySprite(prefab, kenneyArtPath, false, new Vector3(0f, 0.55f, -0.06f), spriteScale ?? Vector3.one))
+                HideMeshRenderers(prefab);
+            prefab.SetActive(false);
+            return prefab;
+        }
+
+        private GameObject CreateRuntimeVisualPrefab(string name, GameObject sourcePrefab, PrimitiveType fallbackPrimitive, Color color, string kenneyArtPath, Vector3 spriteLocalPosition, Vector3 spriteScale, bool projectile, int sortingOrder)
+        {
+            GameObject prefab = sourcePrefab != null
+                ? Instantiate(sourcePrefab)
+                : GameObject.CreatePrimitive(fallbackPrimitive);
+            prefab.name = name;
+            prefab.transform.SetParent(_root != null ? _root.transform : null, false);
+            prefab.transform.localPosition = Vector3.zero;
+            prefab.transform.localRotation = Quaternion.identity;
+            prefab.transform.localScale = Vector3.one;
+            if (sourcePrefab == null)
+                ApplyColor(prefab, color);
+
+            DisableColliders(prefab);
+            bool attachedSprite = prefab.GetComponentInChildren<SpriteRenderer>(true) != null ||
+                AttachKenneySprite(prefab, kenneyArtPath, false, spriteLocalPosition, spriteScale, sortingOrder);
+            if (attachedSprite)
+                HideMeshRenderers(prefab);
+            if (projectile)
+                AddProjectileTrail(prefab, color);
             prefab.SetActive(false);
             return prefab;
         }
@@ -3964,7 +4158,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             instance.transform.position = position;
             instance.transform.localScale = scale;
             ApplyColor(instance, color);
-            AttachKenneySprite(instance, kenneyArtPath, groundSprite, spriteLocalPosition ?? Vector3.zero, spriteScale ?? Vector3.one);
+            if (AttachKenneySprite(instance, kenneyArtPath, groundSprite, spriteLocalPosition ?? Vector3.zero, spriteScale ?? Vector3.one))
+                HideMeshRenderers(instance);
             Collider collider = instance.GetComponent<Collider>();
             if (collider != null) collider.enabled = false;
             return instance;
@@ -3996,7 +4191,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreatePrimitive("West Dirt Approach", PrimitiveType.Cube, new Vector3(-10.2f, -0.135f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
         }
 
-        private static bool AttachKenneySprite(GameObject instance, string artPath, bool groundSprite, Vector3 localPosition, Vector3 localScale)
+        private static bool AttachKenneySprite(GameObject instance, string artPath, bool groundSprite, Vector3 localPosition, Vector3 localScale, int sortingOrder = 20)
         {
             if (instance == null || string.IsNullOrWhiteSpace(artPath)) return false;
             Sprite sprite = Resources.Load<Sprite>(KenneyResourceRoot + artPath);
@@ -4014,8 +4209,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             spriteObject.transform.localScale = localScale;
             SpriteRenderer renderer = spriteObject.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
-            renderer.sortingOrder = groundSprite ? -20 : 20;
+            renderer.sortingOrder = groundSprite ? -20 : sortingOrder;
+            if (!groundSprite)
+            {
+                var billboard = spriteObject.AddComponent<KenneyBillboardVisual>();
+                billboard.Configure(true);
+            }
+
             return true;
+        }
+
+        private static void AddProjectileTrail(GameObject instance, Color color)
+        {
+            if (instance == null) return;
+            TrailRenderer trail = instance.GetComponentInChildren<TrailRenderer>(true);
+            if (trail == null)
+                trail = instance.AddComponent<TrailRenderer>();
+            trail.time = 0.32f;
+            trail.startWidth = 0.22f;
+            trail.endWidth = 0.02f;
+            trail.minVertexDistance = 0.03f;
+            trail.autodestruct = false;
+            trail.emitting = true;
+            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Standard");
+            if (shader != null)
+                trail.sharedMaterial = new Material(shader) { color = color };
+            trail.startColor = new Color(color.r, color.g, color.b, 0.88f);
+            trail.endColor = new Color(color.r, color.g, color.b, 0f);
         }
 
         private static string ResolveEnemyKenneyArtPath(string enemyId)
@@ -4166,6 +4386,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _rewardDamageMultiplierBonus = 0d;
             _minimumEnemySpawnDistance = float.MaxValue;
             _closestEnemyDistanceToObjective = float.MaxValue;
+            _cameraShakeSecondsRemaining = 0f;
+            _cameraShakeDuration = 0f;
+            _cameraShakeMagnitude = 0f;
             ClearDamageNumbers();
         }
 
@@ -4183,7 +4406,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _projectileSpawning?.Dispose();
                 foreach (GameObject prefab in _runtimeEnemyPrefabs.Values)
                     DestroyTemplateObject(prefab);
+                foreach (GameObject prefab in _runtimeProjectilePrefabs.Values)
+                    DestroyTemplateObject(prefab);
                 _runtimeEnemyPrefabs.Clear();
+                _runtimeProjectilePrefabs.Clear();
                 DestroyTemplateObject(_enemyPrefab);
                 DestroyTemplateObject(_projectilePrefab);
                 if (_fallbackPresentationClipIsRuntimeOwned)
@@ -4201,6 +4427,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _enemySpawning = null;
             _projectileSpawning = null;
             _runtimeEnemyPrefabs.Clear();
+            _runtimeProjectilePrefabs.Clear();
             _enemyPrefab = null;
             _projectilePrefab = null;
             _root = null;
@@ -4228,6 +4455,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _baseRewardRanks.Clear();
             _lastProjectileAgentPositions.Clear();
             _rewardDraftChoices = Array.Empty<IdleAutoDefenseRewardDraftChoice>();
+            RestoreShakenCamera();
+            _shakeCamera = null;
+            _shakeCameraBaseCaptured = false;
+            _cameraShakeSecondsRemaining = 0f;
+            _cameraShakeDuration = 0f;
+            _cameraShakeMagnitude = 0f;
             ClearDamageNumbers();
         }
 
@@ -4236,6 +4469,63 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < _damageNumbers.Count; i++)
                 _damageNumbers[i].Label?.RemoveFromHierarchy();
             _damageNumbers.Clear();
+        }
+
+        private sealed class KenneyBillboardVisual : MonoBehaviour
+        {
+            private bool _enabledBillboard;
+
+            public void Configure(bool enabledBillboard)
+            {
+                _enabledBillboard = enabledBillboard;
+            }
+
+            private void LateUpdate()
+            {
+                if (!_enabledBillboard) return;
+                Camera camera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+                if (camera == null) return;
+                Vector3 direction = transform.position - camera.transform.position;
+                if (direction.sqrMagnitude <= 0.0001f) return;
+                transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            }
+        }
+
+        private sealed class KenneySpriteBurstVisual : MonoBehaviour
+        {
+            private SpriteRenderer _renderer;
+            private Vector3 _startScale;
+            private Color _startColor;
+            private float _duration;
+            private float _rise;
+            private float _elapsed;
+
+            public void Configure(SpriteRenderer renderer, float duration, float rise, Vector3 startScale)
+            {
+                _renderer = renderer;
+                _duration = Mathf.Max(0.1f, duration);
+                _rise = Mathf.Max(0f, rise);
+                _startScale = startScale;
+                _startColor = renderer != null ? renderer.color : Color.white;
+            }
+
+            private void Update()
+            {
+                _elapsed += Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
+                float t = Mathf.Clamp01(_elapsed / Mathf.Max(0.1f, _duration));
+                float punch = 1f + Mathf.Sin(t * Mathf.PI) * 0.55f;
+                transform.localScale = _startScale * punch;
+                transform.position += Vector3.up * (_rise * Time.deltaTime / Mathf.Max(0.1f, _duration));
+                if (_renderer != null)
+                {
+                    Color color = _startColor;
+                    color.a *= Mathf.Clamp01(1f - t);
+                    _renderer.color = color;
+                }
+
+                if (t >= 1f)
+                    Destroy(gameObject);
+            }
         }
 
         private sealed class TemplateJitteredPerimeterPoseResolver : IAutoDefensePoseResolver, ISpawnPoseResolver

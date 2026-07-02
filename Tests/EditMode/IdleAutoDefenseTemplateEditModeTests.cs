@@ -1549,6 +1549,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "PanelScaleMode.ScaleWithScreenSize");
             AssertFileContains(runtimePath, "settings.sortingOrder = 32767");
             AssertFileContains(runtimePath, "settings.clearColor = false");
+            AssertFileContains(runtimePath, "CreateRuntimeVisualPrefab");
+            AssertFileContains(runtimePath, "AttachKenneySprite");
+            AssertFileContains(runtimePath, "HideMeshRenderers");
+            AssertFileContains(runtimePath, "AddProjectileTrail");
+            AssertFileContains(runtimePath, "EmitKenneySpriteBurst");
+            AssertFileContains(runtimePath, "TriggerCameraShake");
+            AssertFileContains(runtimePath, "Art/impact_flame");
+            AssertFileContains(runtimePath, "Art/currency_coin_gold");
             AssertFileDoesNotContain(runtimePath, "ScriptableObject.CreateInstance<ThemeStyleSheet>()");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"));
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"), "unity-theme://default");
