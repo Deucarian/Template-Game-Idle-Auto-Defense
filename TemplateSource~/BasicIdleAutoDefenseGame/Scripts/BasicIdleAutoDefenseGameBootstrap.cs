@@ -3,86 +3,220 @@ using System.Globalization;
 using System.IO;
 using Deucarian.TemplateGameIdleAutoDefense;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.Samples
 {
     public sealed class BasicIdleAutoDefenseGameBootstrap : IdleAutoDefenseTemplateController
     {
-        private const float HudWidth = 360f;
         [SerializeField] private GameContentPackAsset _templateContentPack;
         [SerializeField] private GameContentSetAsset _templateContentSet;
         private string _saveStatus = "No snapshot saved";
+        private VisualElement _hudRoot;
+        private Label _stateLabel;
+        private Label _healthLabel;
+        private Label _currencyLabel;
+        private Label _rewardLabel;
+        private Label _timeLabel;
+        private Label _waveLabel;
+        private Label _enemyLabel;
+        private Label _killLabel;
+        private Label _purchaseLabel;
+        private Label _saveLabel;
+        private Label _resultLabel;
+        private Button _damageButton;
+        private Button _attackSpeedButton;
+        private Button _rangeButton;
+        private Button _repairButton;
+        private Button _pulseButton;
+        private Button _arcButton;
+        private Button _homingButton;
+        private Button _saveButton;
+        private Button _resetButton;
+        private Button _restartButton;
+
+        public bool UiToolkitHudReady { get; private set; }
 
         protected override void Awake()
         {
             ConfigureContentPack(_templateContentPack, _templateContentSet);
             base.Awake();
+            BuildUiToolkitHud();
+            RefreshUiToolkitHud();
         }
 
-        private void OnGUI()
+        private void LateUpdate()
         {
-            GUILayout.BeginArea(new Rect(12f, 12f, HudWidth, 500f), GUI.skin.box);
-            GUILayout.Label("Idle Auto Defense");
-            GUILayout.Label("State: " + RuntimeStateName);
-            GUILayout.Label("Tower HP: " + ObjectiveHealthText + "  Lives: " + ObjectiveLivesRemaining);
-            GUILayout.Label("Runtime Credits: " + RuntimeCurrency);
-            GUILayout.Label("Progression Credits: " + EncounterRewardCredits + "  Parts: " + EncounterRewardParts);
-            GUILayout.Label("Time: " + SurvivalSeconds.ToString("0", CultureInfo.InvariantCulture) + "s");
-            GUILayout.Label("Spawn Profile: " + CurrentSpawnProfileName);
-            GUILayout.Label("Enemies: " + ActiveEnemyCount + " active / " + SpawnedCount + " spawned");
-            GUILayout.Label("Kills: " + (DirectOrCombatKillCount + ProjectileAdapterKillCount) + "  Projectiles: " + ProjectileLaunchCount);
-            GUILayout.Label("Purchases: " + SelectedUpgradeCount + "  Modules: " + UnlockedModuleCount + "/4  Objective Hits: " + ObjectiveDamageEvents);
-            GUILayout.Space(4f);
-            GUILayout.Label("Upgrades");
-            DrawUpgradeButton("Damage", DamageUpgradeRank, DamageUpgradeCost, CanPurchaseDamageUpgrade, TryPurchaseDamageUpgrade);
-            DrawUpgradeButton("Attack Speed", AttackSpeedUpgradeRank, AttackSpeedUpgradeCost, CanPurchaseAttackSpeedUpgrade, TryPurchaseAttackSpeedUpgrade);
-            DrawUpgradeButton("Range", RangeUpgradeRank, RangeUpgradeCost, CanPurchaseRangeUpgrade, TryPurchaseRangeUpgrade);
-            DrawUpgradeButton("Repair / Max HP", RepairUpgradeRank, RepairUpgradeCost, CanPurchaseRepairUpgrade, TryPurchaseRepairUpgrade);
-            GUILayout.Space(4f);
-            GUILayout.Label("Modules");
-            DrawModuleButton("Pulse Beam", PulseBeamUnlocked, PulseBeamUnlockCost, CanPurchasePulseBeamModule, TryPurchasePulseBeamModule);
-            DrawModuleButton("Arc Burst", ArcBurstUnlocked, ArcBurstUnlockCost, CanPurchaseArcBurstModule, TryPurchaseArcBurstModule);
-            DrawModuleButton("Homing Pulse", HomingPulseUnlocked, HomingPulseUnlockCost, CanPurchaseHomingPulseModule, TryPurchaseHomingPulseModule);
-            GUILayout.Space(4f);
-            GUILayout.Label("Save: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty));
-            if (GUILayout.Button("Save Snapshot")) SaveSnapshot("manual");
-            if (GUILayout.Button("Reset Save")) ResetSave();
-            GUILayout.Space(4f);
-            if (EncounterCompleted) GUILayout.Label("Run complete");
-            else if (EncounterFailed) GUILayout.Label("Tower destroyed");
-            if ((EncounterCompleted || EncounterFailed) && GUILayout.Button("Restart Run")) RestartRun();
-            GUILayout.EndArea();
+            if (UiToolkitHudReady)
+                RefreshUiToolkitHud();
         }
 
         private void SaveSnapshot(string reason)
         {
             BasicIdleAutoDefenseSampleSave.WriteSnapshot(reason, this);
             _saveStatus = "Saved " + DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+            RefreshUiToolkitHud();
         }
 
         private void ResetSave()
         {
             bool existed = BasicIdleAutoDefenseSampleSave.Reset();
             _saveStatus = existed ? "Reset saved snapshot" : "No snapshot to reset";
+            RefreshUiToolkitHud();
         }
 
-        private static void DrawUpgradeButton(string label, int rank, int cost, bool enabled, Func<bool> purchase)
+        private void BuildUiToolkitHud()
         {
-            bool wasEnabled = GUI.enabled;
-            GUI.enabled = enabled;
-            if (GUILayout.Button(label + "  Lv " + rank.ToString(CultureInfo.InvariantCulture) + "  " + cost.ToString(CultureInfo.InvariantCulture)))
-                purchase?.Invoke();
-            GUI.enabled = wasEnabled;
+            VisualElement root = RuntimeUiRoot;
+            _hudRoot?.RemoveFromHierarchy();
+            _hudRoot = new VisualElement { name = "idle-auto-defense-hud" };
+            _hudRoot.style.position = Position.Absolute;
+            _hudRoot.style.left = 12;
+            _hudRoot.style.top = 12;
+            _hudRoot.style.width = 370;
+            _hudRoot.style.maxWidth = Length.Percent(42);
+            _hudRoot.style.paddingLeft = 12;
+            _hudRoot.style.paddingRight = 12;
+            _hudRoot.style.paddingTop = 10;
+            _hudRoot.style.paddingBottom = 10;
+            _hudRoot.style.backgroundColor = new Color(0.04f, 0.05f, 0.06f, 0.86f);
+            _hudRoot.style.borderTopLeftRadius = 8;
+            _hudRoot.style.borderTopRightRadius = 8;
+            _hudRoot.style.borderBottomLeftRadius = 8;
+            _hudRoot.style.borderBottomRightRadius = 8;
+            root.Insert(0, _hudRoot);
+
+            Label title = AddLabel(_hudRoot, "Idle Auto Defense", 22, FontStyle.Bold);
+            title.style.marginBottom = 6;
+            _stateLabel = AddLabel(_hudRoot);
+            _healthLabel = AddLabel(_hudRoot);
+            _currencyLabel = AddLabel(_hudRoot);
+            _rewardLabel = AddLabel(_hudRoot);
+            _timeLabel = AddLabel(_hudRoot);
+            _waveLabel = AddLabel(_hudRoot);
+            _enemyLabel = AddLabel(_hudRoot);
+            _killLabel = AddLabel(_hudRoot);
+            _purchaseLabel = AddLabel(_hudRoot);
+
+            AddSectionTitle(_hudRoot, "Upgrades");
+            _damageButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseDamageUpgrade));
+            _attackSpeedButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseAttackSpeedUpgrade));
+            _rangeButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseRangeUpgrade));
+            _repairButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseRepairUpgrade));
+
+            AddSectionTitle(_hudRoot, "Modules");
+            _pulseButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchasePulseBeamModule));
+            _arcButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseArcBurstModule));
+            _homingButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseHomingPulseModule));
+
+            AddSectionTitle(_hudRoot, "Save");
+            _saveLabel = AddLabel(_hudRoot);
+            VisualElement saveRow = AddRow(_hudRoot);
+            _saveButton = AddButton(saveRow, () => SaveSnapshot("manual"), "Save Snapshot");
+            _resetButton = AddButton(saveRow, ResetSave, "Reset Save");
+
+            _resultLabel = AddLabel(_hudRoot, string.Empty, 16, FontStyle.Bold);
+            _resultLabel.style.marginTop = 8;
+            _restartButton = AddButton(_hudRoot, () =>
+            {
+                RestartRun();
+                RefreshUiToolkitHud();
+            }, "Restart Run");
+
+            UiToolkitHudReady = true;
         }
 
-        private static void DrawModuleButton(string label, bool unlocked, int cost, bool enabled, Func<bool> purchase)
+        private void RefreshUiToolkitHud()
         {
-            bool wasEnabled = GUI.enabled;
-            GUI.enabled = enabled;
-            string state = unlocked ? "Unlocked" : cost.ToString(CultureInfo.InvariantCulture);
-            if (GUILayout.Button(label + "  " + state))
-                purchase?.Invoke();
-            GUI.enabled = wasEnabled;
+            if (_hudRoot == null) return;
+
+            _stateLabel.text = "State: " + RuntimeStateName;
+            _healthLabel.text = "Tower HP: " + ObjectiveHealthText + "  Lives: " + ObjectiveLivesRemaining;
+            _currencyLabel.text = "Credits: " + RuntimeCurrency.ToString(CultureInfo.InvariantCulture);
+            _rewardLabel.text = "Banked: " + EncounterRewardCredits.ToString(CultureInfo.InvariantCulture) + " credits / " + EncounterRewardParts.ToString(CultureInfo.InvariantCulture) + " parts";
+            _timeLabel.text = "Time: " + SurvivalSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
+            _waveLabel.text = "Wave: " + CurrentSpawnProfileName;
+            _enemyLabel.text = "Enemies: " + ActiveEnemyCount + " active / " + SpawnedCount + " spawned";
+            _killLabel.text = "Kills: " + (DirectOrCombatKillCount + ProjectileAdapterKillCount).ToString(CultureInfo.InvariantCulture) +
+                "  Projectiles: " + ProjectileLaunchCount.ToString(CultureInfo.InvariantCulture);
+            _purchaseLabel.text = "Purchases: " + SelectedUpgradeCount.ToString(CultureInfo.InvariantCulture) +
+                "  Modules: " + UnlockedModuleCount.ToString(CultureInfo.InvariantCulture) + "/4  Tower Hits: " + ObjectiveDamageEvents.ToString(CultureInfo.InvariantCulture);
+
+            SetUpgradeButton(_damageButton, "Damage", DamageUpgradeRank, DamageUpgradeCost, CanPurchaseDamageUpgrade);
+            SetUpgradeButton(_attackSpeedButton, "Fire Rate", AttackSpeedUpgradeRank, AttackSpeedUpgradeCost, CanPurchaseAttackSpeedUpgrade);
+            SetUpgradeButton(_rangeButton, "Range", RangeUpgradeRank, RangeUpgradeCost, CanPurchaseRangeUpgrade);
+            SetUpgradeButton(_repairButton, "Repair / Max HP", RepairUpgradeRank, RepairUpgradeCost, CanPurchaseRepairUpgrade);
+
+            SetModuleButton(_pulseButton, "Pulse Beam", PulseBeamUnlocked, PulseBeamUnlockCost, CanPurchasePulseBeamModule);
+            SetModuleButton(_arcButton, "Arc Burst", ArcBurstUnlocked, ArcBurstUnlockCost, CanPurchaseArcBurstModule);
+            SetModuleButton(_homingButton, "Homing Pulse", HomingPulseUnlocked, HomingPulseUnlockCost, CanPurchaseHomingPulseModule);
+
+            _saveLabel.text = "Save: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty);
+            _saveButton.SetEnabled(true);
+            _resetButton.SetEnabled(true);
+
+            bool terminal = EncounterCompleted || EncounterFailed;
+            _resultLabel.text = EncounterCompleted ? "Run complete" : EncounterFailed ? "Tower destroyed" : string.Empty;
+            _resultLabel.style.display = terminal ? DisplayStyle.Flex : DisplayStyle.None;
+            _restartButton.style.display = terminal ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void TryPurchaseAndRefresh(Func<bool> purchase)
+        {
+            purchase?.Invoke();
+            RefreshUiToolkitHud();
+        }
+
+        private static VisualElement AddRow(VisualElement parent)
+        {
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            parent.Add(row);
+            return row;
+        }
+
+        private static Label AddLabel(VisualElement parent, string text = "", int fontSize = 13, FontStyle fontStyle = FontStyle.Normal)
+        {
+            var label = new Label(text);
+            label.style.color = new Color(0.92f, 0.96f, 1f);
+            label.style.fontSize = fontSize;
+            label.style.unityFontStyleAndWeight = fontStyle;
+            label.style.marginTop = 1;
+            label.style.marginBottom = 1;
+            parent.Add(label);
+            return label;
+        }
+
+        private static void AddSectionTitle(VisualElement parent, string text)
+        {
+            Label label = AddLabel(parent, text, 14, FontStyle.Bold);
+            label.style.marginTop = 8;
+            label.style.marginBottom = 3;
+            label.style.color = new Color(0.65f, 0.9f, 1f);
+        }
+
+        private static Button AddButton(VisualElement parent, Action clicked, string text = "")
+        {
+            var button = new Button(clicked) { text = text };
+            button.style.height = 28;
+            button.style.marginTop = 2;
+            button.style.marginBottom = 2;
+            button.style.flexGrow = 1;
+            button.style.unityFontStyleAndWeight = FontStyle.Bold;
+            parent.Add(button);
+            return button;
+        }
+
+        private static void SetUpgradeButton(Button button, string label, int rank, int cost, bool enabled)
+        {
+            button.text = label + "  Lv " + rank.ToString(CultureInfo.InvariantCulture) + "  " + cost.ToString(CultureInfo.InvariantCulture);
+            button.SetEnabled(enabled);
+        }
+
+        private static void SetModuleButton(Button button, string label, bool unlocked, int cost, bool enabled)
+        {
+            button.text = label + "  " + (unlocked ? "Unlocked" : cost.ToString(CultureInfo.InvariantCulture));
+            button.SetEnabled(enabled);
         }
     }
 

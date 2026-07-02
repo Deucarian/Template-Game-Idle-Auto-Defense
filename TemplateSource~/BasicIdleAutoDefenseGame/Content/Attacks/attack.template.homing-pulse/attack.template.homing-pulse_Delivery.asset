@@ -16,7 +16,7 @@ MonoBehaviour:
   _projectileDefinitionId: projectile.template.homing-pulse
   _projectileSpawnableId: projectile.template.homing-pulse
   _projectilePrefab: {fileID: 7966618697552162373, guid: d81a2052a085f494aaade0afc4f5fc21, type: 3}
-  _projectileSpeed: 6.5
+  _projectileSpeed: 5.5
   _projectileLifetimeTicks: 150
   _homing: 1
   _homingTurnRate: 180

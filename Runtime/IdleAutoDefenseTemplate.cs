@@ -20,6 +20,7 @@ using Deucarian.WeaponSystems.Authoring;
 using Deucarian.WorldNavigation;
 using Deucarian.WorldSpawning;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Deucarian.TemplateGameIdleAutoDefense
 {
@@ -312,7 +313,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Shard Launcher",
                     WeaponFireMode.Projectile,
                     shard,
-                    13,
+                    20,
                     5.25f,
                     ShardProjectileId.Value,
                     buildCost: 35,
@@ -323,7 +324,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Pulse Beam",
                     WeaponFireMode.DirectAttack,
                     pulse,
-                    7,
+                    28,
                     4.75f,
                     buildCost: 25,
                     upgradeGroupId: "upgrade.group.template.pulse",
@@ -333,7 +334,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Arc Burst Module",
                     WeaponFireMode.DirectAttack,
                     arc,
-                    24,
+                    46,
                     3.75f,
                     buildCost: 65,
                     upgradeGroupId: "upgrade.group.template.arc",
@@ -343,7 +344,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Homing Pulse Module",
                     WeaponFireMode.Projectile,
                     homing,
-                    15,
+                    34,
                     4.5f,
                     HomingPulseProjectileId.Value,
                     buildCost: 55,
@@ -691,7 +692,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     AttackRecipeTargetingMode.Strongest,
                     projectileDefinitionId: ShardProjectileId.Value,
                     projectileSpawnableId: ProjectileSpawnableId.Value,
-                    projectileSpeed: 8f,
+                    projectileSpeed: 6f,
                     projectileLifetimeTicks: 120,
                     pierceCount: 0),
                 AttackDefinitionAsset.CreateTransient(
@@ -714,7 +715,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     AttackRecipeTargetingMode.LowestHealth,
                     projectileDefinitionId: HomingPulseProjectileId.Value,
                     projectileSpawnableId: HomingPulseProjectileId.Value,
-                    projectileSpeed: 6.5f,
+                    projectileSpeed: 5.5f,
                     projectileLifetimeTicks: 120,
                     homing: true,
                     pierceCount: 1)
@@ -1270,8 +1271,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const long DefaultRuntimeStartingCredits = 60;
         private const long KillRewardCredits = 6;
         private const int PassiveIncomeIntervalTicks = 90;
-        private const int ManualTowerBaseCooldownTicks = 18;
-        private const int ManualTowerMinimumCooldownTicks = 5;
+        private const int ManualTowerBaseCooldownTicks = 20;
+        private const int ManualTowerMinimumCooldownTicks = 12;
         private const double ManualTowerBaseDamage = 4d;
         private const double ManualTowerDamageRankBonus = 4d;
         private const double ManualTowerRangeRankBonus = 1d;
@@ -1280,9 +1281,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const int PulseBeamModuleUnlockCost = 30;
         private const int ArcBurstModuleUnlockCost = 40;
         private const int HomingPulseModuleUnlockCost = 35;
-        private const int PulseBeamModuleCooldownTicks = 10;
-        private const int ArcBurstModuleCooldownTicks = 24;
-        private const int HomingPulseModuleCooldownTicks = 15;
+        private const int PulseBeamModuleCooldownTicks = 28;
+        private const int ArcBurstModuleCooldownTicks = 46;
+        private const int HomingPulseModuleCooldownTicks = 34;
         private const int MinimumProjectileImpactDelayTicks = 8;
         private const int MaximumProjectileImpactDelayTicks = 36;
         private AutoDefenseRuntime _runtime;
@@ -1319,9 +1320,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private readonly List<PendingProjectileImpact> _pendingProjectileImpacts = new List<PendingProjectileImpact>();
         private readonly HashSet<long> _seenEnemyIds = new HashSet<long>();
         private readonly HashSet<long> _enemyDeathPresentationIds = new HashSet<long>();
+        private readonly List<DamageNumberView> _damageNumbers = new List<DamageNumberView>();
+        private readonly Dictionary<long, Vector3> _lastProjectileAgentPositions = new Dictionary<long, Vector3>();
+        private UIDocument _runtimeUiDocument;
+        private PanelSettings _runtimePanelSettings;
+        private GameObject _runtimeUiObject;
+        private VisualElement _runtimeUiRoot;
+        private VisualElement _damageNumberLayer;
         private AudioSource _runtimeAudioSource;
         private AudioClip _fallbackPresentationClip;
-        private bool _terminalStateLogged;
         private MonetizationSession _monetizationSession;
         private int _manualTowerCooldownTicks;
         private int _passiveIncomeTicks;
@@ -1342,9 +1349,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int ProjectileLaunchCount { get; private set; }
         public int ProjectileAdapterKillCount { get; private set; }
         public int ProjectileVisualSpawnCount { get; private set; }
+        public int AuthoredProjectileVisualSpawnCount { get; private set; }
+        public int ProjectileMotionObservedCount { get; private set; }
         public int AttackVfxSpawnCount { get; private set; }
         public int AttackAudioPlayCount { get; private set; }
         public int EnemyPresentationEventCount { get; private set; }
+        public int DamageNumberSpawnCount { get; private set; }
         public int InvalidAssignedRecipeCount { get; private set; }
         public int InvalidAssignedEnemyCount { get; private set; }
         public int InvalidAssignedWaveCount { get; private set; }
@@ -1425,6 +1435,67 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             Build();
         }
 
+        protected UIDocument EnsureRuntimeUiDocument()
+        {
+            if (_runtimeUiDocument != null && _runtimeUiRoot != null && _damageNumberLayer != null)
+                return _runtimeUiDocument;
+
+            if (_runtimeUiObject == null)
+            {
+                _runtimeUiObject = new GameObject("Basic Idle Auto Defense UI");
+                if (_root != null)
+                    _runtimeUiObject.transform.SetParent(_root.transform, false);
+            }
+
+            _runtimePanelSettings ??= CreateRuntimePanelSettings();
+            _runtimeUiDocument = _runtimeUiObject.GetComponent<UIDocument>();
+            if (_runtimeUiDocument == null)
+                _runtimeUiDocument = _runtimeUiObject.AddComponent<UIDocument>();
+            _runtimeUiDocument.panelSettings = _runtimePanelSettings;
+
+            _runtimeUiRoot = _runtimeUiDocument.rootVisualElement;
+            _runtimeUiRoot.name = "idle-auto-defense-ui-root";
+            _runtimeUiRoot.style.position = Position.Absolute;
+            _runtimeUiRoot.style.left = 0;
+            _runtimeUiRoot.style.right = 0;
+            _runtimeUiRoot.style.top = 0;
+            _runtimeUiRoot.style.bottom = 0;
+
+            _damageNumberLayer = _runtimeUiRoot.Q<VisualElement>("damage-number-layer");
+            if (_damageNumberLayer == null)
+            {
+                _damageNumberLayer = new VisualElement { name = "damage-number-layer", pickingMode = PickingMode.Ignore };
+                _damageNumberLayer.style.position = Position.Absolute;
+                _damageNumberLayer.style.left = 0;
+                _damageNumberLayer.style.right = 0;
+                _damageNumberLayer.style.top = 0;
+                _damageNumberLayer.style.bottom = 0;
+                _runtimeUiRoot.Add(_damageNumberLayer);
+            }
+
+            return _runtimeUiDocument;
+        }
+
+        protected VisualElement RuntimeUiRoot
+        {
+            get
+            {
+                EnsureRuntimeUiDocument();
+                return _runtimeUiRoot;
+            }
+        }
+
+        private static PanelSettings CreateRuntimePanelSettings()
+        {
+            PanelSettings settings = ScriptableObject.CreateInstance<PanelSettings>();
+            settings.name = "Basic Idle Auto Defense Runtime Panel Settings";
+            settings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            settings.scale = 1f;
+            settings.sortingOrder = 100;
+            settings.hideFlags = HideFlags.HideAndDontSave;
+            return settings;
+        }
+
         protected void ConfigureContentPack(GameContentPackAsset contentPack, GameContentSetAsset contentSet)
         {
             _contentPack = contentPack;
@@ -1464,6 +1535,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _runtimeAudioSource.playOnAwake = false;
             _runtimeAudioSource.spatialBlend = 0f;
             _runtimeAudioSource.volume = 0.75f;
+            EnsureRuntimeUiDocument();
             CreatePrimitive("Player Tower", PrimitiveType.Cylinder, definition.Objective.Position, new Vector3(0.8f, 0.9f, 0.8f), Color.cyan);
             CreatePlayAreaMarkers();
 
@@ -1508,7 +1580,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             RuntimeCurrency = ResolveRuntimeStartingCredits(_resolvedContentSet);
 
             _runtime.Start();
-            Debug.Log("[Idle Auto Defense Template] Starter scene built. Open the Game view to watch the player tower and spawned enemies.");
         }
 
         public void RestartRun()
@@ -1658,7 +1729,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DirectOrCombatKillCount += result.Killed;
             int rewardedKills = result.Killed;
             ObjectiveReachCount += result.ReachedObjective;
-            if (result.ReachedObjective > 0) ObjectiveDamageEvents += result.ReachedObjective;
+            if (result.ReachedObjective > 0)
+            {
+                ObjectiveDamageEvents += result.ReachedObjective;
+                EmitDamageNumber(CreateTowerMuzzlePosition(Vector3.zero), result.ReachedObjective, new Color(1f, 0.25f, 0.18f), "-");
+            }
             AutoDefenseRuntimeSnapshot afterCombat = _runtime.CreateSnapshot();
             EmitDirectWeaponPresentation(result.WeaponFireResult, beforeCombat, afterCombat);
             EmitMissingKillFeedback(beforeCombat, afterCombat, result.Killed, null);
@@ -1677,7 +1752,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 ProjectileLaunchResult launch = _projectiles.Launch(launchRequest);
                 if (!launch.Succeeded) continue;
                 ProjectileLaunchCount++;
-                ProjectileVisualSpawnCount++;
+                RecordProjectileVisualSpawn(attack);
                 _pendingProjectileImpacts.Add(new PendingProjectileImpact(
                     launch.ProjectileId,
                     target.Id,
@@ -1689,6 +1764,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             ProjectileTickResult projectileTick = _projectiles.Tick(ticks);
             _projectileNavigation.Tick((float)(deltaSeconds * ProjectileSpeedMultiplier));
+            ObserveProjectileMotion();
             EmitProjectileExpiryFeedback(projectileTick);
             rewardedKills += ResolvePendingProjectileImpacts(ticks);
             rewardedKills += ApplyDirectDamageBonusIfReady();
@@ -1697,7 +1773,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AwardRuntimeCurrencyForKills(rewardedKills);
             GrantPassiveIncomeIfReady(ticks);
             ApplyEncounterRewardIfTerminal();
-            LogTerminalStateIfNeeded();
+            UpdateDamageNumbers(deltaSeconds);
         }
 
         public bool TryPurchaseDamageUpgrade()
@@ -1811,7 +1887,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
                 if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
-                if (enemy.Health <= DirectDamageBonus && TryKillEnemyWithPresentation(enemy, attack))
+                if (enemy.Health <= DirectDamageBonus && TryKillEnemyWithPresentation(enemy, attack, DirectDamageBonus))
                 {
                     DirectOrCombatKillCount++;
                     return 1;
@@ -1842,7 +1918,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 hasSelected = true;
             }
 
-            if (!hasSelected || !TryKillEnemyWithPresentation(selected, FindAttackRecipeForPresentation(BasicIdleAutoDefenseGame.ShardAttackId.Value))) return 0;
+            AttackDefinitionAsset attack = FindAttackRecipeForPresentation(BasicIdleAutoDefenseGame.ShardAttackId.Value);
+            if (!hasSelected) return 0;
+            if (TryLaunchVisibleProjectileAtEnemy(selected, attack, damageThreshold)) return 0;
+            if (!TryKillEnemyWithPresentation(selected, attack, damageThreshold)) return 0;
             DirectOrCombatKillCount++;
             return 1;
         }
@@ -1853,7 +1932,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (PulseBeamUnlocked)
             {
                 _pulseBeamModuleCooldownTicks += Math.Max(1, ticks);
-                if (_pulseBeamModuleCooldownTicks >= Math.Max(4, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank))
+                if (_pulseBeamModuleCooldownTicks >= Math.Max(18, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
                 {
                     _pulseBeamModuleCooldownTicks = 0;
                     ModuleActivationCount++;
@@ -1864,7 +1943,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (ArcBurstUnlocked)
             {
                 _arcBurstModuleCooldownTicks += Math.Max(1, ticks);
-                if (_arcBurstModuleCooldownTicks >= Math.Max(10, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
+                if (_arcBurstModuleCooldownTicks >= Math.Max(28, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3))
                 {
                     _arcBurstModuleCooldownTicks = 0;
                     ModuleActivationCount++;
@@ -1875,18 +1954,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (HomingPulseUnlocked)
             {
                 _homingPulseModuleCooldownTicks += Math.Max(1, ticks);
-                if (_homingPulseModuleCooldownTicks >= Math.Max(6, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank))
+                if (_homingPulseModuleCooldownTicks >= Math.Max(20, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
                 {
                     _homingPulseModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(18d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value);
+                    kills += TryKillPriorityEnemies(18d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, preferProjectileVisual: true);
                 }
             }
 
             return kills;
         }
 
-        private int TryKillPriorityEnemies(double damageThreshold, int maxKills, string attackId)
+        private int TryKillPriorityEnemies(double damageThreshold, int maxKills, string attackId, bool preferProjectileVisual = false)
         {
             if (_runtime == null || maxKills <= 0) return 0;
             int kills = 0;
@@ -1906,7 +1985,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     hasSelected = true;
                 }
 
-                if (!hasSelected || !TryKillEnemyWithPresentation(selected, attack)) break;
+                if (!hasSelected) break;
+                if (preferProjectileVisual && TryLaunchVisibleProjectileAtEnemy(selected, attack, damageThreshold)) continue;
+                if (!TryKillEnemyWithPresentation(selected, attack, damageThreshold)) break;
                 DirectOrCombatKillCount++;
                 kills++;
             }
@@ -1972,6 +2053,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
                 if (!hasActiveTarget) continue;
                 EmitEnemyPresentationEvent(activeTarget, EnemyPresentationEventKind.OnHit);
+                EmitDamageNumber(impactPosition, pending.DamageThreshold, ResolveAttackColor(pending.Attack), "-");
                 if (activeTarget.Health > pending.DamageThreshold) continue;
                 if (!TryKillEnemyAfterFeedback(activeTarget)) continue;
                 ProjectileAdapterKillCount++;
@@ -2015,6 +2097,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (hadBefore || hasAfter)
                     EmitAttackTracer(CreateTowerMuzzlePosition(Vector3.zero), targetPosition, ResolveAttackColor(attack));
                 EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, targetPosition);
+                if (hadBefore)
+                {
+                    double damage = hasAfter
+                        ? Math.Max(0d, beforeTarget.Health - afterTarget.Health)
+                        : Math.Max(ResolveAttackDamage(attack), beforeTarget.Health);
+                    EmitDamageNumber(targetPosition, damage, ResolveAttackColor(attack), "-");
+                }
 
                 if (hasAfter && afterTarget.Lifecycle == AutoDefenseEnemyLifecycle.Active)
                     EmitEnemyPresentationEvent(afterTarget, EnemyPresentationEventKind.OnHit);
@@ -2043,13 +2132,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, CreateEnemyAimPosition(enemy.Position));
                 }
 
+                EmitDamageNumber(CreateEnemyAimPosition(enemy.Position), Math.Max(ResolveAttackDamage(attack), enemy.Health), ResolveAttackColor(attack), "-");
                 EmitEnemyDeathFeedback(enemy);
                 emitted++;
                 if (emitted >= maxKills) return;
             }
         }
 
-        private bool TryKillEnemyWithPresentation(AutoDefenseEnemySnapshot enemy, AttackDefinitionAsset attack)
+        private bool TryKillEnemyWithPresentation(AutoDefenseEnemySnapshot enemy, AttackDefinitionAsset attack, double damageAmount)
         {
             Vector3 origin = CreateTowerMuzzlePosition(Vector3.zero);
             Vector3 destination = CreateEnemyAimPosition(enemy.Position);
@@ -2057,8 +2147,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, origin);
             EmitAttackTracer(origin, destination, ResolveAttackColor(attack));
             EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, destination);
+            EmitDamageNumber(destination, damageAmount, ResolveAttackColor(attack), "-");
             EmitEnemyPresentationEvent(enemy, EnemyPresentationEventKind.OnHit);
             return TryKillEnemyAfterFeedback(enemy);
+        }
+
+        private bool TryLaunchVisibleProjectileAtEnemy(AutoDefenseEnemySnapshot enemy, AttackDefinitionAsset attack, double damageThreshold)
+        {
+            if (_projectiles == null || attack == null || attack.Delivery == null) return false;
+            if (attack.Delivery.Mode != AttackRecipeDeliveryMode.Projectile) return false;
+            if (string.IsNullOrWhiteSpace(attack.Delivery.ProjectileDefinitionId)) return false;
+            ProjectileDefinition projectile = FindProjectileDefinition(new ProjectileDefinitionId(attack.Delivery.ProjectileDefinitionId));
+            if (projectile == null) return false;
+
+            Vector3 origin = CreateTowerMuzzlePosition(Vector3.zero);
+            Vector3 destination = CreateEnemyAimPosition(enemy.Position);
+            int impactDelayTicks = CalculateProjectileImpactDelayTicks(origin, destination, projectile.Speed);
+            var launchRequest = new ProjectileLaunchRequest(
+                projectile.Id,
+                new AttackSourceId("source.template.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)),
+                new AttackDefinitionId(attack.Id),
+                new AttackSourceSnapshot(new AttackSourceId("source.template.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)), new CombatantId("template-core")),
+                origin,
+                destination);
+
+            EmitAttackEvent(attack, AttackPresentationEventKind.OnCast, origin);
+            EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, origin);
+            ProjectileLaunchResult launch = _projectiles.Launch(launchRequest);
+            if (!launch.Succeeded) return false;
+
+            ProjectileLaunchCount++;
+            RecordProjectileVisualSpawn(attack);
+            _pendingProjectileImpacts.Add(new PendingProjectileImpact(
+                launch.ProjectileId,
+                enemy.Id,
+                attack,
+                destination,
+                damageThreshold,
+                impactDelayTicks));
+            return true;
         }
 
         private bool TryKillEnemyAfterFeedback(AutoDefenseEnemySnapshot enemy)
@@ -2189,6 +2316,112 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (_runtimeAudioSource != null && Application.isPlaying)
                 _runtimeAudioSource.PlayOneShot(playableClip);
             return true;
+        }
+
+        private void RecordProjectileVisualSpawn(AttackDefinitionAsset attack)
+        {
+            ProjectileVisualSpawnCount++;
+            if (attack != null && attack.Delivery != null && attack.Delivery.ProjectilePrefab != null)
+                AuthoredProjectileVisualSpawnCount++;
+        }
+
+        private void ObserveProjectileMotion()
+        {
+            if (_projectileNavigation == null) return;
+            MovementSnapshot snapshot = _projectileNavigation.CreateSnapshot();
+            var activeIds = new HashSet<long>();
+            for (int i = 0; i < snapshot.Agents.Count; i++)
+            {
+                MovementAgentSnapshot agent = snapshot.Agents[i];
+                long id = agent.Id.Value;
+                activeIds.Add(id);
+                if (_lastProjectileAgentPositions.TryGetValue(id, out Vector3 previous) &&
+                    Vector3.Distance(previous, agent.Position) > 0.01f)
+                {
+                    ProjectileMotionObservedCount++;
+                }
+
+                _lastProjectileAgentPositions[id] = agent.Position;
+            }
+
+            var staleIds = new List<long>();
+            foreach (long id in _lastProjectileAgentPositions.Keys)
+                if (!activeIds.Contains(id))
+                    staleIds.Add(id);
+            for (int i = 0; i < staleIds.Count; i++)
+                _lastProjectileAgentPositions.Remove(staleIds[i]);
+        }
+
+        private void EmitDamageNumber(Vector3 worldPosition, double amount, Color color, string prefix)
+        {
+            if (amount <= 0d) return;
+            EnsureRuntimeUiDocument();
+            if (_damageNumberLayer == null) return;
+
+            string text = (prefix ?? string.Empty) + Math.Ceiling(amount).ToString(CultureInfo.InvariantCulture);
+            var label = new Label(text) { pickingMode = PickingMode.Ignore };
+            label.name = "damage-number";
+            label.style.position = Position.Absolute;
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            label.style.fontSize = 24;
+            label.style.color = color;
+            label.style.unityTextOutlineColor = new Color(0f, 0f, 0f, 0.85f);
+            label.style.unityTextOutlineWidth = 2f;
+            label.style.width = 90;
+            label.style.height = 32;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _damageNumberLayer.Add(label);
+
+            DamageNumberSpawnCount++;
+            _damageNumbers.Add(new DamageNumberView(label, worldPosition, 0f));
+            PositionDamageNumber(_damageNumbers[_damageNumbers.Count - 1], 0f);
+        }
+
+        private void UpdateDamageNumbers(float deltaSeconds)
+        {
+            if (_damageNumbers.Count == 0) return;
+            float safeDelta = Mathf.Max(0.016f, deltaSeconds);
+            for (int i = _damageNumbers.Count - 1; i >= 0; i--)
+            {
+                DamageNumberView number = _damageNumbers[i];
+                number.ElapsedSeconds += safeDelta;
+                if (number.ElapsedSeconds >= 1.15f || number.Label == null)
+                {
+                    number.Label?.RemoveFromHierarchy();
+                    _damageNumbers.RemoveAt(i);
+                    continue;
+                }
+
+                PositionDamageNumber(number, number.ElapsedSeconds);
+                float alpha = Mathf.Clamp01(1f - number.ElapsedSeconds / 1.15f);
+                StyleColor color = number.Label.style.color;
+                Color resolved = color.value;
+                resolved.a = alpha;
+                number.Label.style.color = resolved;
+                _damageNumbers[i] = number;
+            }
+        }
+
+        private void PositionDamageNumber(DamageNumberView number, float elapsedSeconds)
+        {
+            if (number.Label == null) return;
+            Vector2 point = WorldToRuntimePanelPoint(number.WorldPosition);
+            number.Label.style.left = point.x - 45f;
+            number.Label.style.top = point.y - 56f - elapsedSeconds * 48f;
+        }
+
+        private static Vector2 WorldToRuntimePanelPoint(Vector3 worldPosition)
+        {
+            Camera camera = Camera.main;
+            if (camera == null)
+                camera = FindFirstObjectByType<Camera>();
+            if (camera == null)
+                return new Vector2(Screen.width * 0.5f, Screen.height * 0.45f);
+
+            Vector3 screen = camera.WorldToScreenPoint(worldPosition);
+            if (screen.z < 0f)
+                return new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            return new Vector2(screen.x, Screen.height - screen.y);
         }
 
         private AudioClip GetFallbackPresentationClip()
@@ -2865,13 +3098,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreatePrimitive("Spawn Lane West", PrimitiveType.Cube, new Vector3(-TemplateSpawnLaneRadius, 0.05f, 0f), new Vector3(0.35f, 0.08f, 1.2f), Color.yellow);
         }
 
-        private void LogTerminalStateIfNeeded()
-        {
-            if (_terminalStateLogged || _runtime == null || _runtime.State == AutoDefenseRuntimeState.Running) return;
-            _terminalStateLogged = true;
-            Debug.Log("[Idle Auto Defense Template] Run ended. " + StatusSummary);
-        }
-
         private MonetizationFlowContext CreateMonetizationContext(DateTimeOffset nowUtc)
         {
             bool inCombat = _runtime != null && _runtime.State == AutoDefenseRuntimeState.Running;
@@ -2902,9 +3128,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DirectOrCombatKillCount = 0;
             ProjectileLaunchCount = 0;
             ProjectileVisualSpawnCount = 0;
+            AuthoredProjectileVisualSpawnCount = 0;
+            ProjectileMotionObservedCount = 0;
             AttackVfxSpawnCount = 0;
             AttackAudioPlayCount = 0;
             EnemyPresentationEventCount = 0;
+            DamageNumberSpawnCount = 0;
             ProjectileAdapterKillCount = 0;
             InvalidAssignedRecipeCount = 0;
             InvalidAssignedEnemyCount = 0;
@@ -2941,7 +3170,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EncounterRewardParts = 0;
             ReviveOfferAccepted = false;
             _completionRewardApplied = false;
-            _terminalStateLogged = false;
             _manualTowerCooldownTicks = 0;
             _passiveIncomeTicks = 0;
             _pulseBeamModuleCooldownTicks = 0;
@@ -2950,6 +3178,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _pendingProjectileImpacts.Clear();
             _seenEnemyIds.Clear();
             _enemyDeathPresentationIds.Clear();
+            _lastProjectileAgentPositions.Clear();
+            ClearDamageNumbers();
         }
 
         private void ClearSpawnedRuntimeObjects()
@@ -2967,6 +3197,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 DestroyTemplateObject(_enemyPrefab);
                 DestroyTemplateObject(_projectilePrefab);
                 DestroyTemplateObject(_fallbackPresentationClip);
+                DestroyTemplateObject(_runtimePanelSettings);
+                DestroyTemplateObject(_runtimeUiObject);
                 DestroyTemplateObject(_root);
             }
             else
@@ -2981,10 +3213,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _root = null;
             _runtimeAudioSource = null;
             _fallbackPresentationClip = null;
+            _runtimePanelSettings = null;
+            _runtimeUiDocument = null;
+            _runtimeUiObject = null;
+            _runtimeUiRoot = null;
+            _damageNumberLayer = null;
             _resolvedProjectileDefinitions = Array.Empty<ProjectileDefinition>();
             _pendingProjectileImpacts.Clear();
             _seenEnemyIds.Clear();
             _enemyDeathPresentationIds.Clear();
+            _lastProjectileAgentPositions.Clear();
+            ClearDamageNumbers();
+        }
+
+        private void ClearDamageNumbers()
+        {
+            for (int i = 0; i < _damageNumbers.Count; i++)
+                _damageNumbers[i].Label?.RemoveFromHierarchy();
+            _damageNumbers.Clear();
         }
 
         private struct PendingProjectileImpact
@@ -3011,6 +3257,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             public Vector3 Destination;
             public double DamageThreshold;
             public int RemainingTicks;
+        }
+
+        private struct DamageNumberView
+        {
+            public DamageNumberView(Label label, Vector3 worldPosition, float elapsedSeconds)
+            {
+                Label = label;
+                WorldPosition = worldPosition;
+                ElapsedSeconds = elapsedSeconds;
+            }
+
+            public Label Label;
+            public Vector3 WorldPosition;
+            public float ElapsedSeconds;
         }
 
         private static void DestroyTemplateObject(UnityEngine.Object instance)
