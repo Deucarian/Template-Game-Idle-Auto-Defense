@@ -1324,6 +1324,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private readonly Dictionary<long, Vector3> _lastProjectileAgentPositions = new Dictionary<long, Vector3>();
         private UIDocument _runtimeUiDocument;
         private PanelSettings _runtimePanelSettings;
+        private ThemeStyleSheet _runtimeThemeStyleSheet;
         private GameObject _runtimeUiObject;
         private VisualElement _runtimeUiRoot;
         private VisualElement _damageNumberLayer;
@@ -1485,15 +1486,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
-        private static PanelSettings CreateRuntimePanelSettings()
+        private PanelSettings CreateRuntimePanelSettings()
         {
             PanelSettings settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.name = "Basic Idle Auto Defense Runtime Panel Settings";
             settings.scaleMode = PanelScaleMode.ConstantPixelSize;
             settings.scale = 1f;
             settings.sortingOrder = 100;
+            ThemeStyleSheet themeStyleSheet = ResolveRuntimeThemeStyleSheet();
+            if (themeStyleSheet == null)
+            {
+                _runtimeThemeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>();
+                _runtimeThemeStyleSheet.name = "Basic Idle Auto Defense Runtime Theme";
+                _runtimeThemeStyleSheet.hideFlags = HideFlags.HideAndDontSave;
+                themeStyleSheet = _runtimeThemeStyleSheet;
+            }
+
+            if (themeStyleSheet != null)
+                settings.themeStyleSheet = themeStyleSheet;
             settings.hideFlags = HideFlags.HideAndDontSave;
             return settings;
+        }
+
+        private static ThemeStyleSheet ResolveRuntimeThemeStyleSheet()
+        {
+            UnityEngine.Object[] loadedThemes = Resources.FindObjectsOfTypeAll(typeof(ThemeStyleSheet));
+            foreach (UnityEngine.Object loadedTheme in loadedThemes)
+            {
+                if (loadedTheme is ThemeStyleSheet themeStyleSheet)
+                    return themeStyleSheet;
+            }
+
+            UnityEngine.Object[] resourceThemes = Resources.LoadAll(string.Empty, typeof(ThemeStyleSheet));
+            foreach (UnityEngine.Object resourceTheme in resourceThemes)
+            {
+                if (resourceTheme is ThemeStyleSheet themeStyleSheet)
+                    return themeStyleSheet;
+            }
+
+            return null;
         }
 
         protected void ConfigureContentPack(GameContentPackAsset contentPack, GameContentSetAsset contentSet)
@@ -3198,6 +3229,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 DestroyTemplateObject(_projectilePrefab);
                 DestroyTemplateObject(_fallbackPresentationClip);
                 DestroyTemplateObject(_runtimePanelSettings);
+                DestroyTemplateObject(_runtimeThemeStyleSheet);
                 DestroyTemplateObject(_runtimeUiObject);
                 DestroyTemplateObject(_root);
             }
@@ -3214,6 +3246,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _runtimeAudioSource = null;
             _fallbackPresentationClip = null;
             _runtimePanelSettings = null;
+            _runtimeThemeStyleSheet = null;
             _runtimeUiDocument = null;
             _runtimeUiObject = null;
             _runtimeUiRoot = null;
