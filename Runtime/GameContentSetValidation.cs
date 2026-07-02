@@ -269,6 +269,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AddAll(knownTargets, weaponIds);
             AddAll(knownTargets, enemyIds);
             AddAll(knownTargets, attackAndProjectileIds);
+            knownTargets.Add("objective.template-core");
+            knownTargets.Add("reward.template.run");
+            knownTargets.Add("offline.template.credits");
 
             for (int i = 0; i < contentSet.UpgradePool.Count; i++)
             {

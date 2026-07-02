@@ -1,0 +1,53 @@
+{
+  "contentPack": "contentpack.template.basic-idle-auto-defense",
+  "contentSet": "contentset.template.basic-idle-auto-defense",
+  "objective": {
+    "id": "template-core",
+    "maximumHealth": 42,
+    "lives": 4,
+    "contactRadius": 0.45
+  },
+  "spawnRing": {
+    "radius": 9,
+    "channels": [
+      "perimeter-north",
+      "perimeter-east",
+      "perimeter-south",
+      "perimeter-west"
+    ]
+  },
+  "enemies": [
+    "enemy.template.swarm",
+    "enemy.template.runner",
+    "enemy.template.tank",
+    "enemy.template.shielded"
+  ],
+  "attacks": [
+    "attack.template.pulse-cannon",
+    "attack.template.shard-launcher",
+    "attack.template.arc-burst",
+    "attack.template.homing-pulse"
+  ],
+  "weapons": [
+    "weapon.template.pulse-cannon",
+    "weapon.template.shard-launcher",
+    "weapon.template.arc-burst-tower",
+    "weapon.template.homing-spire"
+  ],
+  "spawnProfiles": [
+    "wave.template.authored.opening",
+    "wave.template.authored.runner-pressure",
+    "wave.template.authored.pressure",
+    "wave.template.authored.surge",
+    "wave.template.authored.final"
+  ],
+  "upgrades": [
+    "upgrade.template.authored.damage-up",
+    "upgrade.template.authored.fire-rate-up",
+    "upgrade.template.authored.range-up",
+    "upgrade.template.authored.projectile-speed-up",
+    "upgrade.template.authored.core-reinforcement",
+    "upgrade.template.authored.credit-reward"
+  ],
+  "notes": "The runtime uses authored Game Content assets in this folder. The setup wizard copies them into product-owned Assets/GameContent folders and remaps their GUIDs."
+}

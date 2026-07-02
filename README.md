@@ -4,175 +4,109 @@ Package ID: `com.deucarian.template.game.idle-auto-defense`
 
 Version: `0.1.1`
 
-This package is a starter Unity game template for an idle auto-defense loop. It depends on `com.deucarian.auto-defense-suite`, `com.deucarian.game-content-authoring`, and `com.deucarian.monetization`; reusable gameplay and monetization abstractions stay in Deucarian packages, while this package owns starter-game glue, sample content, placement hooks, and developer-facing setup helpers.
+This package creates a product-owned idle auto-defense game folder. It owns template glue, setup helpers, starter authored content, and smoke coverage. Reusable gameplay systems stay in lower Deucarian packages.
+
+No Unity Package Manager sample import is required. The private template source lives under `TemplateSource~/BasicIdleAutoDefenseGame` so the setup wizard can create product-owned files.
 
 ## Quick Start
 
-1. Install Deucarian Package Installer.
-2. Open `Tools > Deucarian > Package Installer`.
-3. Find `Templates > Games > Idle Auto Defense`.
-4. Install `Deucarian Template Game - Idle Auto Defense`.
-5. Import the `Basic Idle Auto Defense Game` sample from the Package Installer details panel or Unity Package Manager.
-6. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template`.
-7. Choose a target folder under `Assets`, a namespace, and a game prefix.
-8. Open the created scene if needed, then press Play.
+1. Install the template package.
+2. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game`.
+3. Choose a target folder under `Assets`, a content folder under `Assets/GameContent`, a namespace, and a game prefix.
+4. Open the created scene.
+5. Press Play.
 
-The starter scene shows a central core, perimeter spawn markers, Pulse Cannon and Shard Launcher mounts, a placeholder enemy preview, runtime enemies, projectile launches, staged encounters, and a small status panel.
+The generated scene opens into a complete starter loop: a tower in the center, enemies spawning outside view, automatic attacks, currency rewards, buyable upgrades, tower damage, loss state, HUD, save, reset, and restart.
 
-## What This Template Includes
+## Generated Game
 
-- Central objective with health, lives, contact damage, completion, and failure paths.
-- Four perimeter spawn channels.
-- First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder stage definitions.
-- Six placeholder enemy archetypes: Swarm, Runner, Tank, Shielded, Elite, and Boss.
-- Pulse Cannon direct module and Shard Launcher projectile module, with Arc Emitter and Orbital Shot kept as future data-only intent.
-- Deterministic upgrade drafts with at least three choices from a 14-upgrade starter catalog.
-- Offline reward calculation.
-- Mock/no-op rewarded and interstitial placement hooks with no real ad SDKs.
-- Progression currency, account XP, stage/module unlock, and sample research reward application.
-- Save/load, missing-save defaults, corrupted-save recovery, and migration smoke coverage.
-- A sample-local save snapshot and reset flow.
-- A documented canonical game flow and explicit default content/balance pack.
-- A setup wizard for creating a product-owned game folder from the starter.
-- A `GameContentSetAsset` sample recipe and authoring provider for assembling attacks, enemies, waves, towers/weapons, and upgrades into a playable run.
-- Template-local editor utilities under `Tools > Deucarian > Templates > Idle Auto Defense`.
+The created folder includes:
 
-## What To Edit First
+- `Scenes`: the playable idle auto-defense scene.
+- `Scripts`: a renamed bootstrap and save/reset helper in the chosen namespace.
+- `Prefabs`, `Visuals`, and `Audio`: placeholder assets for replacing the starter look.
+- `Docs`: setup report and asset-flip checklist.
 
-After importing the sample, start here:
+The authored gameplay data is created separately under `Assets/GameContent/IdleAutoDefense` by default:
 
-- `Content/starter-content.json`: human-readable constants for the core, spawn ring, stages, enemies, weapons, upgrades, and offline rewards.
-- `Content/DefaultBalance`: objective, spawn ring, run loop, and draft cadence values.
-- `Content/DefaultStages`: stage routing, stage rewards, and stage-scoped content references.
-- `Content/DefaultEnemies`: Swarm, Runner, Tank, Shielded, Elite, and Boss archetypes.
-- `Content/DefaultWeapons`: Pulse Cannon, Shard Launcher, future Arc Emitter intent, and future Orbital Shot intent.
-- `Content/DefaultWaves`: First Orbit, Pressure Ring, Boss Pulse, and Endless placeholder wave groups.
-- `Content/DefaultUpgrades`: 14 run upgrades covering damage, survival, reward, offline, reroll, crit intent, and specialization choices.
-- `Content/DefaultProgression`: currencies, rewards, account XP, unlocks, research-like defaults, offline rewards, and save DTO setup.
-- `Content/DefaultMonetization`: mock rewarded/interstitial placements and IAP placeholders.
-- `Scripts/<GamePrefix>IdleAutoDefenseGameBootstrap.cs`: product UI, save snapshot, and the first place to add project-specific scene glue after running the setup wizard.
-- `Prefabs/`: place your real core, enemy, weapon, and projectile prefabs here.
-- `Scenes/<GamePrefix>IdleAutoDefense.unity`: product-owned scene created by the setup wizard.
+- `Attacks`, `Enemies`, `Weapons`, `Waves`, and `Upgrades`: editable starter definitions.
+- `ContentSets`: the playable run recipe assigned by the generated scene.
+- `ContentPacks`: the package-style wrapper assigned by the generated scene.
 
-The setup wizard writes `Docs/setup-report.md` and `Docs/asset-flip-checklist.md` into the created folder. It blocks existing files unless overwrite is explicitly enabled.
+The generated scene references the generated content pack and content set. The controller should report `UsingAssignedContentSet == true` with zero content pack/set validation errors.
 
-The template owns the default full loop from boot through save/restart. Product games should override content and balance first, and fork the flow only when a product requirement needs it.
+## Template Source
 
-## Create A Game / Run Content Set
-
-1. Open `Tools > Deucarian > Game Content Authoring`.
-2. Use the Attack, Enemy, Wave, Tower / Weapon, and Upgrade providers to create the assets for a run.
-3. Select `Game / Run Content Set`.
-4. Assign the starting tower/weapon, available tower/weapon list, enemy pool, wave list, upgrade pool, resources, economy hints, tags, and optional icon/banner.
-5. Create under `Assets/GameContent/ContentSets/{ContentSetId}/`.
-6. Assign the created `GameContentSetAsset` to an `IdleAutoDefenseTemplateController`.
-
-The content set is a root asset that references existing authored assets; it does not own their sub-assets. Runtime conversion stays in gameplay packages: weapons still point at attack definitions, waves still point at enemies, and upgrades still point at included weapons, attacks, enemies, or projectile IDs. Missing optional icon/banner/audio/VFX/model references are safe metadata gaps. Missing required weapons, attacks, enemies, or waves block validation.
-
-When a valid content set is assigned, the template uses it as the source of truth. When it is missing or invalid, the controller logs a clear warning and falls back to direct assigned arrays or built-in sample content.
-
-## Replace Enemies
-
-1. Add your enemy prefab under the imported sample's `Prefabs/Enemies` folder.
-2. Replace the generated enemy placeholder with your prefab provider in your copied game code.
-3. Update `starter-content.json` and `DefaultEnemies/enemy-archetypes.json` enemy IDs, health, speed, and contact damage.
-4. Keep one simple placeholder enemy in the scene while tuning so Play Mode remains easy to inspect.
-
-## Replace Weapons
-
-The template includes two weapon modes:
-
-- Pulse Cannon: instant single-target damage through the Attack package.
-- Shard Launcher: launches a visible projectile through the Projectiles package.
-
-To customize them:
-
-1. Add weapon mount prefabs under `Prefabs/Weapons`.
-2. Change weapon IDs and fire modes in your copied definition code.
-3. Update the matching entries in `starter-content.json` and `DefaultWeapons/default-weapons.json`.
-4. Keep one direct and one projectile example until your replacement weapons are both validated.
-
-## Tune Waves
-
-Wave pacing is defined in `BasicIdleAutoDefenseGame.CreateEncounterDefinitions()` and mirrored in `Content/DefaultWaves/stages-and-encounters.json`.
-
-Useful values to tune first:
-
-- Spawn channels: `perimeter-north`, `perimeter-east`, `perimeter-south`, `perimeter-west`.
-- Spawn count per group.
-- Initial delay ticks.
-- Repeat interval ticks.
-- Encounter seed.
-
-Keep the first tuning pass deterministic. Once the starter loop feels right, introduce project-specific content loading.
-
-## Reset Sample Save
-
-The sample writes a small snapshot file to:
+The package-owned source lives at:
 
 ```text
-<Unity persistentDataPath>/Deucarian/IdleAutoDefenseTemplateSample/sample-state.json
+TemplateSource~/BasicIdleAutoDefenseGame
+|-- Content
+|   |-- Attacks
+|   |-- ContentPacks
+|   |-- ContentSets
+|   |-- Enemies
+|   |-- Upgrades
+|   |-- Waves
+|   |-- Weapons
+|   `-- starter-content.json
+|-- Prefabs
+|-- Scenes
+|   `-- BasicIdleAutoDefenseGame.unity
+|-- Scripts
+|   `-- BasicIdleAutoDefenseGameBootstrap.cs
+|-- Visuals
+`-- Audio
 ```
 
-Reset it from:
+This source is not a public package sample. It is copied by the setup wizard with product-owned namespaces, assembly names, scene references, and remapped GUIDs.
 
-```text
-Tools > Deucarian > Templates > Idle Auto Defense > Reset Sample Save
-```
+## Editing Content
 
-The in-game status panel also has a `Reset Save` button.
+Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace placeholder visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
 
-## Create Your Own Game From This
+The starter content intentionally stays generic and reusable:
 
-1. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Game From Template`.
-2. Choose a target folder under `Assets`, a C# namespace, and a game prefix.
-3. Replace placeholder prefabs and IDs with project-specific content in the generated folder.
-4. Follow `Docs/asset-flip-checklist.md` and `Docs/setup-report.md`.
-5. Keep the Auto Defense Suite and Monetization dependencies unless you intentionally split packages later.
-6. Delete the template package only after your generated game code no longer references it.
+- 4 enemies
+- 4 attacks
+- 4 tower weapons
+- 5 spawn profiles
+- 6 upgrades
 
-## Sample Folder Map
+## Package Boundary
 
-```text
-Basic Idle Auto Defense Game
-├── Content
-│   ├── DefaultBalance
-│   ├── DefaultStages
-│   ├── DefaultEnemies
-│   ├── DefaultWeapons
-│   ├── DefaultWaves
-│   ├── DefaultUpgrades
-│   ├── DefaultProgression
-│   ├── DefaultMonetization
-│   ├── ContentSets
-│   └── starter-content.json
-├── Prefabs
-│   └── README.md
-├── Scenes
-│   └── BasicIdleAutoDefenseGame.unity
-├── Scripts
-│   └── BasicIdleAutoDefenseGameBootstrap.cs
-└── Tests
-    └── BasicIdleAutoDefenseGameSampleTests.cs
-```
+This template depends on:
 
-## Troubleshooting
+- `com.deucarian.auto-defense-suite` for the reusable auto-defense gameplay stack.
+- `com.deucarian.editor` for shared editor shell/resources used by template setup tools.
+- `com.deucarian.game-content-authoring` for content authoring provider integration.
+- `com.deucarian.gameplay-foundation` for shared IDs, validation, and gameplay primitives used by template glue.
+- `com.deucarian.monetization` for SDK-free placement and mock/no-op monetization abstractions.
 
-- Starter scene command cannot find the scene: import the `Basic Idle Auto Defense Game` sample first.
-- Sample import does not appear: install the package first, then refresh Package Installer or Unity Package Manager.
-- Play Mode shows no enemies: check the Console for package resolution errors, then run the shared EditMode tests.
-- Reset says nothing was found: press Play once or use `Save Snapshot` in the status panel, then reset again.
-- Package dependencies do not resolve in a local validation project: use explicit file references to lower Deucarian packages, or install the suite from the promoted registry URLs.
+Keep product-specific starter glue, setup reporting, template scene composition, placeholder content, and asset-flip helpers local to this template. Move reusable behavior down only through explicit governance.
 
 ## Tests
 
-Package tests live under `Tests/EditMode` and `Tests/PlayMode`. The sample also includes smoke tests under `Samples~/BasicIdleAutoDefenseGame/Tests` for projects that import the sample.
+Package tests live under `Tests/EditMode` and `Tests/PlayMode`. Template source files under `TemplateSource~` are not user-importable samples.
 
-## Dependency Graph
+## Validation
+
+Before committing package changes, run:
+
+```powershell
+python C:/Repositories/Package-Registry/Tools/deucarian_package_validator.py --registry-root C:/Repositories/Package-Registry --repository-root . --config deucarian-package.json
+git diff --check
+```
+
+Run existing Unity EditMode and PlayMode tests when changing code, asmdefs, package dependencies, template source content, setup wizard behavior, or starter gameplay behavior.
+
+Durable batch entry points are:
 
 ```text
-com.deucarian.template.game.idle-auto-defense
-├── com.deucarian.auto-defense-suite
-├── com.deucarian.game-content-authoring
-└── com.deucarian.monetization
+Deucarian.TestAutomation.BatchTestRunner.RunEditMode
+Deucarian.TestAutomation.BatchTestRunner.RunPlayMode
 ```
+
+## License
+
+MIT. See `LICENSE.md`.
