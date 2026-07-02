@@ -27,6 +27,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 
             Assert.That(controller.SpawnedCount, Is.GreaterThanOrEqualTo(4));
             Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0));
+            Assert.That(controller.ProjectileVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
             Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
             Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
@@ -75,6 +79,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 
             Assert.AreEqual(0, controller.SelectedUpgradeCount);
             Assert.IsFalse(controller.PulseBeamUnlocked);
+            Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ObjectiveDamageEvents, Is.GreaterThan(0), controller.StatusSummary);
             Assert.True(controller.EncounterFailed, "No-upgrade sample run should be able to lose. " + controller.StatusSummary);
 

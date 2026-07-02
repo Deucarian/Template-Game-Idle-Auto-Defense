@@ -1396,7 +1396,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset"), "9832cf788c584c0a9c8cd160b57f84a2");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_mode: 0");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.shard");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "_projectilePrefab: {fileID: 0");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_projectilePrefab: {fileID: 0");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_mode: 1");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_beamVfxPrefab: {fileID: 0");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_impactVfxPrefab: {fileID: 0");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "_audioClip: {fileID: 8300000");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "_vfxPrefab: {fileID:");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.swarm", "enemy.template.swarm_Presentation.asset"), "_audioClip: {fileID: 8300000");
+            AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.swarm", "enemy.template.swarm_Presentation.asset"), "_vfxPrefab: {fileID:");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.fire-orb");
 
             AssertDirectoryExists(Path.Combine(templateSourceRoot, "Audio"));
@@ -1497,6 +1505,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 controller.RestartRun(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
                 StepUntilTerminalWithLivePurchases(controller, 1200);
                 Assert.IsTrue(controller.EncounterCompleted, controller.StatusSummary);
+                Assert.That(controller.ProjectileVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
                 Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
                 Assert.AreEqual(0, controller.DraftTickCount);
@@ -1606,6 +1618,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertFileDoesNotContain(AssetPathToFullPath(targetRoot + "/Scenes/WizardSmokeIdleAutoDefense.unity"), sourceContentPackGuid);
                 AssertFileContains(AssetPathToFullPath(contentRoot + "/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset"), generatedPulseWeaponGuid);
                 AssertFileDoesNotContain(AssetPathToFullPath(contentRoot + "/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset"), sourcePulseWeaponGuid);
+                AssertFileDoesNotContain(AssetPathToFullPath(contentRoot + "/Attacks/attack.template.fire-orb/attack.template.fire-orb_Delivery.asset"), "_projectilePrefab: {fileID: 0");
+                AssertFileDoesNotContain(AssetPathToFullPath(contentRoot + "/Attacks/attack.template.homing-pulse/attack.template.homing-pulse_Delivery.asset"), "_projectilePrefab: {fileID: 0");
+                AssertFileDoesNotContain(AssetPathToFullPath(contentRoot + "/Attacks/attack.template.hitscan-beam/attack.template.hitscan-beam_Delivery.asset"), "_beamVfxPrefab: {fileID: 0");
+                AssertFileContains(AssetPathToFullPath(contentRoot + "/Attacks/attack.template.fire-orb/attack.template.fire-orb_Presentation.asset"), "_audioClip: {fileID: 8300000");
+                AssertFileContains(AssetPathToFullPath(contentRoot + "/Attacks/attack.template.fire-orb/attack.template.fire-orb_Presentation.asset"), "_vfxPrefab: {fileID:");
+                AssertFileContains(AssetPathToFullPath(contentRoot + "/Enemies/enemy.template.swarm/enemy.template.swarm_Presentation.asset"), "_audioClip: {fileID: 8300000");
+                AssertFileContains(AssetPathToFullPath(contentRoot + "/Enemies/enemy.template.swarm/enemy.template.swarm_Presentation.asset"), "_vfxPrefab: {fileID:");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/asset-flip-checklist.md"), "product-owned");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/asset-flip-checklist.md"), contentRoot);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), "Deucarian.TemplateGameIdleAutoDefense");

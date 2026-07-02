@@ -1283,6 +1283,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const int PulseBeamModuleCooldownTicks = 10;
         private const int ArcBurstModuleCooldownTicks = 24;
         private const int HomingPulseModuleCooldownTicks = 15;
+        private const int MinimumProjectileImpactDelayTicks = 8;
+        private const int MaximumProjectileImpactDelayTicks = 36;
         private AutoDefenseRuntime _runtime;
         private EncounterRuntime _encounter;
         private ProjectileRuntime _projectiles;
@@ -1313,6 +1315,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
+        private ProjectileDefinition[] _resolvedProjectileDefinitions = Array.Empty<ProjectileDefinition>();
+        private readonly List<PendingProjectileImpact> _pendingProjectileImpacts = new List<PendingProjectileImpact>();
+        private readonly HashSet<long> _seenEnemyIds = new HashSet<long>();
+        private readonly HashSet<long> _enemyDeathPresentationIds = new HashSet<long>();
+        private AudioSource _runtimeAudioSource;
+        private AudioClip _fallbackPresentationClip;
         private bool _terminalStateLogged;
         private MonetizationSession _monetizationSession;
         private int _manualTowerCooldownTicks;
@@ -1333,6 +1341,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int DirectOrCombatKillCount { get; private set; }
         public int ProjectileLaunchCount { get; private set; }
         public int ProjectileAdapterKillCount { get; private set; }
+        public int ProjectileVisualSpawnCount { get; private set; }
+        public int AttackVfxSpawnCount { get; private set; }
+        public int AttackAudioPlayCount { get; private set; }
+        public int EnemyPresentationEventCount { get; private set; }
         public int InvalidAssignedRecipeCount { get; private set; }
         public int InvalidAssignedEnemyCount { get; private set; }
         public int InvalidAssignedWaveCount { get; private set; }
@@ -1448,6 +1460,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
 
             _root = new GameObject("Basic Idle Auto Defense Runtime");
+            _runtimeAudioSource = _root.AddComponent<AudioSource>();
+            _runtimeAudioSource.playOnAwake = false;
+            _runtimeAudioSource.spatialBlend = 0f;
+            _runtimeAudioSource.volume = 0.75f;
             CreatePrimitive("Player Tower", PrimitiveType.Cylinder, definition.Objective.Position, new Vector3(0.8f, 0.9f, 0.8f), Color.cyan);
             CreatePlayAreaMarkers();
 
@@ -1465,17 +1481,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             var projectilePoseResolver = new ChannelPoseResolver(new Dictionary<WorldSpawnChannelId, SpawnPose>
             {
-                { new WorldSpawnChannelId("projectile-origin"), new SpawnPose(definition.Objective.Position, Quaternion.identity) }
+                { new WorldSpawnChannelId("projectile-origin"), new SpawnPose(CreateTowerMuzzlePosition(definition.Objective.Position), Quaternion.identity) }
             });
-            ProjectileDefinition[] projectileDefinitions = BasicIdleAutoDefenseGame.CreateProjectileDefinitions(_resolvedAttackRecipes);
+            _resolvedProjectileDefinitions = BasicIdleAutoDefenseGame.CreateProjectileDefinitions(_resolvedAttackRecipes);
             _projectileSpawning = new WorldSpawnService(
-                new SpawnableCatalog(CreateProjectileSpawnables(projectileDefinitions)),
+                new SpawnableCatalog(CreateProjectileSpawnables(_resolvedProjectileDefinitions)),
                 projectilePoseResolver,
                 rootName: "TemplateIdleProjectiles");
             _projectileNavigation = new WorldNavigationService();
             _projectiles = new ProjectileRuntime(
                 catalog,
-                projectileDefinitions,
+                _resolvedProjectileDefinitions,
                 new WorldSpawnProjectileSpawner(_projectileSpawning, new WorldSpawnChannelId("projectile-origin")),
                 new WorldNavigationProjectileNavigator(_projectileNavigation));
             _upgradeCatalog = UsingAssignedContentSet
@@ -1636,22 +1652,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _spawnBuffer[i] = default;
             }
 
+            EmitSpawnFeedbackForNewEnemies();
+            AutoDefenseRuntimeSnapshot beforeCombat = _runtime.CreateSnapshot();
             AutoDefenseRunResult result = _runtime.Tick(ticks, deltaSeconds);
             DirectOrCombatKillCount += result.Killed;
             int rewardedKills = result.Killed;
             ObjectiveReachCount += result.ReachedObjective;
             if (result.ReachedObjective > 0) ObjectiveDamageEvents += result.ReachedObjective;
+            AutoDefenseRuntimeSnapshot afterCombat = _runtime.CreateSnapshot();
+            EmitDirectWeaponPresentation(result.WeaponFireResult, beforeCombat, afterCombat);
+            EmitMissingKillFeedback(beforeCombat, afterCombat, result.Killed, null);
 
             for (int i = 0; i < result.ProjectileLaunches.Count; i++)
             {
-                ProjectileLaunchResult launch = _projectiles.Launch(result.ProjectileLaunches[i]);
+                ProjectileLaunchRequest launchRequest = CreateVisibleProjectileLaunchRequest(
+                    result.ProjectileLaunches[i],
+                    afterCombat,
+                    out AttackDefinitionAsset attack,
+                    out AutoDefenseEnemySnapshot target,
+                    out int impactDelayTicks,
+                    out double damageThreshold);
+                EmitAttackEvent(attack, AttackPresentationEventKind.OnCast, launchRequest.Origin);
+                EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, launchRequest.Origin);
+                ProjectileLaunchResult launch = _projectiles.Launch(launchRequest);
                 if (!launch.Succeeded) continue;
                 ProjectileLaunchCount++;
-                rewardedKills += TryApplySampleProjectileHit();
+                ProjectileVisualSpawnCount++;
+                _pendingProjectileImpacts.Add(new PendingProjectileImpact(
+                    launch.ProjectileId,
+                    target.Id,
+                    attack,
+                    launchRequest.Destination,
+                    damageThreshold,
+                    impactDelayTicks));
             }
 
-            _projectiles.Tick(ticks);
+            ProjectileTickResult projectileTick = _projectiles.Tick(ticks);
             _projectileNavigation.Tick((float)(deltaSeconds * ProjectileSpeedMultiplier));
+            EmitProjectileExpiryFeedback(projectileTick);
+            rewardedKills += ResolvePendingProjectileImpacts(ticks);
             rewardedKills += ApplyDirectDamageBonusIfReady();
             rewardedKills += FireManualTowerShotIfReady(ticks);
             rewardedKills += FireUnlockedModulesIfReady(ticks);
@@ -1767,31 +1806,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (DirectDamageBonus <= 0d) return 0;
             AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
+            AttackDefinitionAsset attack = FindAttackRecipeForPresentation(BasicIdleAutoDefenseGame.PulseAttackId.Value);
             for (int i = 0; i < snapshot.Enemies.Count; i++)
             {
                 AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
                 if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
-                if (enemy.Health <= DirectDamageBonus && _runtime.TryKillEnemy(enemy.Id))
+                if (enemy.Health <= DirectDamageBonus && TryKillEnemyWithPresentation(enemy, attack))
                 {
                     DirectOrCombatKillCount++;
-                    return 1;
-                }
-            }
-
-            return 0;
-        }
-
-        private int TryApplySampleProjectileHit()
-        {
-            AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
-            for (int i = 0; i < snapshot.Enemies.Count; i++)
-            {
-                AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
-                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
-                if (enemy.Health > SampleProjectileFinishThreshold) continue;
-                if (_runtime.TryKillEnemy(enemy.Id))
-                {
-                    ProjectileAdapterKillCount++;
                     return 1;
                 }
             }
@@ -1820,7 +1842,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 hasSelected = true;
             }
 
-            if (!hasSelected || !_runtime.TryKillEnemy(selected.Id)) return 0;
+            if (!hasSelected || !TryKillEnemyWithPresentation(selected, FindAttackRecipeForPresentation(BasicIdleAutoDefenseGame.ShardAttackId.Value))) return 0;
             DirectOrCombatKillCount++;
             return 1;
         }
@@ -1835,7 +1857,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 {
                     _pulseBeamModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(12d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1);
+                    kills += TryKillPriorityEnemies(12d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1, BasicIdleAutoDefenseGame.PulseAttackId.Value);
                 }
             }
 
@@ -1846,7 +1868,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 {
                     _arcBurstModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(16d + DamageUpgradeRank * 2.5d, 2);
+                    kills += TryKillPriorityEnemies(16d + DamageUpgradeRank * 2.5d, 2, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value);
                 }
             }
 
@@ -1857,17 +1879,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 {
                     _homingPulseModuleCooldownTicks = 0;
                     ModuleActivationCount++;
-                    kills += TryKillPriorityEnemies(18d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1);
+                    kills += TryKillPriorityEnemies(18d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value);
                 }
             }
 
             return kills;
         }
 
-        private int TryKillPriorityEnemies(double damageThreshold, int maxKills)
+        private int TryKillPriorityEnemies(double damageThreshold, int maxKills, string attackId)
         {
             if (_runtime == null || maxKills <= 0) return 0;
             int kills = 0;
+            AttackDefinitionAsset attack = FindAttackRecipeForPresentation(attackId);
             for (int attempt = 0; attempt < maxKills; attempt++)
             {
                 AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
@@ -1883,12 +1906,530 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     hasSelected = true;
                 }
 
-                if (!hasSelected || !_runtime.TryKillEnemy(selected.Id)) break;
+                if (!hasSelected || !TryKillEnemyWithPresentation(selected, attack)) break;
                 DirectOrCombatKillCount++;
                 kills++;
             }
 
             return kills;
+        }
+
+        private ProjectileLaunchRequest CreateVisibleProjectileLaunchRequest(
+            ProjectileLaunchRequest original,
+            AutoDefenseRuntimeSnapshot snapshot,
+            out AttackDefinitionAsset attack,
+            out AutoDefenseEnemySnapshot target,
+            out int impactDelayTicks,
+            out double damageThreshold)
+        {
+            attack = FindAttackRecipeForPresentation(original.AttackDefinitionId.Value);
+            if (!TrySelectAttackTarget(attack, snapshot, out target))
+                target = default;
+
+            Vector3 origin = CreateTowerMuzzlePosition(Vector3.zero);
+            Vector3 destination = target.Id > 0
+                ? CreateEnemyAimPosition(target.Position)
+                : (original.Destination == Vector3.zero ? origin + Vector3.forward * 4f : original.Destination);
+            ProjectileDefinition projectile = FindProjectileDefinition(original.DefinitionId);
+            float speed = projectile == null ? ResolveProjectileSpeed(attack) : projectile.Speed;
+            impactDelayTicks = CalculateProjectileImpactDelayTicks(origin, destination, speed);
+            damageThreshold = projectile == null ? ResolveAttackDamage(attack) : projectile.BaseDamage;
+
+            return new ProjectileLaunchRequest(
+                original.DefinitionId,
+                original.AttackSourceId,
+                original.AttackDefinitionId,
+                original.Source,
+                origin,
+                destination,
+                original.Path);
+        }
+
+        private int ResolvePendingProjectileImpacts(int ticks)
+        {
+            if (_pendingProjectileImpacts.Count == 0) return 0;
+            int kills = 0;
+            int step = Math.Max(1, ticks);
+            for (int i = _pendingProjectileImpacts.Count - 1; i >= 0; i--)
+            {
+                PendingProjectileImpact pending = _pendingProjectileImpacts[i];
+                pending.RemainingTicks -= step;
+                if (pending.RemainingTicks > 0)
+                {
+                    _pendingProjectileImpacts[i] = pending;
+                    continue;
+                }
+
+                _pendingProjectileImpacts.RemoveAt(i);
+                if (pending.ProjectileId.Value > 0)
+                    _projectiles?.Cleanup(pending.ProjectileId, ProjectileExpiryReason.HitLimitReached);
+
+                bool hasActiveTarget = TryFindActiveEnemy(pending.TargetEnemyId, out AutoDefenseEnemySnapshot activeTarget);
+                Vector3 impactPosition = hasActiveTarget
+                    ? CreateEnemyAimPosition(activeTarget.Position)
+                    : pending.Destination;
+                EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnImpact, impactPosition);
+
+                if (!hasActiveTarget) continue;
+                EmitEnemyPresentationEvent(activeTarget, EnemyPresentationEventKind.OnHit);
+                if (activeTarget.Health > pending.DamageThreshold) continue;
+                if (!TryKillEnemyAfterFeedback(activeTarget)) continue;
+                ProjectileAdapterKillCount++;
+                kills++;
+            }
+
+            return kills;
+        }
+
+        private void EmitProjectileExpiryFeedback(ProjectileTickResult result)
+        {
+            if (result == null || result.Expiries.Count == 0) return;
+            for (int i = 0; i < result.Expiries.Count; i++)
+            {
+                ProjectileExpiryEvent expiry = result.Expiries[i];
+                int pendingIndex = FindPendingProjectileImpactIndex(expiry.ProjectileId);
+                if (pendingIndex < 0) continue;
+                PendingProjectileImpact pending = _pendingProjectileImpacts[pendingIndex];
+                _pendingProjectileImpacts.RemoveAt(pendingIndex);
+                EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnExpire, pending.Destination);
+            }
+        }
+
+        private void EmitDirectWeaponPresentation(WeaponFireResult fireResult, AutoDefenseRuntimeSnapshot beforeCombat, AutoDefenseRuntimeSnapshot afterCombat)
+        {
+            if (fireResult == null) return;
+            for (int i = 0; i < fireResult.Intents.Count; i++)
+            {
+                WeaponIntent intent = fireResult.Intents[i];
+                if (intent.Kind != WeaponIntentKind.DirectAttack || intent.AttackIntent == null) continue;
+
+                AttackDefinitionAsset attack = FindAttackRecipeForPresentation(intent.AttackIntent.DefinitionId.Value);
+                CombatantId targetId = intent.AttackIntent.Selection.Target.CombatantId;
+                bool hadBefore = TryFindEnemyByCombatant(beforeCombat, targetId, out AutoDefenseEnemySnapshot beforeTarget);
+                bool hasAfter = TryFindEnemyByCombatant(afterCombat, targetId, out AutoDefenseEnemySnapshot afterTarget);
+                AutoDefenseEnemySnapshot target = hasAfter ? afterTarget : beforeTarget;
+                Vector3 targetPosition = hadBefore || hasAfter ? CreateEnemyAimPosition(target.Position) : Vector3.zero;
+
+                EmitAttackEvent(attack, AttackPresentationEventKind.OnCast, CreateTowerMuzzlePosition(Vector3.zero));
+                EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, CreateTowerMuzzlePosition(Vector3.zero));
+                if (hadBefore || hasAfter)
+                    EmitAttackTracer(CreateTowerMuzzlePosition(Vector3.zero), targetPosition, ResolveAttackColor(attack));
+                EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, targetPosition);
+
+                if (hasAfter && afterTarget.Lifecycle == AutoDefenseEnemyLifecycle.Active)
+                    EmitEnemyPresentationEvent(afterTarget, EnemyPresentationEventKind.OnHit);
+                else if (hadBefore)
+                    EmitEnemyDeathFeedback(beforeTarget);
+            }
+        }
+
+        private void EmitMissingKillFeedback(AutoDefenseRuntimeSnapshot beforeCombat, AutoDefenseRuntimeSnapshot afterCombat, int maxKills, AttackDefinitionAsset attack)
+        {
+            if (maxKills <= 0 || beforeCombat == null) return;
+            int emitted = 0;
+            for (int i = 0; i < beforeCombat.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot enemy = beforeCombat.Enemies[i];
+                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                if (TryFindEnemy(afterCombat, enemy.Id, out AutoDefenseEnemySnapshot afterEnemy) &&
+                    afterEnemy.Lifecycle == AutoDefenseEnemyLifecycle.Active)
+                {
+                    continue;
+                }
+
+                if (attack != null)
+                {
+                    EmitAttackTracer(CreateTowerMuzzlePosition(Vector3.zero), CreateEnemyAimPosition(enemy.Position), ResolveAttackColor(attack));
+                    EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, CreateEnemyAimPosition(enemy.Position));
+                }
+
+                EmitEnemyDeathFeedback(enemy);
+                emitted++;
+                if (emitted >= maxKills) return;
+            }
+        }
+
+        private bool TryKillEnemyWithPresentation(AutoDefenseEnemySnapshot enemy, AttackDefinitionAsset attack)
+        {
+            Vector3 origin = CreateTowerMuzzlePosition(Vector3.zero);
+            Vector3 destination = CreateEnemyAimPosition(enemy.Position);
+            EmitAttackEvent(attack, AttackPresentationEventKind.OnCast, origin);
+            EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, origin);
+            EmitAttackTracer(origin, destination, ResolveAttackColor(attack));
+            EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, destination);
+            EmitEnemyPresentationEvent(enemy, EnemyPresentationEventKind.OnHit);
+            return TryKillEnemyAfterFeedback(enemy);
+        }
+
+        private bool TryKillEnemyAfterFeedback(AutoDefenseEnemySnapshot enemy)
+        {
+            if (_runtime == null || enemy.Id <= 0 || !_runtime.TryKillEnemy(enemy.Id)) return false;
+            EmitEnemyDeathFeedback(enemy);
+            return true;
+        }
+
+        private void EmitSpawnFeedbackForNewEnemies()
+        {
+            if (_runtime == null) return;
+            AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
+                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                if (!_seenEnemyIds.Add(enemy.Id)) continue;
+                EmitEnemyPresentationEvent(enemy, EnemyPresentationEventKind.OnSpawn);
+            }
+        }
+
+        private void EmitEnemyDeathFeedback(AutoDefenseEnemySnapshot enemy)
+        {
+            if (enemy.Id <= 0 || !_enemyDeathPresentationIds.Add(enemy.Id)) return;
+            EmitEnemyPresentationEvent(enemy, EnemyPresentationEventKind.OnDeath);
+        }
+
+        private void EmitEnemyPresentationEvent(AutoDefenseEnemySnapshot enemy, EnemyPresentationEventKind eventKind)
+        {
+            EnemyPresentationEventCount++;
+            EnemyDefinitionAsset definition = FindEnemyDefinitionForPresentation(enemy.SpawnableId);
+            bool emittedVfx = false;
+            bool emittedAudio = false;
+            if (definition != null &&
+                definition.Presentation != null &&
+                definition.Presentation.TryGetEvent(eventKind, out EnemyPresentationEventRecipe recipe))
+            {
+                Vector3 position = CreateEnemyAimPosition(enemy.Position);
+                emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position);
+                emittedAudio = PlayPresentationAudio(recipe.AudioClip);
+            }
+
+            if (!emittedVfx)
+                EmitFallbackPresentationVfx(CreateEnemyAimPosition(enemy.Position), ResolveEnemyEventColor(eventKind), 0.34f);
+            if (!emittedAudio)
+                PlayPresentationAudio(null);
+        }
+
+        private void EmitAttackEvent(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind, Vector3 eventPosition)
+        {
+            bool emittedVfx = false;
+            bool emittedAudio = false;
+            if (attack != null &&
+                attack.Presentation != null &&
+                attack.Presentation.TryGetEvent(eventKind, out AttackPresentationEventRecipe recipe))
+            {
+                Vector3 position = ResolveAttackEventPosition(recipe, eventPosition);
+                emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position);
+                emittedAudio = PlayPresentationAudio(recipe.AudioClip);
+            }
+
+            if (!emittedVfx)
+                EmitFallbackPresentationVfx(eventPosition, ResolveAttackColor(attack), ResolveAttackEventScale(eventKind));
+            if (!emittedAudio && eventKind != AttackPresentationEventKind.OnTick)
+                PlayPresentationAudio(null);
+        }
+
+        private bool EmitPresentationVfx(GameObject prefab, Vector3 position)
+        {
+            if (prefab == null) return false;
+            GameObject instance = Instantiate(prefab, position, Quaternion.identity);
+            instance.name = prefab.name + " Runtime";
+            if (_root != null) instance.transform.SetParent(_root.transform, true);
+            instance.SetActive(true);
+            DisableColliders(instance);
+            ParticleSystem[] particles = instance.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].gameObject.SetActive(true);
+                particles[i].Play(true);
+            }
+
+            AttackVfxSpawnCount++;
+            DestroyPresentationObject(instance, 2f);
+            return true;
+        }
+
+        private void EmitFallbackPresentationVfx(Vector3 position, Color color, float scale)
+        {
+            if (_root == null) return;
+            GameObject instance = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            instance.name = "Template Presentation VFX";
+            instance.transform.SetParent(_root.transform, false);
+            instance.transform.position = position;
+            instance.transform.localScale = Vector3.one * Mathf.Max(0.08f, scale);
+            ApplyColor(instance, color);
+            DisableColliders(instance);
+            AttackVfxSpawnCount++;
+            DestroyPresentationObject(instance, 0.45f);
+        }
+
+        private void EmitAttackTracer(Vector3 origin, Vector3 destination, Color color)
+        {
+            if (_root == null) return;
+            GameObject tracer = new GameObject("Template Attack Tracer");
+            tracer.transform.SetParent(_root.transform, false);
+            LineRenderer line = tracer.AddComponent<LineRenderer>();
+            line.positionCount = 2;
+            line.SetPosition(0, origin);
+            line.SetPosition(1, destination);
+            line.startWidth = 0.07f;
+            line.endWidth = 0.02f;
+            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Standard");
+            if (shader != null)
+                line.material = new Material(shader) { color = color };
+            line.startColor = color;
+            line.endColor = new Color(color.r, color.g, color.b, 0.2f);
+            AttackVfxSpawnCount++;
+            DestroyPresentationObject(tracer, 0.2f);
+        }
+
+        private bool PlayPresentationAudio(AudioClip clip)
+        {
+            AudioClip playableClip = clip != null ? clip : GetFallbackPresentationClip();
+            if (playableClip == null) return false;
+            AttackAudioPlayCount++;
+            if (_runtimeAudioSource != null && Application.isPlaying)
+                _runtimeAudioSource.PlayOneShot(playableClip);
+            return true;
+        }
+
+        private AudioClip GetFallbackPresentationClip()
+        {
+            if (_fallbackPresentationClip != null) return _fallbackPresentationClip;
+            const int sampleRate = 22050;
+            const int sampleCount = 2205;
+            float[] samples = new float[sampleCount];
+            for (int i = 0; i < samples.Length; i++)
+            {
+                float t = (float)i / sampleRate;
+                float envelope = 1f - (float)i / samples.Length;
+                samples[i] = Mathf.Sin(2f * Mathf.PI * 660f * t) * 0.18f * envelope;
+            }
+
+            _fallbackPresentationClip = AudioClip.Create("Template Presentation Click", sampleCount, 1, sampleRate, false);
+            _fallbackPresentationClip.hideFlags = HideFlags.HideAndDontSave;
+            _fallbackPresentationClip.SetData(samples, 0);
+            return _fallbackPresentationClip;
+        }
+
+        private bool TrySelectAttackTarget(AttackDefinitionAsset attack, AutoDefenseRuntimeSnapshot snapshot, out AutoDefenseEnemySnapshot selected)
+        {
+            selected = default;
+            if (snapshot == null || snapshot.Enemies.Count == 0) return false;
+            AttackRecipeTargetingMode mode = attack != null && attack.Targeting != null
+                ? attack.Targeting.Mode
+                : AttackRecipeTargetingMode.Nearest;
+            bool hasSelected = false;
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
+                if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                if (!hasSelected || IsBetterTarget(enemy, selected, mode))
+                {
+                    selected = enemy;
+                    hasSelected = true;
+                }
+            }
+
+            return hasSelected;
+        }
+
+        private static bool IsBetterTarget(AutoDefenseEnemySnapshot candidate, AutoDefenseEnemySnapshot current, AttackRecipeTargetingMode mode)
+        {
+            if (mode == AttackRecipeTargetingMode.LowestHealth)
+                return candidate.Health < current.Health || (Math.Abs(candidate.Health - current.Health) < 0.001d && candidate.ObjectiveProgress > current.ObjectiveProgress);
+            if (mode == AttackRecipeTargetingMode.Strongest)
+                return candidate.Health > current.Health || (Math.Abs(candidate.Health - current.Health) < 0.001d && candidate.ObjectiveProgress > current.ObjectiveProgress);
+            if (mode == AttackRecipeTargetingMode.Random)
+                return candidate.Id < current.Id;
+            return candidate.ObjectiveProgress > current.ObjectiveProgress;
+        }
+
+        private bool TryFindActiveEnemy(long enemyId, out AutoDefenseEnemySnapshot enemy)
+        {
+            enemy = default;
+            if (_runtime == null || enemyId <= 0) return false;
+            return TryFindEnemy(_runtime.CreateSnapshot(), enemyId, out enemy) &&
+                enemy.Lifecycle == AutoDefenseEnemyLifecycle.Active;
+        }
+
+        private static bool TryFindEnemy(AutoDefenseRuntimeSnapshot snapshot, long enemyId, out AutoDefenseEnemySnapshot enemy)
+        {
+            enemy = default;
+            if (snapshot == null || enemyId <= 0) return false;
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                if (snapshot.Enemies[i].Id != enemyId) continue;
+                enemy = snapshot.Enemies[i];
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryFindEnemyByCombatant(AutoDefenseRuntimeSnapshot snapshot, CombatantId combatantId, out AutoDefenseEnemySnapshot enemy)
+        {
+            enemy = default;
+            if (snapshot == null || combatantId.IsEmpty) return false;
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                if (!snapshot.Enemies[i].CombatantId.Equals(combatantId)) continue;
+                enemy = snapshot.Enemies[i];
+                return true;
+            }
+
+            return false;
+        }
+
+        private AttackDefinitionAsset FindAttackRecipeForPresentation(string attackId)
+        {
+            if (string.IsNullOrWhiteSpace(attackId)) return null;
+            for (int i = 0; i < _resolvedAttackRecipes.Length; i++)
+            {
+                AttackDefinitionAsset attack = _resolvedAttackRecipes[i];
+                if (attack != null && string.Equals(attack.Id, attackId, StringComparison.OrdinalIgnoreCase))
+                    return attack;
+            }
+
+            return null;
+        }
+
+        private AttackDefinitionAsset FindAttackRecipeForProjectile(ProjectileDefinition definition)
+        {
+            if (definition == null) return null;
+            for (int i = 0; i < _resolvedAttackRecipes.Length; i++)
+            {
+                AttackDefinitionAsset attack = _resolvedAttackRecipes[i];
+                if (attack == null || attack.Delivery == null) continue;
+                if (string.Equals(attack.Delivery.ProjectileDefinitionId, definition.Id.Value, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(attack.Delivery.ProjectileSpawnableId, definition.SpawnableId.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return attack;
+                }
+            }
+
+            return null;
+        }
+
+        private EnemyDefinitionAsset FindEnemyDefinitionForPresentation(WorldSpawnableId spawnableId)
+        {
+            if (spawnableId.IsEmpty) return null;
+            for (int i = 0; i < _resolvedEnemyDefinitions.Length; i++)
+            {
+                EnemyDefinitionAsset enemy = _resolvedEnemyDefinitions[i];
+                if (enemy != null && string.Equals(enemy.Id, spawnableId.Value, StringComparison.OrdinalIgnoreCase))
+                    return enemy;
+            }
+
+            return null;
+        }
+
+        private ProjectileDefinition FindProjectileDefinition(ProjectileDefinitionId id)
+        {
+            for (int i = 0; i < _resolvedProjectileDefinitions.Length; i++)
+            {
+                ProjectileDefinition definition = _resolvedProjectileDefinitions[i];
+                if (definition != null && definition.Id.Equals(id))
+                    return definition;
+            }
+
+            return null;
+        }
+
+        private int FindPendingProjectileImpactIndex(ProjectileInstanceId projectileId)
+        {
+            for (int i = 0; i < _pendingProjectileImpacts.Count; i++)
+                if (_pendingProjectileImpacts[i].ProjectileId.Equals(projectileId))
+                    return i;
+            return -1;
+        }
+
+        private GameObject GetProjectilePrefab(ProjectileDefinition definition)
+        {
+            AttackDefinitionAsset attack = FindAttackRecipeForProjectile(definition);
+            if (attack != null && attack.Delivery != null && attack.Delivery.ProjectilePrefab != null)
+                return attack.Delivery.ProjectilePrefab;
+            return _projectilePrefab;
+        }
+
+        private static int CalculateProjectileImpactDelayTicks(Vector3 origin, Vector3 destination, float speed)
+        {
+            float safeSpeed = Mathf.Max(0.5f, speed);
+            int ticks = Mathf.CeilToInt(Vector3.Distance(origin, destination) / safeSpeed / 0.05f);
+            return Mathf.Clamp(ticks, MinimumProjectileImpactDelayTicks, MaximumProjectileImpactDelayTicks);
+        }
+
+        private static float ResolveProjectileSpeed(AttackDefinitionAsset attack)
+        {
+            return attack != null && attack.Delivery != null
+                ? Mathf.Max(0.5f, attack.Delivery.ProjectileSpeed)
+                : 8f;
+        }
+
+        private static double ResolveAttackDamage(AttackDefinitionAsset attack)
+        {
+            return attack != null && attack.Mechanics != null
+                ? Math.Max(SampleProjectileFinishThreshold, attack.Mechanics.DamageAmount)
+                : SampleProjectileFinishThreshold;
+        }
+
+        private static Vector3 CreateTowerMuzzlePosition(Vector3 objectivePosition)
+        {
+            return objectivePosition + Vector3.up * 0.75f;
+        }
+
+        private static Vector3 CreateEnemyAimPosition(Vector3 enemyPosition)
+        {
+            return enemyPosition + Vector3.up * 0.35f;
+        }
+
+        private static Vector3 ResolveAttackEventPosition(AttackPresentationEventRecipe recipe, Vector3 requestedPosition)
+        {
+            if (recipe == null) return requestedPosition;
+            if (recipe.SpawnPointRole == AttackPresentationSpawnPointRole.Caster ||
+                recipe.SpawnPointRole == AttackPresentationSpawnPointRole.Muzzle)
+            {
+                return CreateTowerMuzzlePosition(Vector3.zero);
+            }
+
+            return requestedPosition;
+        }
+
+        private static Color ResolveAttackColor(AttackDefinitionAsset attack)
+        {
+            if (attack == null) return Color.white;
+            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ShardAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(1f, 0.45f, 0.1f);
+            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.PulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(0.15f, 0.8f, 1f);
+            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(1f, 0.65f, 0.12f);
+            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(0.68f, 0.38f, 1f);
+            return Color.white;
+        }
+
+        private static Color ResolveEnemyEventColor(EnemyPresentationEventKind eventKind)
+        {
+            if (eventKind == EnemyPresentationEventKind.OnDeath) return new Color(1f, 0.25f, 0.18f);
+            if (eventKind == EnemyPresentationEventKind.OnHit) return new Color(1f, 0.95f, 0.25f);
+            return new Color(0.35f, 1f, 0.55f);
+        }
+
+        private static float ResolveAttackEventScale(AttackPresentationEventKind eventKind)
+        {
+            if (eventKind == AttackPresentationEventKind.OnImpact) return 0.42f;
+            if (eventKind == AttackPresentationEventKind.OnExpire) return 0.28f;
+            return 0.3f;
+        }
+
+        private static void DisableColliders(GameObject instance)
+        {
+            if (instance == null) return;
+            Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+                colliders[i].enabled = false;
+        }
+
+        private static void DestroyPresentationObject(GameObject instance, float delaySeconds)
+        {
+            if (instance == null) return;
+            if (Application.isPlaying) Destroy(instance, delaySeconds);
+            else DestroyImmediate(instance);
         }
 
         private void AwardRuntimeCurrencyForKills(int kills)
@@ -2239,7 +2780,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 ProjectileDefinition definition = projectileDefinitions[i];
                 if (definition == null || !seen.Add(definition.SpawnableId.Value)) continue;
-                spawnables.Add(new SpawnableDefinition(definition.SpawnableId, new GameObjectPrefabProvider(_projectilePrefab), 4, 32));
+                spawnables.Add(new SpawnableDefinition(definition.SpawnableId, new GameObjectPrefabProvider(GetProjectilePrefab(definition)), 4, 32));
             }
 
             return spawnables.ToArray();
@@ -2341,7 +2882,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private static void ApplyColor(GameObject instance, Color color)
         {
             Renderer renderer = instance.GetComponent<Renderer>();
-            if (renderer != null) renderer.sharedMaterial = new Material(Shader.Find("Standard")) { color = color };
+            Shader shader = Shader.Find("Standard");
+            if (renderer != null && shader != null) renderer.sharedMaterial = new Material(shader) { color = color };
         }
 
         private void OnDestroy()
@@ -2359,6 +2901,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             SpawnedCount = 0;
             DirectOrCombatKillCount = 0;
             ProjectileLaunchCount = 0;
+            ProjectileVisualSpawnCount = 0;
+            AttackVfxSpawnCount = 0;
+            AttackAudioPlayCount = 0;
+            EnemyPresentationEventCount = 0;
             ProjectileAdapterKillCount = 0;
             InvalidAssignedRecipeCount = 0;
             InvalidAssignedEnemyCount = 0;
@@ -2401,6 +2947,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _pulseBeamModuleCooldownTicks = 0;
             _arcBurstModuleCooldownTicks = 0;
             _homingPulseModuleCooldownTicks = 0;
+            _pendingProjectileImpacts.Clear();
+            _seenEnemyIds.Clear();
+            _enemyDeathPresentationIds.Clear();
         }
 
         private void ClearSpawnedRuntimeObjects()
@@ -2417,6 +2966,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _projectileSpawning?.Dispose();
                 DestroyTemplateObject(_enemyPrefab);
                 DestroyTemplateObject(_projectilePrefab);
+                DestroyTemplateObject(_fallbackPresentationClip);
                 DestroyTemplateObject(_root);
             }
             else
@@ -2429,6 +2979,38 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _enemyPrefab = null;
             _projectilePrefab = null;
             _root = null;
+            _runtimeAudioSource = null;
+            _fallbackPresentationClip = null;
+            _resolvedProjectileDefinitions = Array.Empty<ProjectileDefinition>();
+            _pendingProjectileImpacts.Clear();
+            _seenEnemyIds.Clear();
+            _enemyDeathPresentationIds.Clear();
+        }
+
+        private struct PendingProjectileImpact
+        {
+            public PendingProjectileImpact(
+                ProjectileInstanceId projectileId,
+                long targetEnemyId,
+                AttackDefinitionAsset attack,
+                Vector3 destination,
+                double damageThreshold,
+                int remainingTicks)
+            {
+                ProjectileId = projectileId;
+                TargetEnemyId = targetEnemyId;
+                Attack = attack;
+                Destination = destination;
+                DamageThreshold = damageThreshold;
+                RemainingTicks = remainingTicks;
+            }
+
+            public ProjectileInstanceId ProjectileId;
+            public long TargetEnemyId;
+            public AttackDefinitionAsset Attack;
+            public Vector3 Destination;
+            public double DamageThreshold;
+            public int RemainingTicks;
         }
 
         private static void DestroyTemplateObject(UnityEngine.Object instance)
