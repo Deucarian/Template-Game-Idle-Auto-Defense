@@ -104,7 +104,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(WeaponFireMode.Projectile, weapons[3].Stats.FireMode);
             Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateWeaponDefinitions(weapons).Length);
             Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateDefinition(null, weapons).WeaponModules.Count);
-            Assert.That(weapons[0].Stats.CooldownTicks, Is.EqualTo(30));
+            Assert.That(weapons[0].Stats.CooldownTicks, Is.EqualTo(34));
             Assert.That(weapons[0].Stats.Range, Is.LessThan(5.5f));
             Assert.That(weapons[3].Stats.Range, Is.GreaterThan(weapons[2].Stats.Range));
 
@@ -1330,6 +1330,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.IsTrue(controller.RewardDraftActive);
                 Assert.AreEqual(3, controller.RewardDraftChoiceCount);
                 var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                bool offeredUnlock = false;
                 for (int i = 0; i < controller.RewardDraftChoices.Count; i++)
                 {
                     IdleAutoDefenseRewardDraftChoice choice = controller.RewardDraftChoices[i];
@@ -1340,8 +1341,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     Assert.IsFalse(string.IsNullOrWhiteSpace(choice.TargetName));
                     Assert.IsFalse(string.IsNullOrWhiteSpace(choice.EffectDescription));
                     Assert.AreEqual((i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), choice.HotkeyLabel);
+                    offeredUnlock |= choice.IsUnlock;
                 }
 
+                Assert.IsTrue(offeredUnlock, "The first level-up draft should offer at least one module unlock.");
                 Assert.IsTrue(controller.TryChooseRewardDraftHotkey(1));
                 Assert.AreEqual(1, controller.RewardDraftSelectionCount);
             }
@@ -1515,10 +1518,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.elite", "enemy.template.elite_Presentation.asset"), "_audioClip: {fileID: 8300000");
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.boss", "enemy.template.boss_Presentation.asset"), "_vfxPrefab: {fileID:");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.fire-orb");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.shard-launcher", "weapon.template.shard-launcher_Stats.asset"), "_cooldownTicks: 30");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_Stats.asset"), "_cooldownTicks: 48");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.arc-burst-tower", "weapon.template.arc-burst-tower_Stats.asset"), "_cooldownTicks: 76");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.homing-spire", "weapon.template.homing-spire_Stats.asset"), "_cooldownTicks: 60");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.shard-launcher", "weapon.template.shard-launcher_Stats.asset"), "_cooldownTicks: 34");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_Stats.asset"), "_cooldownTicks: 54");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.arc-burst-tower", "weapon.template.arc-burst-tower_Stats.asset"), "_cooldownTicks: 82");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.homing-spire", "weapon.template.homing-spire_Stats.asset"), "_cooldownTicks: 68");
 
             string bootstrapPath = Path.Combine(templateSourceRoot, "Scripts", "BasicIdleAutoDefenseGameBootstrap.cs");
             AssertFileContains(bootstrapPath, "UnityEngine.UIElements");
@@ -1532,8 +1535,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(bootstrapPath, "ApplyRuntimeUiFont");
             AssertFileContains(bootstrapPath, "protected override void Update()");
             AssertFileContains(bootstrapPath, "base.Update();");
+            AssertFileContains(bootstrapPath, "TryPurchaseOverdrive");
             AssertFileContains(bootstrapPath, "backgroundColor");
             AssertFileContains(bootstrapPath, "borderTopColor");
+            AssertFileDoesNotContain(bootstrapPath, "Test Rewards");
+            AssertFileDoesNotContain(bootstrapPath, "Reward Now");
             AssertFileDoesNotContain(bootstrapPath, "OnGUI");
             AssertFileDoesNotContain(bootstrapPath, "GUILayout");
 
@@ -1667,6 +1673,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(3), controller.StatusSummary);
                 Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
+                Assert.That(controller.OverdriveActivationCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.That(controller.UpgradeFeedbackSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.AreEqual(0, controller.DraftTickCount);
                 Assert.That(controller.EncounterRewardCredits, Is.GreaterThanOrEqualTo(60));
                 Assert.That(controller.EncounterRewardParts, Is.GreaterThanOrEqualTo(3));
@@ -2742,6 +2750,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 return;
             }
 
+            if (controller.CanPurchaseOverdrive) controller.TryPurchaseOverdrive();
             if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
                 controller.TryPurchaseRepairUpgrade();
             if (controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();

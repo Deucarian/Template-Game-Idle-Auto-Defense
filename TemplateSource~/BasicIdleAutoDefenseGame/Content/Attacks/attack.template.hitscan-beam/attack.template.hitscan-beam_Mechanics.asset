@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: attack.template.hitscan-beam_Mechanics
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackMechanicsDefinitionAsset
   _cooldownTicks: 0
-  _range: 5.6
-  _damageAmount: 5.5
+  _range: 5.2
+  _damageAmount: 5
   _damageTypeId: damage.template.basic

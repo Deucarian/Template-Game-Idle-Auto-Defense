@@ -18,6 +18,17 @@ The setup wizard copies this content into `Assets/GameContent/IdleAutoDefense` b
 | `ContentSets` | Playable run recipe assigned by the generated scene. |
 | `ContentPacks` | Wrapper assigned by the generated scene. |
 
-The starter pack contains four generic attacks, six enemies, four tower weapons, seven spawn profiles, six authored upgrades, one content set, and one content pack. Starter tuning is intentionally readable, not commercial. Use it to verify spawning, targeting, attacks, upgrades, elite/boss rewards, and save smoke before building a real product loop.
+The starter pack contains four generic attacks, six enemies, four tower weapons, seven spawn profiles, six authored upgrades, one content set, and one content pack. Starter tuning is intentionally readable and pressure-oriented, not commercial. Use it to verify spawning, targeting, attacks, upgrades, elite/boss rewards, and save smoke before building a real product loop.
 
-The playable sample also builds a runtime three-choice reward draft from the resolved tower weapons. Kills grant commander experience, wave completion contributes experience, elite kills always queue a reward, and boss kills queue a stronger reward. `IdleAutoDefenseRewardDraftSettings` exposes the sample XP values, rarity weights, unlock weighting, progression thresholds, and projectile retarget tolerance. The generated controller's reward draft catalog holds the actual unlock, normal, Epic, Legendary, and base reward entries so an asset flip can change names, effects, and tracks without digging through controller branches. Each owned weapon has three normal investments, three Epic investments unlocked after the normal track, and one Legendary investment unlocked after the Epic track by default. Product games can keep this sample progression as glue or replace it after their authored `Assets/GameContent` pack has real balance.
+The playable sample also builds a runtime three-choice reward draft from the resolved tower weapons. Kills grant commander experience, wave completion contributes experience, elite kills always queue a reward, boss kills queue a stronger reward, and the controller guarantees an early reward prompt around the opening pressure beat if XP has not already produced one. Early level-up drafts bias one card toward a module unlock, then fill the rest from owned weapon/base upgrades. `IdleAutoDefenseRewardDraftSettings` exposes the sample XP values, rarity weights, unlock weighting, progression thresholds, and projectile retarget tolerance. The generated controller's reward draft catalog holds the actual unlock, normal, Epic, Legendary, and base reward entries so an asset flip can change names, effects, and tracks without digging through controller branches. Each owned weapon has three normal investments, three Epic investments unlocked after the normal track, and one Legendary investment unlocked after the Epic track by default.
+
+The first-run feel depends on authored data and small sample runtime glue:
+
+- Tune enemy HP, speed, reward value, and contact damage in `Enemies`.
+- Tune tower range, cooldown, and starting weapon identity in `Weapons`.
+- Tune attack damage, delivery mode, projectile speed, VFX, and audio in `Attacks`.
+- Tune pressure timing, offscreen approach lanes, elite moments, and boss timing in `Waves`.
+- Tune live starter upgrade costs/effects in `Upgrades` and runtime reward tracks in the controller catalog.
+- Replace tower, enemy, projectile, impact, UI, and ground Kenney assets in the generated game root under `Resources/Kenney/IdleAutoDefense`.
+
+The sample HUD includes explicit Damage, Fire Rate, Range, Repair, module unlock, and Overdrive buttons. Overdrive is a short credit spend for pressure moments; it is intentionally player-facing and replaces the older visible test reward buttons. Product games can keep this sample progression as glue or replace it after their authored `Assets/GameContent` pack has real balance.

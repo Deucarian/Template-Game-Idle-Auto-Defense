@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: attack.template.homing-pulse_Mechanics
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackMechanicsDefinitionAsset
   _cooldownTicks: 0
-  _range: 6.6
+  _range: 6.8
   _damageAmount: 8
   _damageTypeId: damage.template.arc

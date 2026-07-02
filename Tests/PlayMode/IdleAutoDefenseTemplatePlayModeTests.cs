@@ -45,8 +45,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.RewardDraftSelectionCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.FirstRewardDraftSeconds, Is.GreaterThan(0f).And.LessThan(90f), controller.StatusSummary);
+            Assert.That(controller.UpgradeFeedbackSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EliteOrBossSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
+            Assert.That(controller.OverdriveActivationCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.True(controller.PulseBeamUnlocked, "Smoke should unlock Pulse Beam.");
             Assert.True(controller.ArcBurstUnlocked, "Smoke should unlock Arc Burst.");
             Assert.True(controller.HomingPulseUnlocked, "Smoke should unlock Homing Pulse.");
@@ -157,6 +159,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
                 return;
             }
 
+            if (controller.CanPurchaseOverdrive) controller.TryPurchaseOverdrive();
             if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
                 controller.TryPurchaseRepairUpgrade();
             if (controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();

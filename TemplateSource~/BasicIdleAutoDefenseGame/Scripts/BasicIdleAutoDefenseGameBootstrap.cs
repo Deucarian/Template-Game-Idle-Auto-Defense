@@ -42,8 +42,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private Button _pulseButton;
         private Button _arcButton;
         private Button _homingButton;
-        private Button _testLevelRewardButton;
-        private Button _testBossRewardButton;
+        private Button _overdriveButton;
         private Button _saveButton;
         private Button _resetButton;
         private Button _restartButton;
@@ -171,10 +170,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _arcButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseArcBurstModule));
             _homingButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseHomingPulseModule));
 
-            AddSectionTitle(_hudRoot, "Test Rewards");
-            VisualElement testRow = AddRow(_hudRoot);
-            _testLevelRewardButton = AddButton(testRow, () => RequestRewardAndRefresh(IdleAutoDefenseRewardDraftKind.LevelUp), "Reward Now");
-            _testBossRewardButton = AddButton(testRow, () => RequestRewardAndRefresh(IdleAutoDefenseRewardDraftKind.BossDefeated), "Boss Reward");
+            AddSectionTitle(_hudRoot, "Active");
+            _overdriveButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseOverdrive));
 
             AddSectionTitle(_hudRoot, "Save");
             _saveLabel = AddLabel(_hudRoot);
@@ -293,7 +290,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _killLabel.text = "Kills: " + (DirectOrCombatKillCount + ProjectileAdapterKillCount).ToString(CultureInfo.InvariantCulture) +
                 "  Projectiles: " + ProjectileLaunchCount.ToString(CultureInfo.InvariantCulture);
             _purchaseLabel.text = "Purchases: " + SelectedUpgradeCount.ToString(CultureInfo.InvariantCulture) +
-                "  Modules: " + UnlockedModuleCount.ToString(CultureInfo.InvariantCulture) + "/4  Tower Hits: " + ObjectiveDamageEvents.ToString(CultureInfo.InvariantCulture);
+                "  Modules: " + UnlockedModuleCount.ToString(CultureInfo.InvariantCulture) + "/4  Tower Hits: " + ObjectiveDamageEvents.ToString(CultureInfo.InvariantCulture) +
+                (OverdriveActive ? "  OVERDRIVE " + OverdriveSecondsRemaining.ToString("0", CultureInfo.InvariantCulture) + "s" : string.Empty);
             _buildLabel.text = "Build: Shard Launcher" +
                 (PulseBeamUnlocked ? " + Pulse Beam" : string.Empty) +
                 (ArcBurstUnlocked ? " + Arc Burst" : string.Empty) +
@@ -314,8 +312,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             SetModuleButton(_pulseButton, "Pulse Beam", PulseBeamUnlocked, PulseBeamUnlockCost, CanPurchasePulseBeamModule);
             SetModuleButton(_arcButton, "Arc Burst", ArcBurstUnlocked, ArcBurstUnlockCost, CanPurchaseArcBurstModule);
             SetModuleButton(_homingButton, "Homing Pulse", HomingPulseUnlocked, HomingPulseUnlockCost, CanPurchaseHomingPulseModule);
-            _testLevelRewardButton.SetEnabled(!RewardDraftActive);
-            _testBossRewardButton.SetEnabled(!RewardDraftActive);
+            SetOverdriveButton(_overdriveButton, OverdriveActive, OverdriveSecondsRemaining, OverdriveCooldownSecondsRemaining, OverdriveCost, CanPurchaseOverdrive);
 
             _saveLabel.text = "Save: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty);
             _saveButton.SetEnabled(true);
@@ -344,12 +341,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
                 _choiceFeedbackUntil = Time.realtimeSinceStartup + 3.5f;
             }
 
-            RefreshUiToolkitHud();
-        }
-
-        private void RequestRewardAndRefresh(IdleAutoDefenseRewardDraftKind kind)
-        {
-            RequestRewardDraft(kind);
             RefreshUiToolkitHud();
         }
 
@@ -496,6 +487,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             button.text = label + "  " + (unlocked ? "Unlocked" : cost.ToString(CultureInfo.InvariantCulture));
             button.SetEnabled(enabled);
             ApplyButtonState(button, enabled, unlocked);
+        }
+
+        private static void SetOverdriveButton(Button button, bool active, float activeSeconds, float cooldownSeconds, int cost, bool enabled)
+        {
+            if (button == null) return;
+            if (active)
+                button.text = "Overdrive  " + activeSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
+            else if (cooldownSeconds > 0.1f)
+                button.text = "Overdrive  " + cooldownSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
+            else
+                button.text = "Overdrive  " + cost.ToString(CultureInfo.InvariantCulture);
+            button.SetEnabled(enabled);
+            ApplyButtonState(button, enabled, active);
+            if (active)
+            {
+                button.style.backgroundColor = new Color(0.34f, 0.22f, 0.05f, 0.98f);
+                button.style.borderTopColor = new Color(1f, 0.84f, 0.22f, 1f);
+            }
         }
 
         private static void ApplyButtonState(Button button, bool enabled, bool complete)

@@ -331,8 +331,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Shard Launcher",
                     WeaponFireMode.Projectile,
                     shard,
-                    30,
-                    5.2f,
+                    34,
+                    4.9f,
                     ShardProjectileId.Value,
                     buildCost: 35,
                     upgradeGroupId: "upgrade.group.template.shard",
@@ -342,8 +342,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Pulse Beam",
                     WeaponFireMode.DirectAttack,
                     pulse,
-                    48,
-                    5.6f,
+                    54,
+                    5.2f,
                     buildCost: 25,
                     upgradeGroupId: "upgrade.group.template.pulse",
                     tags: new[] { "template", "hitscan", "tower" }),
@@ -352,7 +352,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Arc Burst Module",
                     WeaponFireMode.DirectAttack,
                     arc,
-                    76,
+                    82,
                     4.4f,
                     buildCost: 65,
                     upgradeGroupId: "upgrade.group.template.arc",
@@ -362,8 +362,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Homing Pulse Module",
                     WeaponFireMode.Projectile,
                     homing,
-                    60,
-                    6.6f,
+                    68,
+                    6.8f,
                     HomingPulseProjectileId.Value,
                     buildCost: 55,
                     upgradeGroupId: "upgrade.group.template.homing",
@@ -717,18 +717,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Pulse Beam",
                     AttackRecipeDeliveryMode.Hitscan,
                     DamageType.Value,
-                    5.5f,
+                    5.0f,
                     0,
-                    5.6f,
+                    5.2f,
                     AttackRecipeTargetingMode.Nearest),
                 AttackDefinitionAsset.CreateTransient(
                     ShardAttackId.Value,
                     "Shard Projectile",
                     AttackRecipeDeliveryMode.Projectile,
                     DamageType.Value,
-                    3.5f,
+                    3.0f,
                     0,
-                    5.2f,
+                    4.9f,
                     AttackRecipeTargetingMode.Strongest,
                     projectileDefinitionId: ShardProjectileId.Value,
                     projectileSpawnableId: ProjectileSpawnableId.Value,
@@ -740,8 +740,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Arc Burst",
                     AttackRecipeDeliveryMode.Area,
                     DamageType.Value,
-                    7f,
-                    76,
+                    8.0f,
+                    82,
                     4.4f,
                     AttackRecipeTargetingMode.Strongest),
                 AttackDefinitionAsset.CreateTransient(
@@ -749,9 +749,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Homing Pulse",
                     AttackRecipeDeliveryMode.Projectile,
                     DamageType.Value,
-                    8f,
+                    8.0f,
                     0,
-                    6.6f,
+                    6.8f,
                     AttackRecipeTargetingMode.LowestHealth,
                     projectileDefinitionId: HomingPulseProjectileId.Value,
                     projectileSpawnableId: HomingPulseProjectileId.Value,
@@ -1387,31 +1387,37 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     public class IdleAutoDefenseTemplateController : MonoBehaviour
     {
         private readonly SpawnRequest[] _spawnBuffer = new SpawnRequest[16];
-        private const long DefaultRuntimeStartingCredits = 60;
-        private const long KillRewardCredits = 8;
-        private const int PassiveIncomeIntervalTicks = 90;
-        private const int ManualTowerBaseCooldownTicks = 30;
-        private const int ManualTowerMinimumCooldownTicks = 16;
-        private const double ManualTowerBaseDamage = 3.5d;
-        private const double ManualTowerDamageRankBonus = 1.75d;
-        private const double ManualTowerBaseRange = 5.2d;
+        private const long DefaultRuntimeStartingCredits = 45;
+        private const long KillRewardCredits = 9;
+        private const int PassiveIncomeIntervalTicks = 60;
+        private const int ManualTowerBaseCooldownTicks = 34;
+        private const int ManualTowerMinimumCooldownTicks = 18;
+        private const double ManualTowerBaseDamage = 3.0d;
+        private const double ManualTowerDamageRankBonus = 1.6d;
+        private const double ManualTowerBaseRange = 4.9d;
         private const double ManualTowerRangeRankBonus = 0.4d;
-        private const double ManualTowerMaximumRange = 8.5d;
-        private const double PulseBeamModuleBaseRange = 5.6d;
+        private const double ManualTowerMaximumRange = 7.8d;
+        private const double PulseBeamModuleBaseRange = 5.2d;
         private const double ArcBurstModuleBaseRange = 4.4d;
-        private const double HomingPulseModuleBaseRange = 6.6d;
+        private const double HomingPulseModuleBaseRange = 6.8d;
         private const double ModuleRangeRankBonus = 0.35d;
         private const double SampleProjectileFinishThreshold = 3d;
         private const float TemplateSpawnLaneRadius = 18.5f;
         private const float TemplateVisibleArenaRadius = 14.75f;
-        private const int PulseBeamModuleUnlockCost = 25;
-        private const int ArcBurstModuleUnlockCost = 30;
-        private const int HomingPulseModuleUnlockCost = 30;
-        private const int PulseBeamModuleCooldownTicks = 48;
-        private const int ArcBurstModuleCooldownTicks = 76;
-        private const int HomingPulseModuleCooldownTicks = 60;
+        private const int PulseBeamModuleUnlockCost = 18;
+        private const int ArcBurstModuleUnlockCost = 28;
+        private const int HomingPulseModuleUnlockCost = 34;
+        private const int PulseBeamModuleCooldownTicks = 58;
+        private const int ArcBurstModuleCooldownTicks = 88;
+        private const int HomingPulseModuleCooldownTicks = 74;
         private const int MinimumProjectileImpactDelayTicks = 12;
-        private const int MaximumProjectileImpactDelayTicks = 44;
+        private const int MaximumProjectileImpactDelayTicks = 52;
+        private const float FirstRewardDraftTargetSeconds = 30f;
+        private const int OverdriveCostCredits = 22;
+        private const float OverdriveDurationSeconds = 7f;
+        private const float OverdriveCooldownSeconds = 18f;
+        private const int OverdriveCooldownBonusTicks = 10;
+        private const double OverdriveDamageMultiplier = 1.55d;
         private const string KenneyResourceRoot = "Kenney/IdleAutoDefense/";
         private const float RuntimeUiFallbackWidth = 1280f;
         private const float RuntimeUiFallbackHeight = 720f;
@@ -1492,6 +1498,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private int _arcBurstBonus;
         private int _homingPulseBonus;
         private double _rewardDamageMultiplierBonus;
+        private bool _starterRewardDraftOffered;
+        private float _overdriveSecondsRemaining;
+        private float _overdriveCooldownSecondsRemaining;
         private float _minimumEnemySpawnDistance = float.MaxValue;
         private float _closestEnemyDistanceToObjective = float.MaxValue;
 
@@ -1554,6 +1563,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int WaveRewardExperienceCount { get; private set; }
         public int EpicRewardSelectionCount { get; private set; }
         public int LegendaryRewardSelectionCount { get; private set; }
+        public int UpgradeFeedbackSpawnCount { get; private set; }
         public int CommanderLevel { get; private set; } = 1;
         public long CommanderExperience { get; private set; }
         public long ExperienceToNextLevel => RewardDraftSettings.CalculateExperienceToNextLevel(CommanderLevel);
@@ -1601,11 +1611,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int PulseBeamUnlockCost => PulseBeamModuleUnlockCost;
         public int ArcBurstUnlockCost => ArcBurstModuleUnlockCost;
         public int HomingPulseUnlockCost => HomingPulseModuleUnlockCost;
+        public int OverdriveCost => OverdriveCostCredits;
+        public bool OverdriveActive => _overdriveSecondsRemaining > 0f;
+        public float OverdriveSecondsRemaining => Mathf.Max(0f, _overdriveSecondsRemaining);
+        public float OverdriveCooldownSecondsRemaining => Mathf.Max(0f, _overdriveCooldownSecondsRemaining);
         public bool CanPurchasePulseBeamModule => !PulseBeamUnlocked && CanSpendRuntimeCurrency(PulseBeamUnlockCost);
         public bool CanPurchaseArcBurstModule => !ArcBurstUnlocked && CanSpendRuntimeCurrency(ArcBurstUnlockCost);
         public bool CanPurchaseHomingPulseModule => !HomingPulseUnlocked && CanSpendRuntimeCurrency(HomingPulseUnlockCost);
+        public bool CanPurchaseOverdrive => !OverdriveActive && OverdriveCooldownSecondsRemaining <= 0f && CanSpendRuntimeCurrency(OverdriveCost);
         public int UnlockedModuleCount => 1 + (PulseBeamUnlocked ? 1 : 0) + (ArcBurstUnlocked ? 1 : 0) + (HomingPulseUnlocked ? 1 : 0);
         public int ModuleActivationCount { get; private set; }
+        public int OverdriveActivationCount { get; private set; }
         public bool CanPurchaseDamageUpgrade => CanSpendRuntimeCurrency(DamageUpgradeCost);
         public bool CanPurchaseAttackSpeedUpgrade => CanSpendRuntimeCurrency(AttackSpeedUpgradeCost);
         public bool CanPurchaseRangeUpgrade => CanSpendRuntimeCurrency(RangeUpgradeCost);
@@ -1622,6 +1638,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " ClosestEnemy=" + ClosestEnemyDistanceToObjective.ToString("0.0", CultureInfo.InvariantCulture) +
             " Currency=" + RuntimeCurrency +
             " Level=" + CommanderLevel +
+            " Overdrive=" + (OverdriveActive ? "on" : "off") +
             " Time=" + SurvivalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
 
         private AutoDefenseRuntimeState RuntimeState => _runtime == null ? AutoDefenseRuntimeState.Created : _runtime.State;
@@ -1819,6 +1836,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (FindFirstObjectByType<AudioListener>() == null)
                 _root.AddComponent<AudioListener>();
             EnsureRuntimeUiDocument();
+            ConfigureGameplayCamera(definition.Objective.Position);
             CreateArenaBackdrop();
             CreatePrimitive("Core Build Pad", PrimitiveType.Cylinder, definition.Objective.Position + new Vector3(0f, -0.08f, 0f), new Vector3(1.45f, 0.06f, 1.45f), new Color(0.35f, 0.88f, 1f), "Art/build_pad_target", true);
             CreatePrimitive("Player Tower", PrimitiveType.Cylinder, definition.Objective.Position, new Vector3(0.8f, 0.9f, 0.8f), Color.cyan, "Art/tower_projectile_red", false, new Vector3(0f, 0.95f, -0.06f), new Vector3(1.15f, 1.15f, 1f));
@@ -1997,6 +2015,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public void Step(int ticks, float deltaSeconds)
         {
             if (_runtime == null || _runtime.State != AutoDefenseRuntimeState.Running) return;
+            UpdateOverdriveTimers(deltaSeconds);
             if (RewardDraftActive && RewardDraftPausesCombat)
             {
                 UpdateDamageNumbers(deltaSeconds);
@@ -2005,6 +2024,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             SurvivalSeconds += Math.Max(0f, deltaSeconds);
+            OfferFirstRewardDraftIfReady();
+            if (RewardDraftActive && RewardDraftPausesCombat)
+            {
+                UpdateDamageNumbers(deltaSeconds);
+                UpdateCameraShake(deltaSeconds);
+                return;
+            }
             _encounter.AdvanceTicks(EnemySpawnDelayTicks);
             _encounter.DrainSpawnRequests(_spawnBuffer);
             for (int i = 0; i < _spawnBuffer.Length; i++)
@@ -2079,6 +2105,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!SpendRuntimeCurrency(DamageUpgradeCost)) return false;
             DamageUpgradeRank++;
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Damage Up", new Color(1f, 0.55f, 0.18f), 0.9f);
             return true;
         }
 
@@ -2087,6 +2114,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!SpendRuntimeCurrency(AttackSpeedUpgradeCost)) return false;
             AttackSpeedUpgradeRank++;
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Fire Rate Up", new Color(0.35f, 0.9f, 1f), 0.9f);
             return true;
         }
 
@@ -2096,6 +2124,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             RangeUpgradeRank++;
             DirectDamageBonus += 0.5d;
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Range Up", new Color(0.45f, 1f, 0.6f), 0.9f);
             return true;
         }
 
@@ -2106,10 +2135,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (_runtime != null)
             {
                 _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + 8d, MaximumChangePolicy.PreserveAbsolute);
-                _runtime.Objective.Health.Heal(22d + RepairUpgradeRank * 4d);
+                _runtime.Objective.Health.Heal(34d + RepairUpgradeRank * 6d);
             }
 
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Repair", new Color(0.35f, 1f, 0.55f), 1.0f);
             return true;
         }
 
@@ -2118,6 +2148,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!SpendRuntimeCurrency(PulseBeamUnlockCost)) return false;
             UnlockPulseBeamModule();
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Pulse Beam Online", new Color(0.15f, 0.8f, 1f), 1.1f);
             return true;
         }
 
@@ -2126,6 +2157,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!SpendRuntimeCurrency(ArcBurstUnlockCost)) return false;
             UnlockArcBurstModule();
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Arc Burst Online", new Color(1f, 0.65f, 0.12f), 1.1f);
             return true;
         }
 
@@ -2134,6 +2166,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!SpendRuntimeCurrency(HomingPulseUnlockCost)) return false;
             UnlockHomingPulseModule();
             SelectedUpgradeCount++;
+            EmitUpgradeFeedback("Homing Online", new Color(0.68f, 0.38f, 1f), 1.1f);
+            return true;
+        }
+
+        public bool TryPurchaseOverdrive()
+        {
+            if (!CanPurchaseOverdrive || !SpendRuntimeCurrency(OverdriveCost)) return false;
+            _overdriveSecondsRemaining = OverdriveDurationSeconds;
+            _overdriveCooldownSecondsRemaining = OverdriveDurationSeconds + OverdriveCooldownSeconds;
+            OverdriveActivationCount++;
+            SelectedUpgradeCount++;
+            EmitUpgradeFeedback("OVERDRIVE", new Color(1f, 0.82f, 0.18f), 1.28f);
             return true;
         }
 
@@ -2178,10 +2222,27 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return 0;
         }
 
+        private void UpdateOverdriveTimers(float deltaSeconds)
+        {
+            float safeDelta = Mathf.Max(0f, deltaSeconds);
+            if (_overdriveSecondsRemaining > 0f)
+                _overdriveSecondsRemaining = Mathf.Max(0f, _overdriveSecondsRemaining - safeDelta);
+            if (_overdriveCooldownSecondsRemaining > 0f)
+                _overdriveCooldownSecondsRemaining = Mathf.Max(0f, _overdriveCooldownSecondsRemaining - safeDelta);
+        }
+
+        private void OfferFirstRewardDraftIfReady()
+        {
+            if (_starterRewardDraftOffered || FirstRewardDraftSeconds >= 0f || SurvivalSeconds < FirstRewardDraftTargetSeconds) return;
+            _starterRewardDraftOffered = true;
+            QueueOrOpenRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+            EmitUpgradeFeedback("Reward Ready", new Color(1f, 0.82f, 0.18f), 1.05f);
+        }
+
         private int FireManualTowerShotIfReady(int ticks)
         {
             _manualTowerCooldownTicks += Math.Max(1, ticks);
-            int cooldownTicks = Math.Max(ManualTowerMinimumCooldownTicks, ManualTowerBaseCooldownTicks - AttackSpeedUpgradeRank * 3);
+            int cooldownTicks = Math.Max(ManualTowerMinimumCooldownTicks, ManualTowerBaseCooldownTicks - AttackSpeedUpgradeRank * 3 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0));
             if (_manualTowerCooldownTicks < cooldownTicks) return 0;
             _manualTowerCooldownTicks = 0;
 
@@ -2209,12 +2270,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (PulseBeamUnlocked)
             {
                 _pulseBeamModuleCooldownTicks += Math.Max(1, ticks);
-                if (_pulseBeamModuleCooldownTicks >= Math.Max(24, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
+                if (_pulseBeamModuleCooldownTicks >= Math.Max(28, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank * 2 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0)))
                 {
                     _pulseBeamModuleCooldownTicks = 0;
                     ModuleActivationCount++;
                     kills += TryKillPriorityEnemies(
-                        ResolveModuleDamage(5.5d + DamageUpgradeRank * 1.25d + RangeUpgradeRank * 0.5d),
+                        ResolveModuleDamage(5d + DamageUpgradeRank * 1.25d + RangeUpgradeRank * 0.45d),
                         1 + _pulseBeamBonus,
                         BasicIdleAutoDefenseGame.PulseAttackId.Value,
                         ResolveModuleRange(PulseBeamModuleBaseRange));
@@ -2224,12 +2285,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (ArcBurstUnlocked)
             {
                 _arcBurstModuleCooldownTicks += Math.Max(1, ticks);
-                if (_arcBurstModuleCooldownTicks >= Math.Max(46, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3))
+                if (_arcBurstModuleCooldownTicks >= Math.Max(52, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0)))
                 {
                     _arcBurstModuleCooldownTicks = 0;
                     ModuleActivationCount++;
                     kills += TryKillPriorityEnemies(
-                        ResolveModuleDamage(7d + DamageUpgradeRank * 1.5d),
+                        ResolveModuleDamage(8d + DamageUpgradeRank * 1.55d),
                         2 + _arcBurstBonus,
                         BasicIdleAutoDefenseGame.ArcBurstAttackId.Value,
                         ResolveModuleRange(ArcBurstModuleBaseRange));
@@ -2239,12 +2300,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (HomingPulseUnlocked)
             {
                 _homingPulseModuleCooldownTicks += Math.Max(1, ticks);
-                if (_homingPulseModuleCooldownTicks >= Math.Max(36, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
+                if (_homingPulseModuleCooldownTicks >= Math.Max(42, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0)))
                 {
                     _homingPulseModuleCooldownTicks = 0;
                     ModuleActivationCount++;
                     kills += TryKillPriorityEnemies(
-                        ResolveModuleDamage(8d + DamageUpgradeRank * 1.5d + RangeUpgradeRank * 0.5d),
+                        ResolveModuleDamage(8d + DamageUpgradeRank * 1.45d + RangeUpgradeRank * 0.45d),
                         1 + _homingPulseBonus,
                         BasicIdleAutoDefenseGame.HomingPulseAttackId.Value,
                         ResolveModuleRange(HomingPulseModuleBaseRange),
@@ -2595,7 +2656,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private double ResolveModuleDamage(double baseDamage)
         {
-            return Math.Max(1d, baseDamage * (1d + Math.Max(0d, _rewardDamageMultiplierBonus)));
+            double multiplier = 1d + Math.Max(0d, _rewardDamageMultiplierBonus);
+            if (OverdriveActive)
+                multiplier *= OverdriveDamageMultiplier;
+            return Math.Max(1d, baseDamage * multiplier);
         }
 
         private bool UnlockPulseBeamModule()
@@ -2627,6 +2691,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (choiceIndex < 0 || choiceIndex >= _rewardDraftChoices.Length) return false;
             IdleAutoDefenseRewardDraftChoice choice = _rewardDraftChoices[choiceIndex];
             if (!ApplyRewardDraftChoice(choice)) return false;
+            EmitRewardChoiceFeedback(choice);
 
             SelectedUpgradeCount++;
             RewardDraftSelectionCount++;
@@ -2674,7 +2739,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     if (_runtime != null)
                     {
                         _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + 8d, MaximumChangePolicy.PreserveAbsolute);
-                        _runtime.Objective.Health.Heal(18d + RepairUpgradeRank * 2d);
+                        _runtime.Objective.Health.Heal(28d + RepairUpgradeRank * 4d);
                     }
 
                     return true;
@@ -2944,6 +3009,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             var selected = new List<IdleAutoDefenseRewardDraftChoice>(choiceCount);
             var random = new System.Random(20260623 + CommanderLevel * 17 + (int)kind * 1009 + _rewardDraftSeed++ * 97);
             var remaining = new List<IdleAutoDefenseRewardDraftChoice>(candidates);
+            TrySelectPreferredEarlyUnlock(remaining, selected, kind);
             while (selected.Count < choiceCount && remaining.Count > 0)
             {
                 double totalWeight = 0d;
@@ -2962,12 +3028,34 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
                 IdleAutoDefenseRewardDraftChoice choice = remaining[selectedIndex];
                 selected.Add(WithRewardHotkey(choice, selected.Count + 1));
-                for (int i = remaining.Count - 1; i >= 0; i--)
-                    if (string.Equals(remaining[i].DedupeKey, choice.DedupeKey, StringComparison.OrdinalIgnoreCase))
-                        remaining.RemoveAt(i);
+                RemoveRewardChoicesWithDedupeKey(remaining, choice.DedupeKey);
             }
 
             return selected.ToArray();
+        }
+
+        private bool TrySelectPreferredEarlyUnlock(List<IdleAutoDefenseRewardDraftChoice> remaining, List<IdleAutoDefenseRewardDraftChoice> selected, IdleAutoDefenseRewardDraftKind kind)
+        {
+            if (remaining == null || selected == null || selected.Count > 0) return false;
+            if (kind != IdleAutoDefenseRewardDraftKind.LevelUp || CommanderLevel > 2) return false;
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                IdleAutoDefenseRewardDraftChoice choice = remaining[i];
+                if (choice == null || !choice.IsUnlock) continue;
+                selected.Add(WithRewardHotkey(choice, selected.Count + 1));
+                RemoveRewardChoicesWithDedupeKey(remaining, choice.DedupeKey);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void RemoveRewardChoicesWithDedupeKey(List<IdleAutoDefenseRewardDraftChoice> choices, string dedupeKey)
+        {
+            if (choices == null) return;
+            for (int i = choices.Count - 1; i >= 0; i--)
+                if (choices[i] != null && string.Equals(choices[i].DedupeKey, dedupeKey, StringComparison.OrdinalIgnoreCase))
+                    choices.RemoveAt(i);
         }
 
         private static IdleAutoDefenseRewardDraftChoice WithRewardHotkey(IdleAutoDefenseRewardDraftChoice choice, int hotkey)
@@ -3304,6 +3392,64 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             PositionDamageNumber(_damageNumbers[_damageNumbers.Count - 1], 0f);
         }
 
+        private void EmitRewardChoiceFeedback(IdleAutoDefenseRewardDraftChoice choice)
+        {
+            if (choice == null) return;
+            Color color = ResolveRewardRarityColor(choice.Rarity);
+            string prefix = choice.IsUnlock ? "UNLOCK: " : choice.RarityName.ToUpperInvariant() + ": ";
+            EmitFloatingStatusText(CreateTowerMuzzlePosition(Vector3.zero), prefix + choice.DisplayName, color);
+            EmitKenneySpriteBurst("Reward Choice Burst", "Art/currency_coin_gold", CreateTowerMuzzlePosition(Vector3.zero), color, 1.22f, 0.72f, 0.68f, 70);
+            bool bigReward = (int)choice.Rarity >= (int)IdleAutoDefenseRewardRarity.Epic;
+            TriggerCameraShake(bigReward ? 0.22f : 0.14f, bigReward ? 0.12f : 0.07f);
+        }
+
+        private void EmitUpgradeFeedback(string text, Color color, float scale)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            EmitFloatingStatusText(CreateTowerMuzzlePosition(Vector3.zero), text, color);
+            EmitKenneySpriteBurst("Upgrade Feedback Burst", "Art/impact_flame", CreateTowerMuzzlePosition(Vector3.zero), color, Mathf.Max(0.35f, scale), 0.5f, 0.45f, 68);
+            TriggerCameraShake(0.08f, 0.045f);
+        }
+
+        private void EmitFloatingStatusText(Vector3 worldPosition, string text, Color color)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            EnsureRuntimeUiDocument();
+            if (_damageNumberLayer == null) return;
+
+            var label = new Label(text) { pickingMode = PickingMode.Ignore };
+            label.name = "upgrade-feedback";
+            label.style.position = Position.Absolute;
+            ApplyRuntimeUiFont(label);
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            label.style.fontSize = 20;
+            label.style.color = color;
+            label.style.backgroundColor = new Color(0.01f, 0.015f, 0.02f, 0.78f);
+            label.style.borderTopColor = color;
+            label.style.borderBottomColor = color;
+            label.style.borderLeftColor = color;
+            label.style.borderRightColor = color;
+            label.style.borderTopWidth = 2;
+            label.style.borderBottomWidth = 1;
+            label.style.borderLeftWidth = 1;
+            label.style.borderRightWidth = 1;
+            label.style.borderTopLeftRadius = 14;
+            label.style.borderTopRightRadius = 14;
+            label.style.borderBottomLeftRadius = 14;
+            label.style.borderBottomRightRadius = 14;
+            label.style.unityTextOutlineColor = new Color(0f, 0f, 0f, 0.9f);
+            label.style.unityTextOutlineWidth = 2f;
+            label.style.width = 292;
+            label.style.height = 36;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _damageNumberLayer.Add(label);
+
+            DamageNumberSpawnCount++;
+            UpgradeFeedbackSpawnCount++;
+            _damageNumbers.Add(new DamageNumberView(label, worldPosition, 0f));
+            PositionDamageNumber(_damageNumbers[_damageNumbers.Count - 1], 0f);
+        }
+
         private void UpdateDamageNumbers(float deltaSeconds)
         {
             if (_damageNumbers.Count == 0) return;
@@ -3333,7 +3479,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (number.Label == null) return;
             Vector2 point = WorldToRuntimePanelPoint(number.WorldPosition);
-            number.Label.style.left = point.x - 45f;
+            float width = number.Label.resolvedStyle.width;
+            if (float.IsNaN(width) || width <= 1f)
+                width = number.Label.name == "upgrade-feedback" ? 292f : 90f;
+            number.Label.style.left = point.x - width * 0.5f;
             number.Label.style.top = point.y - 56f - elapsedSeconds * 48f;
         }
 
@@ -3664,6 +3813,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return Color.white;
         }
 
+        private static Color ResolveRewardRarityColor(IdleAutoDefenseRewardRarity rarity)
+        {
+            if (rarity == IdleAutoDefenseRewardRarity.Legendary) return new Color(1f, 0.78f, 0.16f);
+            if (rarity == IdleAutoDefenseRewardRarity.Epic) return new Color(0.78f, 0.42f, 1f);
+            if (rarity == IdleAutoDefenseRewardRarity.Rare) return new Color(0.25f, 0.65f, 1f);
+            if (rarity == IdleAutoDefenseRewardRarity.Uncommon) return new Color(0.35f, 1f, 0.55f);
+            return new Color(0.92f, 0.96f, 1f);
+        }
+
         private static Color ResolveEnemyEventColor(EnemyPresentationEventKind eventKind)
         {
             if (eventKind == EnemyPresentationEventKind.OnDeath) return new Color(1f, 0.25f, 0.18f);
@@ -3704,7 +3862,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void AwardRuntimeCurrencyForKills(int kills)
         {
             if (kills <= 0) return;
-            RuntimeCurrency += Math.Max(kills, (long)Math.Ceiling(kills * KillRewardCredits * (1d + RewardCreditMultiplierBonus)));
+            long earned = Math.Max(kills, (long)Math.Ceiling(kills * KillRewardCredits * (1d + RewardCreditMultiplierBonus)));
+            RuntimeCurrency += earned;
+            EmitFloatingStatusText(CreateTowerMuzzlePosition(Vector3.zero), "+" + earned.ToString(CultureInfo.InvariantCulture) + " credits", new Color(1f, 0.86f, 0.2f));
         }
 
         private void GrantPassiveIncomeIfReady(int ticks)
@@ -4175,10 +4335,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             CreatePrimitive("Shard Launcher Module", PrimitiveType.Cube, new Vector3(0f, 0.35f, 0.9f), new Vector3(0.45f, 0.28f, 0.45f), new Color(1f, 0.45f, 0.1f), "Art/tower_projectile_red", false, new Vector3(0f, 0.38f, -0.04f), new Vector3(0.7f, 0.7f, 1f));
             Color warningStrip = new Color(0.95f, 0.68f, 0.18f, 0.95f);
-            CreatePrimitive("Outer Spawn Zone North", PrimitiveType.Cube, new Vector3(0f, 0.03f, TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip);
-            CreatePrimitive("Outer Spawn Zone East", PrimitiveType.Cube, new Vector3(TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip);
-            CreatePrimitive("Outer Spawn Zone South", PrimitiveType.Cube, new Vector3(0f, 0.03f, -TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip);
-            CreatePrimitive("Outer Spawn Zone West", PrimitiveType.Cube, new Vector3(-TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip);
+            CreatePrimitive("Outer Spawn Zone North", PrimitiveType.Cube, new Vector3(0f, 0.03f, TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(21.5f, 0.32f, 1f));
+            CreatePrimitive("Outer Spawn Zone East", PrimitiveType.Cube, new Vector3(TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(0.32f, 21.5f, 1f));
+            CreatePrimitive("Outer Spawn Zone South", PrimitiveType.Cube, new Vector3(0f, 0.03f, -TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(21.5f, 0.32f, 1f));
+            CreatePrimitive("Outer Spawn Zone West", PrimitiveType.Cube, new Vector3(-TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(0.32f, 21.5f, 1f));
         }
 
         private void CreateArenaBackdrop()
@@ -4189,6 +4349,30 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreatePrimitive("East Dirt Approach", PrimitiveType.Cube, new Vector3(10.2f, -0.145f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
             CreatePrimitive("South Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.14f, -10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f));
             CreatePrimitive("West Dirt Approach", PrimitiveType.Cube, new Vector3(-10.2f, -0.135f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
+        }
+
+        private void ConfigureGameplayCamera(Vector3 focus)
+        {
+            Camera camera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+            if (camera == null)
+            {
+                var cameraObject = new GameObject("Idle Auto Defense Camera");
+                cameraObject.transform.SetParent(_root != null ? _root.transform : null, false);
+                camera = cameraObject.AddComponent<Camera>();
+                cameraObject.tag = "MainCamera";
+            }
+
+            camera.orthographic = true;
+            camera.orthographicSize = 10.7f;
+            camera.transform.position = focus + new Vector3(1.2f, 18.5f, -14.5f);
+            camera.transform.rotation = Quaternion.Euler(57f, 0f, 0f);
+            camera.backgroundColor = new Color(0.07f, 0.10f, 0.12f, 1f);
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.nearClipPlane = 0.1f;
+            camera.farClipPlane = 80f;
+            _shakeCamera = camera;
+            _shakeCameraBaseLocalPosition = camera.transform.localPosition;
+            _shakeCameraBaseCaptured = true;
         }
 
         private static bool AttachKenneySprite(GameObject instance, string artPath, bool groundSprite, Vector3 localPosition, Vector3 localScale, int sortingOrder = 20)
@@ -4337,6 +4521,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             WaveRewardExperienceCount = 0;
             EpicRewardSelectionCount = 0;
             LegendaryRewardSelectionCount = 0;
+            UpgradeFeedbackSpawnCount = 0;
             CommanderLevel = 1;
             CommanderExperience = 0;
             DirectDamageBonus = 0d;
@@ -4354,6 +4539,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             ArcBurstUnlocked = false;
             HomingPulseUnlocked = false;
             ModuleActivationCount = 0;
+            OverdriveActivationCount = 0;
             UnsupportedUpgradeIntentCount = 0;
             EncounterRewardCredits = 0;
             EncounterRewardParts = 0;
@@ -4384,6 +4570,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _arcBurstBonus = 0;
             _homingPulseBonus = 0;
             _rewardDamageMultiplierBonus = 0d;
+            _starterRewardDraftOffered = false;
+            _overdriveSecondsRemaining = 0f;
+            _overdriveCooldownSecondsRemaining = 0f;
             _minimumEnemySpawnDistance = float.MaxValue;
             _closestEnemyDistanceToObjective = float.MaxValue;
             _cameraShakeSecondsRemaining = 0f;
@@ -4455,6 +4644,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _baseRewardRanks.Clear();
             _lastProjectileAgentPositions.Clear();
             _rewardDraftChoices = Array.Empty<IdleAutoDefenseRewardDraftChoice>();
+            _starterRewardDraftOffered = false;
+            _overdriveSecondsRemaining = 0f;
+            _overdriveCooldownSecondsRemaining = 0f;
             RestoreShakenCamera();
             _shakeCamera = null;
             _shakeCameraBaseCaptured = false;

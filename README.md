@@ -16,7 +16,7 @@ No Unity Package Manager sample import is required. The private template source 
 4. Open `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`.
 5. Press Play.
 
-The generated scene opens into a complete starter loop: a tower in the center, enemies spawning outside view, automatic attacks, currency rewards, buyable upgrades, tower damage, loss state, HUD, save, reset, and restart.
+The generated scene opens into a complete starter loop: a tower in the center, enemies spawning outside view, automatic attacks, currency rewards, a prominent three-card reward draft, buyable upgrades, an Overdrive active button, tower damage, loss state, HUD, save, reset, and restart.
 
 ## Generated Game
 
@@ -70,7 +70,9 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace placeholder visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
 
-During play, the sample controller turns kills, wave progress, elite kills, and boss kills into a visible three-choice reward draft. Normal choices unlock or improve owned tower weapons; after three normal investments in a weapon, Epic choices can appear for that weapon, and after three Epic investments a Legendary choice can appear. Keep the authored weapons, attacks, enemies, waves, and starter upgrades under `Assets/GameContent`; use `IdleAutoDefenseRewardDraftSettings` on the generated controller for XP pacing, rarity weights, unlock weighting, progression thresholds, and projectile retarget tolerance. Use the generated controller's reward draft catalog for the actual unlock, normal, Epic, Legendary, and base reward entries.
+During play, the sample controller turns kills, wave progress, elite kills, boss kills, and a guaranteed early run moment into a visible three-choice reward draft. Early level-up drafts prefer at least one module unlock so the player gets a build direction quickly. Normal choices unlock or improve owned tower weapons; after three normal investments in a weapon, Epic choices can appear for that weapon, and after three Epic investments a Legendary choice can appear. Keep the authored weapons, attacks, enemies, waves, and starter upgrades under `Assets/GameContent`; use `IdleAutoDefenseRewardDraftSettings` on the generated controller for XP pacing, rarity weights, unlock weighting, progression thresholds, and projectile retarget tolerance. Use the generated controller's reward draft catalog for the actual unlock, normal, Epic, Legendary, and base reward entries.
+
+The starter balance is tuned as a short first-run sample. The shard launcher begins with short range and a slower cadence so enemies can be seen approaching. Pulse Beam, Arc Burst, and Homing Pulse unlocks have distinct cadence/range roles, while Overdrive is a temporary credit spend that boosts visible damage and cooldowns for pressure moments. To make the first two minutes easier or harder, tune authored enemy health/speed under `Assets/GameContent/IdleAutoDefense/Enemies`, wave timings under `Waves`, weapon cooldown/range under `Weapons`, and attack damage/range/projectile speed under `Attacks`.
 
 The starter content intentionally stays generic and reusable:
 

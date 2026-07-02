@@ -15,8 +15,8 @@ MonoBehaviour:
   _fireMode: 1
   _attack: {fileID: 11400000, guid: 16f0c102ac4c82a46b5b4094f71e156a, type: 2}
   _projectileDefinitionId: projectile.template.shard
-  _cooldownTicks: 30
-  _range: 5.2
+  _cooldownTicks: 34
+  _range: 4.9
   _burstCount: 1
   _volleyCount: 1
   _spreadDegrees: 0
