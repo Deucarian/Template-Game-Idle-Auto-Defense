@@ -28,8 +28,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly DamageTypeId DamageType = new DamageTypeId("damage.template.basic");
         public static readonly AttackDefinitionId PulseAttackId = new AttackDefinitionId("attack.template.pulse-cannon");
         public static readonly AttackDefinitionId ShardAttackId = new AttackDefinitionId("attack.template.shard-launcher");
+        public static readonly AttackDefinitionId ArcBurstAttackId = new AttackDefinitionId("attack.template.arc-burst");
+        public static readonly AttackDefinitionId HomingPulseAttackId = new AttackDefinitionId("attack.template.homing-pulse");
         public static readonly AttackDefinitionId AttackId = PulseAttackId;
         public static readonly ProjectileDefinitionId ShardProjectileId = new ProjectileDefinitionId("projectile.template.shard");
+        public static readonly ProjectileDefinitionId HomingPulseProjectileId = new ProjectileDefinitionId("projectile.template.homing-pulse");
         public static readonly ProjectileDefinitionId ProjectileId = ShardProjectileId;
         public static readonly WorldSpawnableId SwarmEnemySpawnableId = new WorldSpawnableId("enemy.template.swarm");
         public static readonly WorldSpawnableId RunnerEnemySpawnableId = new WorldSpawnableId("enemy.template.runner");
@@ -41,17 +44,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly WorldSpawnableId ProjectileSpawnableId = new WorldSpawnableId("projectile.template.shard");
         public static readonly WeaponDefinitionId PulseCannonWeaponId = new WeaponDefinitionId("weapon.template.pulse-cannon");
         public static readonly WeaponDefinitionId ShardLauncherWeaponId = new WeaponDefinitionId("weapon.template.shard-launcher");
-        public static readonly WeaponDefinitionId ArcEmitterWeaponId = new WeaponDefinitionId("weapon.template.arc-emitter");
-        public static readonly WeaponDefinitionId OrbitalShotWeaponId = new WeaponDefinitionId("weapon.template.orbital-shot");
+        public static readonly WeaponDefinitionId ArcBurstTowerWeaponId = new WeaponDefinitionId("weapon.template.arc-burst-tower");
+        public static readonly WeaponDefinitionId HomingSpireWeaponId = new WeaponDefinitionId("weapon.template.homing-spire");
+        public static readonly WeaponDefinitionId ArcEmitterWeaponId = ArcBurstTowerWeaponId;
+        public static readonly WeaponDefinitionId OrbitalShotWeaponId = HomingSpireWeaponId;
         private static readonly string[] RequiredTemplateAttackIds =
         {
             PulseAttackId.Value,
-            ShardAttackId.Value
+            ShardAttackId.Value,
+            ArcBurstAttackId.Value,
+            HomingPulseAttackId.Value
         };
         private static readonly string[] RequiredTemplateWeaponIds =
         {
             PulseCannonWeaponId.Value,
-            ShardLauncherWeaponId.Value
+            ShardLauncherWeaponId.Value,
+            ArcBurstTowerWeaponId.Value,
+            HomingSpireWeaponId.Value
         };
         private static readonly string[] RequiredTemplateEnemyIds =
         {
@@ -294,29 +303,52 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             attackRecipes ??= CreateAttackRecipes();
             AttackDefinitionAsset pulse = FindAttackRecipe(attackRecipes, PulseAttackId.Value);
             AttackDefinitionAsset shard = FindAttackRecipe(attackRecipes, ShardAttackId.Value);
+            AttackDefinitionAsset arc = FindAttackRecipe(attackRecipes, ArcBurstAttackId.Value);
+            AttackDefinitionAsset homing = FindAttackRecipe(attackRecipes, HomingPulseAttackId.Value);
             return new[]
             {
                 WeaponDefinitionAsset.CreateTransient(
+                    ShardLauncherWeaponId.Value,
+                    "Shard Launcher",
+                    WeaponFireMode.Projectile,
+                    shard,
+                    13,
+                    5.25f,
+                    ShardProjectileId.Value,
+                    buildCost: 35,
+                    upgradeGroupId: "upgrade.group.template.shard",
+                    tags: new[] { "template", "projectile", "tower" }),
+                WeaponDefinitionAsset.CreateTransient(
                     PulseCannonWeaponId.Value,
-                    "Template Pulse Cannon",
+                    "Pulse Beam",
                     WeaponFireMode.DirectAttack,
                     pulse,
                     7,
-                    7f,
+                    4.75f,
                     buildCost: 25,
                     upgradeGroupId: "upgrade.group.template.pulse",
                     tags: new[] { "template", "hitscan", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
-                    ShardLauncherWeaponId.Value,
-                    "Template Shard Launcher",
+                    ArcBurstTowerWeaponId.Value,
+                    "Arc Burst Module",
+                    WeaponFireMode.DirectAttack,
+                    arc,
+                    24,
+                    3.75f,
+                    buildCost: 65,
+                    upgradeGroupId: "upgrade.group.template.arc",
+                    tags: new[] { "template", "area", "tower" }),
+                WeaponDefinitionAsset.CreateTransient(
+                    HomingSpireWeaponId.Value,
+                    "Homing Pulse Module",
                     WeaponFireMode.Projectile,
-                    shard,
-                    13,
-                    13f,
-                    ShardProjectileId.Value,
-                    buildCost: 35,
-                    upgradeGroupId: "upgrade.group.template.shard",
-                    tags: new[] { "template", "projectile", "tower" })
+                    homing,
+                    15,
+                    4.5f,
+                    HomingPulseProjectileId.Value,
+                    buildCost: 55,
+                    upgradeGroupId: "upgrade.group.template.homing",
+                    tags: new[] { "template", "homing", "tower" })
             };
         }
 
@@ -415,12 +447,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Template Swarm Enemy", EnemyRole.Swarm, 7f, 2.8f, 1, 2f, DamageType.Value, 0.25f, tags: new[] { "template", "swarm" }),
-                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Template Runner Enemy", EnemyRole.Fast, 6f, 4.0f, 1, 2f, DamageType.Value, 0.24f, tags: new[] { "template", "runner" }),
-                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Template Tank Enemy", EnemyRole.Tank, 24f, 1.35f, 3, 5f, DamageType.Value, 0.42f, tags: new[] { "template", "tank" }),
-                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Template Shielded Enemy", EnemyRole.Basic, 18f, 1.8f, 2, 4f, DamageType.Value, 0.34f, tags: new[] { "template", "shielded" }),
-                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Template Elite Enemy", EnemyRole.Boss, 34f, 2.15f, 4, 7f, DamageType.Value, 0.36f, tags: new[] { "template", "elite" }),
-                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Template Boss Enemy", EnemyRole.Boss, 96f, 0.95f, 8, 16f, DamageType.Value, 0.65f, tags: new[] { "template", "boss" })
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 5f, 1.1f, 1, 1f, DamageType.Value, 0.25f, tags: new[] { "template", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 8f, 1.6f, 1, 2f, DamageType.Value, 0.24f, tags: new[] { "template", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 22f, 0.7f, 3, 3f, DamageType.Value, 0.42f, tags: new[] { "template", "tank" }),
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 14f, 0.95f, 2, 2f, DamageType.Value, 0.34f, tags: new[] { "template", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 34f, 0.9f, 4, 5f, DamageType.Value, 0.36f, tags: new[] { "template", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 96f, 0.55f, 8, 12f, DamageType.Value, 0.65f, tags: new[] { "template", "boss" })
             };
         }
 
@@ -501,27 +533,59 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new[]
             {
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.first-orbit.opening",
-                    "Template First Orbit Opening",
+                    "wave.template.authored.opening",
+                    "Opening Wave",
                     0,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 3, 1, 0, 20, "perimeter-north"),
-                        new WaveEntryRecipe(enemies[0], 3, 1, 12, 20, "perimeter-east"),
-                        new WaveEntryRecipe(enemies[0], 3, 1, 24, 20, "perimeter-south"),
-                        new WaveEntryRecipe(enemies[0], 3, 1, 36, 20, "perimeter-west")
+                        new WaveEntryRecipe(enemies[0], 4, 1, 0, 28, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 2, 1, 35, 42, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[2], 1, 1, 110, 0, "perimeter-west")
                     },
-                    new[] { "template", "first-orbit", "opening" }),
+                    new[] { "template", "opening" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.first-orbit.pressure",
-                    "Template First Orbit Pressure",
-                    36,
+                    "wave.template.authored.runner-pressure",
+                    "Runner Pressure",
+                    130,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[1], 2, 1, 42, 18, "perimeter-east", 1),
-                        new WaveEntryRecipe(enemies[2], 1, 1, 78, 0, "perimeter-west", 2)
+                        new WaveEntryRecipe(enemies[1], 4, 1, 0, 32, "perimeter-east", 1),
+                        new WaveEntryRecipe(enemies[0], 4, 1, 24, 30, "perimeter-north", 1)
                     },
-                    new[] { "template", "first-orbit", "pressure" })
+                    new[] { "template", "runner-pressure" }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.template.authored.pressure",
+                    "Mixed Pressure",
+                    230,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[3], 2, 1, 0, 42, "perimeter-south", 1),
+                        new WaveEntryRecipe(enemies[2], 2, 1, 30, 36, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[1], 4, 1, 55, 28, "perimeter-north", 2)
+                    },
+                    new[] { "template", "pressure" }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.template.authored.surge",
+                    "Tank Break",
+                    330,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[0], 5, 1, 0, 26, "perimeter-north", 1),
+                        new WaveEntryRecipe(enemies[1], 3, 1, 32, 36, "perimeter-south", 1),
+                        new WaveEntryRecipe(enemies[3], 2, 1, 68, 42, "perimeter-west", 2)
+                    },
+                    new[] { "template", "tank-break" }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.template.authored.final",
+                    "Final Surge",
+                    450,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[2], 2, 1, 0, 52, "perimeter-north", 2),
+                        new WaveEntryRecipe(enemies[3], 3, 1, 28, 42, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[1], 4, 1, 70, 30, "perimeter-south", 2)
+                    },
+                    new[] { "template", "final" })
             };
         }
 
@@ -609,26 +673,50 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 AttackDefinitionAsset.CreateTransient(
                     PulseAttackId.Value,
-                    "Template Pulse Cannon",
+                    "Pulse Beam",
                     AttackRecipeDeliveryMode.Hitscan,
                     DamageType.Value,
-                    9,
+                    8,
                     0,
-                    7,
+                    4.75f,
                     AttackRecipeTargetingMode.Nearest),
                 AttackDefinitionAsset.CreateTransient(
                     ShardAttackId.Value,
-                    "Template Shard Launcher",
+                    "Shard Projectile",
                     AttackRecipeDeliveryMode.Projectile,
                     DamageType.Value,
-                    6,
+                    10,
                     0,
-                    13,
+                    5.25f,
                     AttackRecipeTargetingMode.Strongest,
                     projectileDefinitionId: ShardProjectileId.Value,
                     projectileSpawnableId: ProjectileSpawnableId.Value,
-                    projectileSpeed: 8.5f,
+                    projectileSpeed: 8f,
                     projectileLifetimeTicks: 120,
+                    pierceCount: 0),
+                AttackDefinitionAsset.CreateTransient(
+                    ArcBurstAttackId.Value,
+                    "Arc Burst",
+                    AttackRecipeDeliveryMode.Area,
+                    DamageType.Value,
+                    9,
+                    22,
+                    3.75f,
+                    AttackRecipeTargetingMode.Strongest),
+                AttackDefinitionAsset.CreateTransient(
+                    HomingPulseAttackId.Value,
+                    "Homing Pulse",
+                    AttackRecipeDeliveryMode.Projectile,
+                    DamageType.Value,
+                    7,
+                    0,
+                    4.5f,
+                    AttackRecipeTargetingMode.LowestHealth,
+                    projectileDefinitionId: HomingPulseProjectileId.Value,
+                    projectileSpawnableId: HomingPulseProjectileId.Value,
+                    projectileSpeed: 6.5f,
+                    projectileLifetimeTicks: 120,
+                    homing: true,
                     pierceCount: 1)
             };
         }
@@ -714,14 +802,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static RunUpgradeDefinitionAsset[] CreateRunUpgradeDefinitionAssets(IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null)
         {
             weaponDefinitions ??= CreateWeaponDefinitionAssets(CreateAttackRecipes());
-            WeaponDefinitionAsset pulse = FindWeaponDefinition(weaponDefinitions, PulseCannonWeaponId.Value);
             WeaponDefinitionAsset shard = FindWeaponDefinition(weaponDefinitions, ShardLauncherWeaponId.Value);
             return new[]
             {
-                UpgradeAsset("upgrade.template.damage-up", "Damage Increase", RunUpgradeAuthoringTargetKind.AttackDamage, RunUpgradeModifierType.Additive, 1.5, pulse, "10,20,35", RunUpgradeRarity.Common, 6, 3),
-                UpgradeAsset("upgrade.template.fire-rate-up", "Fire-Rate Increase", RunUpgradeAuthoringTargetKind.AttackRate, RunUpgradeModifierType.Additive, 1, pulse, "8,16,28", RunUpgradeRarity.Common, 5, 3),
-                UpgradeAsset("upgrade.template.range-up", "Range Increase", RunUpgradeAuthoringTargetKind.Range, RunUpgradeModifierType.Additive, 1.25, pulse, "12,24,36", RunUpgradeRarity.Common, 4, 3),
-                UpgradeAsset("upgrade.template.projectile-speed-up", "Projectile Speed Increase", RunUpgradeAuthoringTargetKind.ProjectileSpeed, RunUpgradeModifierType.Multiplicative, 0.35, shard, "10,20,40", RunUpgradeRarity.Common, 5, 3)
+                UpgradeAsset("upgrade.template.damage-up", "Damage Boost", RunUpgradeAuthoringTargetKind.AttackDamage, RunUpgradeModifierType.Additive, 1.5, shard, "10,20,35", RunUpgradeRarity.Common, 6, 3),
+                UpgradeAsset("upgrade.template.fire-rate-up", "Fire Rate Boost", RunUpgradeAuthoringTargetKind.AttackRate, RunUpgradeModifierType.Additive, 1, shard, "8,16,28", RunUpgradeRarity.Common, 5, 3),
+                UpgradeAsset("upgrade.template.range-up", "Range Boost", RunUpgradeAuthoringTargetKind.Range, RunUpgradeModifierType.Additive, 1.25, shard, "12,24,36", RunUpgradeRarity.Common, 4, 3),
+                UpgradeAsset("upgrade.template.projectile-speed-up", "Projectile Speed", RunUpgradeAuthoringTargetKind.ProjectileSpeed, RunUpgradeModifierType.Multiplicative, 0.35, shard, "10,20,40", RunUpgradeRarity.Common, 5, 3),
+                UpgradeAsset("upgrade.template.objective-max-health-up", "Core Reinforcement", RunUpgradeAuthoringTargetKind.WeaponStat, RunUpgradeModifierType.Additive, 8, null, "14,28,42", RunUpgradeRarity.Uncommon, 3, 3, "objective.template-core", "template.objective.max_health"),
+                UpgradeAsset("upgrade.template.enemy-reward-up", "Credit Reward", RunUpgradeAuthoringTargetKind.EnemyReward, RunUpgradeModifierType.Multiplicative, 0.15, null, "16,32,48", RunUpgradeRarity.Uncommon, 3, 3, "reward.template.run")
             };
         }
 
@@ -958,8 +1047,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             string costsCsv,
             RunUpgradeRarity rarity,
             int weight,
-            int maxRank)
+            int maxRank,
+            string targetIdOverride = "",
+            string effectIdOverride = "")
         {
+            string targetId = string.IsNullOrWhiteSpace(targetIdOverride)
+                ? weapon == null ? string.Empty : weapon.Id
+                : targetIdOverride;
             return RunUpgradeDefinitionAsset.CreateTransient(
                 id,
                 displayName,
@@ -968,7 +1062,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 maxRank,
                 new[]
                 {
-                    new RunUpgradeEffectRecipe(targetKind, modifierType, amount, weapon: weapon, targetIdOverride: weapon == null ? string.Empty : weapon.Id)
+                    new RunUpgradeEffectRecipe(targetKind, modifierType, amount, weapon: weapon, targetIdOverride: targetId, effectIdOverride: effectIdOverride)
                 },
                 ParseIntCsv(costsCsv),
                 displayName + " authored upgrade.",
@@ -1028,12 +1122,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                Enemy(SwarmEnemySpawnableId, 7, 2.8f, 2, 0.25f),
-                Enemy(RunnerEnemySpawnableId, 6, 4.0f, 2, 0.24f),
-                Enemy(TankEnemySpawnableId, 24, 1.35f, 5, 0.42f),
-                Enemy(ShieldedEnemySpawnableId, 18, 1.8f, 4, 0.34f),
-                Enemy(EliteEnemySpawnableId, 34, 2.15f, 7, 0.36f),
-                Enemy(BossEnemySpawnableId, 96, 0.95f, 16, 0.65f)
+                Enemy(SwarmEnemySpawnableId, 5, 1.1f, 1, 0.25f),
+                Enemy(RunnerEnemySpawnableId, 8, 1.6f, 2, 0.24f),
+                Enemy(TankEnemySpawnableId, 22, 0.7f, 3, 0.42f),
+                Enemy(ShieldedEnemySpawnableId, 14, 0.95f, 2, 0.34f),
+                Enemy(EliteEnemySpawnableId, 34, 0.9f, 5, 0.36f),
+                Enemy(BossEnemySpawnableId, 96, 0.55f, 12, 0.65f)
             };
         }
 
@@ -1183,6 +1277,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const double ManualTowerRangeRankBonus = 1d;
         private const double SampleProjectileFinishThreshold = 3d;
         private const float TemplateSpawnLaneRadius = 9f;
+        private const int PulseBeamModuleUnlockCost = 30;
+        private const int ArcBurstModuleUnlockCost = 40;
+        private const int HomingPulseModuleUnlockCost = 35;
+        private const int PulseBeamModuleCooldownTicks = 10;
+        private const int ArcBurstModuleCooldownTicks = 24;
+        private const int HomingPulseModuleCooldownTicks = 15;
         private AutoDefenseRuntime _runtime;
         private EncounterRuntime _encounter;
         private ProjectileRuntime _projectiles;
@@ -1217,6 +1317,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private MonetizationSession _monetizationSession;
         private int _manualTowerCooldownTicks;
         private int _passiveIncomeTicks;
+        private int _pulseBeamModuleCooldownTicks;
+        private int _arcBurstModuleCooldownTicks;
+        private int _homingPulseModuleCooldownTicks;
 
         public AutoDefenseRuntime Runtime => _runtime;
         public MonetizationSession MonetizationSession
@@ -1278,6 +1381,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int AttackSpeedUpgradeCost => CalculateUpgradeCost(18, AttackSpeedUpgradeRank);
         public int RangeUpgradeCost => CalculateUpgradeCost(18, RangeUpgradeRank);
         public int RepairUpgradeCost => CalculateUpgradeCost(16, RepairUpgradeRank);
+        public bool PulseBeamUnlocked { get; private set; }
+        public bool ArcBurstUnlocked { get; private set; }
+        public bool HomingPulseUnlocked { get; private set; }
+        public int PulseBeamUnlockCost => PulseBeamModuleUnlockCost;
+        public int ArcBurstUnlockCost => ArcBurstModuleUnlockCost;
+        public int HomingPulseUnlockCost => HomingPulseModuleUnlockCost;
+        public bool CanPurchasePulseBeamModule => !PulseBeamUnlocked && CanSpendRuntimeCurrency(PulseBeamUnlockCost);
+        public bool CanPurchaseArcBurstModule => !ArcBurstUnlocked && CanSpendRuntimeCurrency(ArcBurstUnlockCost);
+        public bool CanPurchaseHomingPulseModule => !HomingPulseUnlocked && CanSpendRuntimeCurrency(HomingPulseUnlockCost);
+        public int UnlockedModuleCount => 1 + (PulseBeamUnlocked ? 1 : 0) + (ArcBurstUnlocked ? 1 : 0) + (HomingPulseUnlocked ? 1 : 0);
+        public int ModuleActivationCount { get; private set; }
         public bool CanPurchaseDamageUpgrade => CanSpendRuntimeCurrency(DamageUpgradeCost);
         public bool CanPurchaseAttackSpeedUpgrade => CanSpendRuntimeCurrency(AttackSpeedUpgradeCost);
         public bool CanPurchaseRangeUpgrade => CanSpendRuntimeCurrency(RangeUpgradeCost);
@@ -1287,6 +1401,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " Kills=" + (DirectOrCombatKillCount + ProjectileAdapterKillCount) +
             " Projectiles=" + ProjectileLaunchCount +
             " Upgrades=" + SelectedUpgradeCount +
+            " Modules=" + UnlockedModuleCount +
             " ObjectiveHits=" + ObjectiveDamageEvents +
             " Currency=" + RuntimeCurrency +
             " Time=" + SurvivalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
@@ -1539,9 +1654,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _projectileNavigation.Tick((float)(deltaSeconds * ProjectileSpeedMultiplier));
             rewardedKills += ApplyDirectDamageBonusIfReady();
             rewardedKills += FireManualTowerShotIfReady(ticks);
+            rewardedKills += FireUnlockedModulesIfReady(ticks);
             AwardRuntimeCurrencyForKills(rewardedKills);
             GrantPassiveIncomeIfReady(ticks);
-            DraftAndApplyUpgradeIfDue(ticks);
             ApplyEncounterRewardIfTerminal();
             LogTerminalStateIfNeeded();
         }
@@ -1583,6 +1698,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             SelectedUpgradeCount++;
+            return true;
+        }
+
+        public bool TryPurchasePulseBeamModule()
+        {
+            if (!SpendRuntimeCurrency(PulseBeamUnlockCost)) return false;
+            PulseBeamUnlocked = true;
+            SelectedUpgradeCount++;
+            CreateModuleAttachment("Pulse Beam Module", PrimitiveType.Cube, new Vector3(-0.9f, 0.35f, 0.35f), new Vector3(0.38f, 0.28f, 0.38f), new Color(0.15f, 0.75f, 1f));
+            return true;
+        }
+
+        public bool TryPurchaseArcBurstModule()
+        {
+            if (!SpendRuntimeCurrency(ArcBurstUnlockCost)) return false;
+            ArcBurstUnlocked = true;
+            SelectedUpgradeCount++;
+            CreateModuleAttachment("Arc Burst Module", PrimitiveType.Sphere, new Vector3(0f, 0.48f, -0.9f), new Vector3(0.38f, 0.38f, 0.38f), new Color(0.95f, 0.55f, 0.15f));
+            return true;
+        }
+
+        public bool TryPurchaseHomingPulseModule()
+        {
+            if (!SpendRuntimeCurrency(HomingPulseUnlockCost)) return false;
+            HomingPulseUnlocked = true;
+            SelectedUpgradeCount++;
+            CreateModuleAttachment("Homing Pulse Module", PrimitiveType.Sphere, new Vector3(0.9f, 0.35f, 0.35f), new Vector3(0.34f, 0.34f, 0.34f), new Color(0.65f, 0.35f, 1f));
             return true;
         }
 
@@ -1681,6 +1823,72 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!hasSelected || !_runtime.TryKillEnemy(selected.Id)) return 0;
             DirectOrCombatKillCount++;
             return 1;
+        }
+
+        private int FireUnlockedModulesIfReady(int ticks)
+        {
+            int kills = 0;
+            if (PulseBeamUnlocked)
+            {
+                _pulseBeamModuleCooldownTicks += Math.Max(1, ticks);
+                if (_pulseBeamModuleCooldownTicks >= Math.Max(4, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank))
+                {
+                    _pulseBeamModuleCooldownTicks = 0;
+                    ModuleActivationCount++;
+                    kills += TryKillPriorityEnemies(12d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1);
+                }
+            }
+
+            if (ArcBurstUnlocked)
+            {
+                _arcBurstModuleCooldownTicks += Math.Max(1, ticks);
+                if (_arcBurstModuleCooldownTicks >= Math.Max(10, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 2))
+                {
+                    _arcBurstModuleCooldownTicks = 0;
+                    ModuleActivationCount++;
+                    kills += TryKillPriorityEnemies(16d + DamageUpgradeRank * 2.5d, 2);
+                }
+            }
+
+            if (HomingPulseUnlocked)
+            {
+                _homingPulseModuleCooldownTicks += Math.Max(1, ticks);
+                if (_homingPulseModuleCooldownTicks >= Math.Max(6, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank))
+                {
+                    _homingPulseModuleCooldownTicks = 0;
+                    ModuleActivationCount++;
+                    kills += TryKillPriorityEnemies(18d + DamageUpgradeRank * 2d + RangeUpgradeRank, 1);
+                }
+            }
+
+            return kills;
+        }
+
+        private int TryKillPriorityEnemies(double damageThreshold, int maxKills)
+        {
+            if (_runtime == null || maxKills <= 0) return 0;
+            int kills = 0;
+            for (int attempt = 0; attempt < maxKills; attempt++)
+            {
+                AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
+                AutoDefenseEnemySnapshot selected = default;
+                bool hasSelected = false;
+                for (int i = 0; i < snapshot.Enemies.Count; i++)
+                {
+                    AutoDefenseEnemySnapshot enemy = snapshot.Enemies[i];
+                    if (enemy.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                    if (enemy.Health > damageThreshold) continue;
+                    if (hasSelected && enemy.ObjectiveProgress <= selected.ObjectiveProgress) continue;
+                    selected = enemy;
+                    hasSelected = true;
+                }
+
+                if (!hasSelected || !_runtime.TryKillEnemy(selected.Id)) break;
+                DirectOrCombatKillCount++;
+                kills++;
+            }
+
+            return kills;
         }
 
         private void AwardRuntimeCurrencyForKills(int kills)
@@ -1854,7 +2062,30 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private WeaponDefinitionAsset[] ResolveActiveWeaponDefinitionsForRun()
         {
-            return _resolvedWeaponDefinitions;
+            WeaponDefinitionAsset startingWeapon = null;
+            if (_resolvedContentSet != null && _resolvedContentSet.IsValid && _resolvedContentSet.ContentSet != null)
+                startingWeapon = FindWeaponDefinitionForRun(_resolvedWeaponDefinitions, _resolvedContentSet.ContentSet.StartingWeapon);
+            startingWeapon ??= FindWeaponDefinitionForRun(_resolvedWeaponDefinitions, BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value);
+            startingWeapon ??= _resolvedWeaponDefinitions.Length > 0 ? _resolvedWeaponDefinitions[0] : null;
+            return startingWeapon == null ? _resolvedWeaponDefinitions : new[] { startingWeapon };
+        }
+
+        private static WeaponDefinitionAsset FindWeaponDefinitionForRun(IReadOnlyList<WeaponDefinitionAsset> weapons, WeaponDefinitionAsset target)
+        {
+            return target == null ? null : FindWeaponDefinitionForRun(weapons, target.Id);
+        }
+
+        private static WeaponDefinitionAsset FindWeaponDefinitionForRun(IReadOnlyList<WeaponDefinitionAsset> weapons, string id)
+        {
+            if (weapons == null || string.IsNullOrWhiteSpace(id)) return null;
+            for (int i = 0; i < weapons.Count; i++)
+            {
+                WeaponDefinitionAsset weapon = weapons[i];
+                if (weapon != null && string.Equals(weapon.Id, id, StringComparison.OrdinalIgnoreCase))
+                    return weapon;
+            }
+
+            return null;
         }
 
         private void ApplyContentSetStartingResources(GameContentSetResolution resolution)
@@ -1937,7 +2168,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (InvalidAssignedRecipeCount > 0)
             {
                 Debug.LogWarning(
-                    "Idle Auto Defense template ignored invalid, duplicate, empty, or incomplete assigned attack recipe entries. The starter weapons require attack.template.pulse-cannon and attack.template.shard-launcher; missing required recipes fall back to built-in transient recipes.",
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or incomplete assigned attack recipe entries. The starter weapons require pulse, shard, arc, and homing attack recipes; missing required recipes fall back to built-in transient recipes.",
                     this);
             }
 
@@ -1965,7 +2196,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (InvalidAssignedWaveCount > 0)
             {
                 Debug.LogWarning(
-                    "Idle Auto Defense template ignored invalid, duplicate, empty, or enemy-mismatched assigned wave definition entries. Missing or invalid waves fall back to built-in first-orbit transient waves.",
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or enemy-mismatched assigned wave definition entries. Missing or invalid waves fall back to built-in transient starter waves.",
                     this);
             }
 
@@ -1979,7 +2210,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (InvalidAssignedWeaponCount > 0)
             {
                 Debug.LogWarning(
-                    "Idle Auto Defense template ignored invalid, duplicate, empty, or attack-mismatched assigned weapon definition entries. The starter mounts require pulse-cannon and shard-launcher weapon IDs; missing required weapons fall back to built-in transient weapons.",
+                    "Idle Auto Defense template ignored invalid, duplicate, empty, or attack-mismatched assigned weapon definition entries. The starter mounts require shard launcher, pulse beam, arc burst, and homing pulse weapon IDs; missing required weapons fall back to built-in transient weapons.",
                     this);
             }
 
@@ -2078,10 +2309,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return instance;
         }
 
+        private void CreateModuleAttachment(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color)
+        {
+            if (_root == null) return;
+            CreatePrimitive(name, primitiveType, position, scale, color);
+        }
+
         private void CreatePlayAreaMarkers()
         {
-            CreatePrimitive("Pulse Cannon Mount", PrimitiveType.Cube, new Vector3(-0.85f, 0.2f, 0f), new Vector3(0.45f, 0.25f, 0.45f), new Color(0.15f, 0.55f, 1f));
-            CreatePrimitive("Shard Launcher Mount", PrimitiveType.Cube, new Vector3(0.85f, 0.2f, 0f), new Vector3(0.45f, 0.25f, 0.45f), new Color(1f, 0.45f, 0.1f));
+            CreatePrimitive("Shard Launcher Module", PrimitiveType.Cube, new Vector3(0f, 0.35f, 0.9f), new Vector3(0.45f, 0.28f, 0.45f), new Color(1f, 0.45f, 0.1f));
             CreatePrimitive("Spawn Lane North", PrimitiveType.Cube, new Vector3(0f, 0.05f, TemplateSpawnLaneRadius), new Vector3(1.2f, 0.08f, 0.35f), Color.yellow);
             CreatePrimitive("Spawn Lane East", PrimitiveType.Cube, new Vector3(TemplateSpawnLaneRadius, 0.05f, 0f), new Vector3(0.35f, 0.08f, 1.2f), Color.yellow);
             CreatePrimitive("Spawn Lane South", PrimitiveType.Cube, new Vector3(0f, 0.05f, -TemplateSpawnLaneRadius), new Vector3(1.2f, 0.08f, 0.35f), Color.yellow);
@@ -2150,6 +2386,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AttackSpeedUpgradeRank = 0;
             RangeUpgradeRank = 0;
             RepairUpgradeRank = 0;
+            PulseBeamUnlocked = false;
+            ArcBurstUnlocked = false;
+            HomingPulseUnlocked = false;
+            ModuleActivationCount = 0;
             UnsupportedUpgradeIntentCount = 0;
             EncounterRewardCredits = 0;
             EncounterRewardParts = 0;
@@ -2158,6 +2398,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _terminalStateLogged = false;
             _manualTowerCooldownTicks = 0;
             _passiveIncomeTicks = 0;
+            _pulseBeamModuleCooldownTicks = 0;
+            _arcBurstModuleCooldownTicks = 0;
+            _homingPulseModuleCooldownTicks = 0;
         }
 
         private void ClearSpawnedRuntimeObjects()

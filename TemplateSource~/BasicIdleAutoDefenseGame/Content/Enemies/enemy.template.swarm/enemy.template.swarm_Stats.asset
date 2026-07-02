@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ec0d7eef89a4810ab6a49c7ab0374fb, type: 3}
   m_Name: enemy.template.swarm_Stats
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyStatsDefinitionAsset
-  _maximumHealth: 7
-  _moveSpeed: 2.8
+  _maximumHealth: 5
+  _moveSpeed: 1.1
   _rewardValue: 1
-  _contactDamage: 2
+  _contactDamage: 1
   _damageTypeId: damage.template.basic
   _collisionRadius: 0.25

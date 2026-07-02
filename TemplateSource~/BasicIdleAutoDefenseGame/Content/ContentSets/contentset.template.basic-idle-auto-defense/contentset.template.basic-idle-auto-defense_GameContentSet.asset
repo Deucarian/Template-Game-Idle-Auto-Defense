@@ -19,10 +19,10 @@ MonoBehaviour:
     icons, and audio.
   _icon: {fileID: 21300000, guid: 030ed80cce432184ea60781e960c5cb5, type: 3}
   _banner: {fileID: 2800000, guid: 251693a7ff26afe44ae62250f856b7a1, type: 3}
-  _startingWeapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+  _startingWeapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
   _availableWeapons:
-  - {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
   - {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+  - {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
   - {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
   - {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
   _enemyPool:
@@ -43,11 +43,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 78c536521542f764abc76cb6ebd30a63, type: 2}
   - {fileID: 11400000, guid: 02b74debbe2246c4b09d6d043c80536b, type: 2}
   - {fileID: 11400000, guid: 9832cf788c584c0a9c8cd160b57f84a2, type: 2}
-  _startingCredits: 20
+  _startingCredits: 45
   _startingParts: 1
   _rewardMultiplier: 1.1
   _difficultyMultiplier: 1
-  _sessionLengthTicks: 300
+  _sessionLengthTicks: 620
   _endless: 0
   _tags:
   - idle-auto-defense

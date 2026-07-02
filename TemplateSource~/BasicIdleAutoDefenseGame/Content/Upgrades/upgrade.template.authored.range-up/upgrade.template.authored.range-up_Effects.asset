@@ -17,9 +17,9 @@ MonoBehaviour:
     _modifierType: 0
     _amount: 1.25
     _attack: {fileID: 0}
-    _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+    _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
     _enemy: {fileID: 0}
-    _targetIdOverride: weapon.template.pulse-cannon
+    _targetIdOverride: weapon.template.shard-launcher
     _effectIdOverride:
   _prerequisites: []
   _exclusions: []

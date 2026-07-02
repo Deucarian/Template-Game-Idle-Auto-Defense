@@ -15,10 +15,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             GameObject host = new GameObject("idle-auto-defense-template-smoke");
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
-            Assert.True(controller.TryPurchaseDamageUpgrade(), "Smoke run should be able to buy the first damage upgrade.");
 
-            for (int i = 0; i < 720; i++)
+            for (int i = 0; i < 1200; i++)
             {
+                BuyAvailableLivePurchases(controller);
                 controller.Step(1, 0.05f);
                 if (controller.EncounterCompleted || controller.EncounterFailed)
                     break;
@@ -28,14 +28,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.SpawnedCount, Is.GreaterThanOrEqualTo(4));
             Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0));
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
-            Assert.That(controller.SelectedUpgradeCount, Is.GreaterThan(0));
-            Assert.True(controller.EncounterCompleted, "First Orbit should complete in deterministic smoke. " + controller.StatusSummary);
+            Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
+            Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
+            Assert.True(controller.PulseBeamUnlocked, "Smoke should unlock Pulse Beam.");
+            Assert.True(controller.ArcBurstUnlocked, "Smoke should unlock Arc Burst.");
+            Assert.True(controller.HomingPulseUnlocked, "Smoke should unlock Homing Pulse.");
+            Assert.AreEqual(0, controller.DraftTickCount, "Sample upgrades should be explicit live purchases only.");
+            Assert.True(controller.EncounterCompleted, "Assisted sample run should complete. " + controller.StatusSummary);
             Assert.That(controller.EncounterRewardCredits, Is.GreaterThanOrEqualTo(60));
             Assert.That(controller.EncounterRewardParts, Is.GreaterThanOrEqualTo(3));
 
             controller.RestartRun(BasicIdleAutoDefenseGame.CreateBossPulseEncounterDefinition());
             for (int i = 0; i < 720; i++)
             {
+                BuyAvailableLivePurchases(controller);
                 controller.Step(1, 0.05f);
                 if (controller.EncounterCompleted || controller.EncounterFailed)
                     break;
@@ -50,6 +56,41 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.OfflineRewardParts, Is.GreaterThanOrEqualTo(15));
 
             UnityEngine.Object.Destroy(host);
+        }
+
+        [UnityTest]
+        public IEnumerator BasicIdleAutoDefenseControllerCanFailWithoutLivePurchases()
+        {
+            GameObject host = new GameObject("idle-auto-defense-template-no-upgrade-smoke");
+            var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            controller.enabled = false;
+
+            for (int i = 0; i < 1200; i++)
+            {
+                controller.Step(1, 0.05f);
+                if (controller.EncounterCompleted || controller.EncounterFailed)
+                    break;
+                if (i % 30 == 0) yield return null;
+            }
+
+            Assert.AreEqual(0, controller.SelectedUpgradeCount);
+            Assert.IsFalse(controller.PulseBeamUnlocked);
+            Assert.That(controller.ObjectiveDamageEvents, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.True(controller.EncounterFailed, "No-upgrade sample run should be able to lose. " + controller.StatusSummary);
+
+            UnityEngine.Object.Destroy(host);
+        }
+
+        private static void BuyAvailableLivePurchases(IdleAutoDefenseTemplateController controller)
+        {
+            if (controller.CanPurchasePulseBeamModule) controller.TryPurchasePulseBeamModule();
+            if (controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();
+            if (controller.CanPurchaseAttackSpeedUpgrade) controller.TryPurchaseAttackSpeedUpgrade();
+            if (controller.CanPurchaseArcBurstModule) controller.TryPurchaseArcBurstModule();
+            if (controller.CanPurchaseRangeUpgrade) controller.TryPurchaseRangeUpgrade();
+            if (controller.CanPurchaseHomingPulseModule) controller.TryPurchaseHomingPulseModule();
+            if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
+                controller.TryPurchaseRepairUpgrade();
         }
     }
 }

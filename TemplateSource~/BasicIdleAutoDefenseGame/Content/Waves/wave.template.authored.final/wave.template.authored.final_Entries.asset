@@ -17,20 +17,20 @@ MonoBehaviour:
     _count: 2
     _batchSize: 1
     _initialDelayTicks: 0
-    _intervalTicks: 20
+    _intervalTicks: 52
     _spawnChannelId: perimeter-north
     _scalingTier: 2
   - _enemy: {fileID: 11400000, guid: 4602ef84828b8e24cafb0c6f599eef6b, type: 2}
     _count: 3
     _batchSize: 1
-    _initialDelayTicks: 8
-    _intervalTicks: 18
+    _initialDelayTicks: 28
+    _intervalTicks: 42
     _spawnChannelId: perimeter-east
     _scalingTier: 2
   - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
-    _count: 6
-    _batchSize: 2
-    _initialDelayTicks: 20
-    _intervalTicks: 8
+    _count: 4
+    _batchSize: 1
+    _initialDelayTicks: 70
+    _intervalTicks: 30
     _spawnChannelId: perimeter-south
     _scalingTier: 2

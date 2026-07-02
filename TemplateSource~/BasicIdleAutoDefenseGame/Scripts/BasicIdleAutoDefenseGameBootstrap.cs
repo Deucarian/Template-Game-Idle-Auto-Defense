@@ -21,7 +21,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
 
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(12f, 12f, HudWidth, 382f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12f, 12f, HudWidth, 500f), GUI.skin.box);
             GUILayout.Label("Idle Auto Defense");
             GUILayout.Label("State: " + RuntimeStateName);
             GUILayout.Label("Tower HP: " + ObjectiveHealthText + "  Lives: " + ObjectiveLivesRemaining);
@@ -31,13 +31,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             GUILayout.Label("Spawn Profile: " + CurrentSpawnProfileName);
             GUILayout.Label("Enemies: " + ActiveEnemyCount + " active / " + SpawnedCount + " spawned");
             GUILayout.Label("Kills: " + (DirectOrCombatKillCount + ProjectileAdapterKillCount) + "  Projectiles: " + ProjectileLaunchCount);
-            GUILayout.Label("Selected Upgrades: " + SelectedUpgradeCount + "  Objective Hits: " + ObjectiveDamageEvents);
+            GUILayout.Label("Purchases: " + SelectedUpgradeCount + "  Modules: " + UnlockedModuleCount + "/4  Objective Hits: " + ObjectiveDamageEvents);
             GUILayout.Space(4f);
             GUILayout.Label("Upgrades");
             DrawUpgradeButton("Damage", DamageUpgradeRank, DamageUpgradeCost, CanPurchaseDamageUpgrade, TryPurchaseDamageUpgrade);
             DrawUpgradeButton("Attack Speed", AttackSpeedUpgradeRank, AttackSpeedUpgradeCost, CanPurchaseAttackSpeedUpgrade, TryPurchaseAttackSpeedUpgrade);
             DrawUpgradeButton("Range", RangeUpgradeRank, RangeUpgradeCost, CanPurchaseRangeUpgrade, TryPurchaseRangeUpgrade);
             DrawUpgradeButton("Repair / Max HP", RepairUpgradeRank, RepairUpgradeCost, CanPurchaseRepairUpgrade, TryPurchaseRepairUpgrade);
+            GUILayout.Space(4f);
+            GUILayout.Label("Modules");
+            DrawModuleButton("Pulse Beam", PulseBeamUnlocked, PulseBeamUnlockCost, CanPurchasePulseBeamModule, TryPurchasePulseBeamModule);
+            DrawModuleButton("Arc Burst", ArcBurstUnlocked, ArcBurstUnlockCost, CanPurchaseArcBurstModule, TryPurchaseArcBurstModule);
+            DrawModuleButton("Homing Pulse", HomingPulseUnlocked, HomingPulseUnlockCost, CanPurchaseHomingPulseModule, TryPurchaseHomingPulseModule);
             GUILayout.Space(4f);
             GUILayout.Label("Save: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty));
             if (GUILayout.Button("Save Snapshot")) SaveSnapshot("manual");
@@ -66,6 +71,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             bool wasEnabled = GUI.enabled;
             GUI.enabled = enabled;
             if (GUILayout.Button(label + "  Lv " + rank.ToString(CultureInfo.InvariantCulture) + "  " + cost.ToString(CultureInfo.InvariantCulture)))
+                purchase?.Invoke();
+            GUI.enabled = wasEnabled;
+        }
+
+        private static void DrawModuleButton(string label, bool unlocked, int cost, bool enabled, Func<bool> purchase)
+        {
+            bool wasEnabled = GUI.enabled;
+            GUI.enabled = enabled;
+            string state = unlocked ? "Unlocked" : cost.ToString(CultureInfo.InvariantCulture);
+            if (GUILayout.Button(label + "  " + state))
                 purchase?.Invoke();
             GUI.enabled = wasEnabled;
         }

@@ -25,15 +25,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
     public sealed class IdleAutoDefenseTemplateEditModeTests
     {
         [Test]
-        public void DefinitionHasCentralObjectivePerimeterEnemiesAndTwoWeaponModes()
+        public void DefinitionHasCentralObjectivePerimeterEnemiesAndFourWeaponModes()
         {
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
 
             Assert.AreEqual("template-core", definition.Objective.Id.Value);
             Assert.AreEqual(4, definition.SpawnRing.Channels.Count);
             Assert.AreEqual(6, definition.Enemies.Count);
-            Assert.AreEqual(2, definition.Mounts.Count);
-            Assert.AreEqual(2, definition.WeaponModules.Count);
+            Assert.AreEqual(4, definition.Mounts.Count);
+            Assert.AreEqual(4, definition.WeaponModules.Count);
             Assert.IsTrue(definition.Mounts[0].HasWeapon);
             Assert.IsTrue(definition.Mounts[1].HasWeapon);
             Assert.AreEqual(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId, definition.Enemies[0].SpawnableId);
@@ -52,10 +52,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(EnemyRole.Boss, enemies[5].Role);
             Assert.AreEqual(6, BasicIdleAutoDefenseGame.CreateAutoDefenseEnemyDefinitions(enemies).Length);
 
-            Assert.AreEqual(2, waves.Length);
-            Assert.AreEqual("wave.template.first-orbit.opening", waves[0].Id);
-            Assert.AreEqual("wave.template.first-orbit.pressure", waves[1].Id);
-            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateEncounterWaves(waves).Length);
+            Assert.AreEqual(5, waves.Length);
+            Assert.AreEqual("wave.template.authored.opening", waves[0].Id);
+            Assert.AreEqual("wave.template.authored.runner-pressure", waves[1].Id);
+            Assert.AreEqual(5, BasicIdleAutoDefenseGame.CreateEncounterWaves(waves).Length);
             Assert.AreEqual(2, waves[1].Entries.Entries.Count);
         }
 
@@ -64,14 +64,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             AttackDefinitionAsset[] recipes = BasicIdleAutoDefenseGame.CreateAttackRecipes();
 
-            Assert.AreEqual(2, recipes.Length);
+            Assert.AreEqual(4, recipes.Length);
             Assert.AreEqual(BasicIdleAutoDefenseGame.PulseAttackId.Value, recipes[0].Id);
             Assert.AreEqual(AttackRecipeDeliveryMode.Hitscan, recipes[0].Delivery.Mode);
             Assert.AreEqual(BasicIdleAutoDefenseGame.ShardAttackId.Value, recipes[1].Id);
             Assert.AreEqual(AttackRecipeDeliveryMode.Projectile, recipes[1].Delivery.Mode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ArcBurstAttackId.Value, recipes[2].Id);
+            Assert.AreEqual(AttackRecipeDeliveryMode.Area, recipes[2].Delivery.Mode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, recipes[3].Id);
+            Assert.AreEqual(AttackRecipeDeliveryMode.Projectile, recipes[3].Delivery.Mode);
 
-            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateAttackDefinitions(recipes).Length);
-            Assert.AreEqual(1, BasicIdleAutoDefenseGame.CreateProjectileDefinitions(recipes).Length);
+            Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateAttackDefinitions(recipes).Length);
+            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateProjectileDefinitions(recipes).Length);
             Assert.AreEqual(0, recipes[1].CreateStatusDefinitions().Length);
         }
 
@@ -82,17 +86,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
             RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
 
-            Assert.AreEqual(2, weapons.Length);
-            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, weapons[0].Id);
-            Assert.AreEqual(WeaponFireMode.DirectAttack, weapons[0].Stats.FireMode);
-            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, weapons[1].Id);
-            Assert.AreEqual(WeaponFireMode.Projectile, weapons[1].Stats.FireMode);
-            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateWeaponDefinitions(weapons).Length);
-            Assert.AreEqual(2, BasicIdleAutoDefenseGame.CreateDefinition(null, weapons).WeaponModules.Count);
+            Assert.AreEqual(4, weapons.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, weapons[0].Id);
+            Assert.AreEqual(WeaponFireMode.Projectile, weapons[0].Stats.FireMode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, weapons[1].Id);
+            Assert.AreEqual(WeaponFireMode.DirectAttack, weapons[1].Stats.FireMode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, weapons[2].Id);
+            Assert.AreEqual(WeaponFireMode.DirectAttack, weapons[2].Stats.FireMode);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, weapons[3].Id);
+            Assert.AreEqual(WeaponFireMode.Projectile, weapons[3].Stats.FireMode);
+            Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateWeaponDefinitions(weapons).Length);
+            Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateDefinition(null, weapons).WeaponModules.Count);
 
-            Assert.AreEqual(4, upgrades.Length);
+            Assert.AreEqual(6, upgrades.Length);
             Assert.AreEqual("upgrade.template.damage-up", upgrades[0].Id);
-            Assert.AreEqual(4, BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitions(upgrades).Length);
+            Assert.AreEqual(6, BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitions(upgrades).Length);
             Assert.IsTrue(BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog(upgrades).TryGet(new RunUpgradeId("upgrade.template.projectile-speed-up"), out _));
         }
 
@@ -112,7 +120,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AttackDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveAttackRecipesForTemplate(new[] { customOnly, null }, out int rejectedRecipeCount);
 
             Assert.That(rejectedRecipeCount, Is.GreaterThan(0));
-            Assert.AreEqual(2, resolved.Length);
+            Assert.AreEqual(4, resolved.Length);
             Assert.AreEqual(BasicIdleAutoDefenseGame.PulseAttackId.Value, resolved[0].Id);
             Assert.AreEqual(BasicIdleAutoDefenseGame.ShardAttackId.Value, resolved[1].Id);
         }
@@ -168,9 +176,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             WaveDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(new[] { invalidWave }, enemies, out int rejectedDefinitionCount);
 
             Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
-            Assert.AreEqual(2, resolved.Length);
-            Assert.AreEqual("wave.template.first-orbit.opening", resolved[0].Id);
-            Assert.AreEqual("wave.template.first-orbit.pressure", resolved[1].Id);
+            Assert.AreEqual(5, resolved.Length);
+            Assert.AreEqual("wave.template.authored.opening", resolved[0].Id);
+            Assert.AreEqual("wave.template.authored.runner-pressure", resolved[1].Id);
         }
 
         [Test]
@@ -195,15 +203,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.AreEqual(0, rejectedWaveCount);
                 Assert.AreEqual(0, rejectedWeaponCount);
                 Assert.AreEqual(0, rejectedUpgradeCount);
-                Assert.AreEqual(2, resolvedAttacks.Length);
+                Assert.AreEqual(4, resolvedAttacks.Length);
                 Assert.AreEqual(6, resolvedEnemies.Length);
-                Assert.AreEqual(2, resolvedWaves.Length);
-                Assert.AreEqual(2, resolvedWeapons.Length);
-                Assert.AreEqual(4, resolvedUpgrades.Length);
+                Assert.AreEqual(5, resolvedWaves.Length);
+                Assert.AreEqual(4, resolvedWeapons.Length);
+                Assert.AreEqual(6, resolvedUpgrades.Length);
                 Assert.AreSame(enemies[5], resolvedEnemies[5]);
-                Assert.AreSame(waves[1], resolvedWaves[1]);
-                Assert.AreSame(weapons[1], resolvedWeapons[1]);
-                Assert.AreSame(upgrades[3], resolvedUpgrades[3]);
+                Assert.AreSame(waves[4], resolvedWaves[4]);
+                Assert.AreSame(weapons[3], resolvedWeapons[3]);
+                Assert.AreSame(upgrades[5], resolvedUpgrades[5]);
             }
             finally
             {
@@ -221,11 +229,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
             Assert.IsTrue(report.IsValid, FormatIssues(report));
             Assert.IsTrue(resolution.IsValid, FormatIssues(resolution.Report));
-            Assert.AreEqual(2, resolution.AttackRecipes.Count);
+            Assert.AreEqual(4, resolution.AttackRecipes.Count);
             Assert.AreEqual(6, resolution.Enemies.Count);
-            Assert.AreEqual(2, resolution.Waves.Count);
-            Assert.AreEqual(2, resolution.Weapons.Count);
-            Assert.AreEqual(4, resolution.Upgrades.Count);
+            Assert.AreEqual(5, resolution.Waves.Count);
+            Assert.AreEqual(4, resolution.Weapons.Count);
+            Assert.AreEqual(6, resolution.Upgrades.Count);
             Assert.AreSame(contentSet.StartingWeapon, resolution.Weapons[0]);
         }
 
@@ -243,11 +251,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsTrue(resolution.IsValid, FormatIssues(resolution.PackReport));
             Assert.AreSame(contentSet, resolution.SelectedContentSet);
             Assert.AreEqual(1, dependencies.ContentSetCount);
-            Assert.AreEqual(2, dependencies.WeaponCount);
-            Assert.AreEqual(2, dependencies.AttackCount);
+            Assert.AreEqual(4, dependencies.WeaponCount);
+            Assert.AreEqual(4, dependencies.AttackCount);
             Assert.AreEqual(6, dependencies.EnemyCount);
-            Assert.AreEqual(2, dependencies.WaveCount);
-            Assert.AreEqual(4, dependencies.UpgradeCount);
+            Assert.AreEqual(5, dependencies.WaveCount);
+            Assert.AreEqual(6, dependencies.UpgradeCount);
         }
 
         [Test]
@@ -1183,8 +1191,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             WeaponDefinitionAsset[] missingRequired = BasicIdleAutoDefenseGame.ResolveWeaponDefinitionsForTemplate(new[] { customOnly }, attacks, out int missingRequiredRejected);
 
             Assert.That(missingRequiredRejected, Is.GreaterThan(0));
-            Assert.AreEqual(2, missingRequired.Length);
-            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, missingRequired[0].Id);
+            Assert.AreEqual(4, missingRequired.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, missingRequired[0].Id);
 
             AttackDefinitionAsset foreignAttack = AttackDefinitionAsset.CreateTransient(
                 "attack.foreign.only",
@@ -1206,8 +1214,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             WeaponDefinitionAsset[] missingAttack = BasicIdleAutoDefenseGame.ResolveWeaponDefinitionsForTemplate(new[] { invalidAttack }, attacks, out int missingAttackRejected);
 
             Assert.That(missingAttackRejected, Is.GreaterThan(0));
-            Assert.AreEqual(2, missingAttack.Length);
-            Assert.AreEqual(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, missingAttack[1].Id);
+            Assert.AreEqual(4, missingAttack.Length);
+            Assert.AreEqual(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, missingAttack[1].Id);
         }
 
         [Test]
@@ -1226,7 +1234,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             RunUpgradeDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveUpgradeDefinitionsForTemplate(new[] { upgrades[0], duplicate }, out int rejectedDefinitionCount);
 
             Assert.That(rejectedDefinitionCount, Is.GreaterThan(0));
-            Assert.AreEqual(4, resolved.Length);
+            Assert.AreEqual(6, resolved.Length);
             Assert.AreEqual("upgrade.template.damage-up", resolved[0].Id);
             Assert.AreNotSame(upgrades[0], resolved[0]);
         }
@@ -1346,7 +1354,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Waves", "wave.template.authored.final", "wave.template.authored.final_WaveDefinition.asset"), "Final Surge");
             AssertFileContains(Path.Combine(contentRoot, "Upgrades", "upgrade.template.authored.projectile-speed-up", "upgrade.template.authored.projectile-speed-up_RunUpgradeDefinition.asset"), "Projectile Speed");
             AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Enemies", "README.md"), "Swarm");
-            AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Cannon");
+            AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Beam");
             AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Projectiles", "README.md"), "projectile");
             AssertFileContains(Path.Combine(contentRoot, "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset"), "contentpack.template.basic-idle-auto-defense");
         }
@@ -1486,7 +1494,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             IdleAutoDefenseTemplateController controller = CreateController();
             try
             {
-                StepToTerminal(controller, BasicIdleAutoDefenseGame.CreateFirstOrbitEncounterDefinition(), expectCompletion: true);
+                controller.RestartRun(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
+                StepUntilTerminalWithLivePurchases(controller, 1200);
+                Assert.IsTrue(controller.EncounterCompleted, controller.StatusSummary);
+                Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(4));
+                Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
+                Assert.AreEqual(0, controller.DraftTickCount);
                 Assert.That(controller.EncounterRewardCredits, Is.GreaterThanOrEqualTo(60));
                 Assert.That(controller.EncounterRewardParts, Is.GreaterThanOrEqualTo(3));
 
@@ -1819,18 +1832,48 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     0,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 2, 1, 0, 10, "perimeter-north"),
-                        new WaveEntryRecipe(enemies[1], 2, 1, 4, 10, "perimeter-east")
+                        new WaveEntryRecipe(enemies[0], 4, 1, 0, 28, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 2, 1, 35, 42, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[2], 1, 1, 110, 0, "perimeter-west")
                     }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.assigned.pressure",
-                    "Assigned Pressure",
-                    24,
+                    "wave.assigned.runner-pressure",
+                    "Assigned Runner Pressure",
+                    130,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[2], 1, 1, 0, 16, "perimeter-south"),
-                        new WaveEntryRecipe(enemies[3], 1, 1, 8, 16, "perimeter-west"),
-                        new WaveEntryRecipe(enemies[5], 1, 1, 16, 0, "perimeter-north")
+                        new WaveEntryRecipe(enemies[1], 4, 1, 0, 32, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[0], 4, 1, 24, 30, "perimeter-north")
+                    }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.mixed-pressure",
+                    "Assigned Mixed Pressure",
+                    230,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[3], 2, 1, 0, 42, "perimeter-south"),
+                        new WaveEntryRecipe(enemies[2], 2, 1, 30, 36, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[1], 4, 1, 55, 28, "perimeter-north")
+                    }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.tank-break",
+                    "Assigned Tank Break",
+                    330,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[0], 5, 1, 0, 26, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 3, 1, 32, 36, "perimeter-south"),
+                        new WaveEntryRecipe(enemies[3], 2, 1, 68, 42, "perimeter-west")
+                    }),
+                WaveDefinitionAsset.CreateTransient(
+                    "wave.assigned.final-surge",
+                    "Assigned Final Surge",
+                    450,
+                    new[]
+                    {
+                        new WaveEntryRecipe(enemies[2], 2, 1, 0, 52, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[3], 3, 1, 28, 42, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[1], 4, 1, 70, 30, "perimeter-south")
                     })
             };
         }
@@ -2393,7 +2436,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         private static void StepToTerminal(IdleAutoDefenseTemplateController controller, EncounterDefinition encounter, bool? expectCompletion)
         {
             controller.RestartRun(encounter);
-            StepUntilTerminal(controller, 720);
+            StepUntilTerminal(controller, 1200);
             if (expectCompletion.HasValue)
             {
                 if (expectCompletion.Value) Assert.IsTrue(controller.EncounterCompleted, controller.StatusSummary);
@@ -2411,6 +2454,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             Assert.IsTrue(controller.EncounterCompleted || controller.EncounterFailed);
+        }
+
+        private static void StepUntilTerminalWithLivePurchases(IdleAutoDefenseTemplateController controller, int maxTicks)
+        {
+            for (int i = 0; i < maxTicks; i++)
+            {
+                BuyAvailableLivePurchases(controller);
+                controller.Step(1, 0.05f);
+                if (controller.EncounterCompleted || controller.EncounterFailed)
+                    break;
+            }
+
+            Assert.IsTrue(controller.EncounterCompleted || controller.EncounterFailed, controller.StatusSummary);
+        }
+
+        private static void BuyAvailableLivePurchases(IdleAutoDefenseTemplateController controller)
+        {
+            if (controller.CanPurchasePulseBeamModule) controller.TryPurchasePulseBeamModule();
+            if (controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();
+            if (controller.CanPurchaseAttackSpeedUpgrade) controller.TryPurchaseAttackSpeedUpgrade();
+            if (controller.CanPurchaseArcBurstModule) controller.TryPurchaseArcBurstModule();
+            if (controller.CanPurchaseRangeUpgrade) controller.TryPurchaseRangeUpgrade();
+            if (controller.CanPurchaseHomingPulseModule) controller.TryPurchaseHomingPulseModule();
+            if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
+                controller.TryPurchaseRepairUpgrade();
         }
 
         private static void AssertUpgradeExists(RunUpgradeCatalog catalog, string id)

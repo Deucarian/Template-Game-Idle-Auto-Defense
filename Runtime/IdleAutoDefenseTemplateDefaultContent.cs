@@ -99,10 +99,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.pulse-cannon", "Pulse Cannon", "direct-single-target", true, "Supported by WeaponFireMode.DirectAttack."),
+                new IdleAutoDefenseTemplateModuleContent("weapon.template.pulse-cannon", "Pulse Beam", "direct-single-target", true, "Supported by WeaponFireMode.DirectAttack."),
                 new IdleAutoDefenseTemplateModuleContent("weapon.template.shard-launcher", "Shard Launcher", "projectile", true, "Supported by WeaponFireMode.Projectile."),
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.arc-emitter", "Arc Emitter", "chain-beam-placeholder", false, "Future package work: current weapon runtime has no chain or beam target resolver."),
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.orbital-shot", "Orbital Shot", "delayed-area-placeholder", false, "Future package work: current weapon runtime has no mine, orbital, or delayed area behavior.")
+                new IdleAutoDefenseTemplateModuleContent("weapon.template.arc-burst-tower", "Arc Burst Module", "area", true, "Sample controller unlocks this as live module damage."),
+                new IdleAutoDefenseTemplateModuleContent("weapon.template.homing-spire", "Homing Pulse Module", "homing-projectile", true, "Sample controller unlocks this as live module damage.")
             };
         }
     }
