@@ -15,8 +15,8 @@ MonoBehaviour:
   _fireMode: 1
   _attack: {fileID: 11400000, guid: 94d71535afe75204596bf67e977dbf75, type: 2}
   _projectileDefinitionId: projectile.template.homing-pulse
-  _cooldownTicks: 68
-  _range: 6.8
+  _cooldownTicks: 92
+  _range: 6.3
   _burstCount: 1
   _volleyCount: 1
   _spreadDegrees: 0

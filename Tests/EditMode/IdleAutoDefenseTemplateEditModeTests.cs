@@ -1519,9 +1519,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.boss", "enemy.template.boss_Presentation.asset"), "_vfxPrefab: {fileID:");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Delivery.asset"), "projectile.template.fire-orb");
             AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.shard-launcher", "weapon.template.shard-launcher_Stats.asset"), "_cooldownTicks: 34");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_Stats.asset"), "_cooldownTicks: 54");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.arc-burst-tower", "weapon.template.arc-burst-tower_Stats.asset"), "_cooldownTicks: 82");
-            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.homing-spire", "weapon.template.homing-spire_Stats.asset"), "_cooldownTicks: 68");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.pulse-cannon", "weapon.template.pulse-cannon_Stats.asset"), "_cooldownTicks: 72");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.arc-burst-tower", "weapon.template.arc-burst-tower_Stats.asset"), "_cooldownTicks: 108");
+            AssertFileContains(Path.Combine(contentRoot, "Weapons", "weapon.template.homing-spire", "weapon.template.homing-spire_Stats.asset"), "_cooldownTicks: 92");
 
             string bootstrapPath = Path.Combine(templateSourceRoot, "Scripts", "BasicIdleAutoDefenseGameBootstrap.cs");
             AssertFileContains(bootstrapPath, "UnityEngine.UIElements");
@@ -1557,6 +1557,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "settings.clearColor = false");
             AssertFileContains(runtimePath, "CreateRuntimeVisualPrefab");
             AssertFileContains(runtimePath, "AttachKenneySprite");
+            AssertFileContains(runtimePath, "Pulse Beam Locked Pad");
+            AssertFileContains(runtimePath, "Arc Burst Locked Pad");
+            AssertFileContains(runtimePath, "Homing Pulse Locked Pad");
+            AssertFileContains(runtimePath, "TintSpriteRenderers");
             AssertFileContains(runtimePath, "HideMeshRenderers");
             AssertFileContains(runtimePath, "AddProjectileTrail");
             AssertFileContains(runtimePath, "EmitKenneySpriteBurst");
@@ -1663,7 +1667,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             try
             {
                 controller.RestartRun(BasicIdleAutoDefenseGame.CreateEncounterDefinition());
-                StepUntilTerminalWithLivePurchases(controller, 2200);
+                StepUntilTerminalWithLivePurchases(controller, 6400);
                 Assert.IsTrue(controller.EncounterCompleted, controller.StatusSummary);
                 Assert.That(controller.ProjectileVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.ProjectileMotionObservedCount, Is.GreaterThan(0), controller.StatusSummary);
@@ -2700,7 +2704,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         private static void StepToTerminal(IdleAutoDefenseTemplateController controller, EncounterDefinition encounter, bool? expectCompletion)
         {
             controller.RestartRun(encounter);
-            StepUntilTerminal(controller, 2200);
+            StepUntilTerminal(controller, 6400);
             if (expectCompletion.HasValue)
             {
                 if (expectCompletion.Value) Assert.IsTrue(controller.EncounterCompleted, controller.StatusSummary);
@@ -2739,16 +2743,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             if (controller.RewardDraftActive)
                 controller.TryChooseRewardDraftChoice(0);
+            if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
+                controller.TryPurchaseRepairUpgrade();
             if (controller.CanPurchasePulseBeamModule) controller.TryPurchasePulseBeamModule();
+            if (controller.PulseBeamUnlocked && controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();
+            if (controller.PulseBeamUnlocked && controller.CanPurchaseAttackSpeedUpgrade) controller.TryPurchaseAttackSpeedUpgrade();
             if (controller.CanPurchaseArcBurstModule) controller.TryPurchaseArcBurstModule();
+            if (controller.ArcBurstUnlocked && controller.CanPurchaseRangeUpgrade) controller.TryPurchaseRangeUpgrade();
             if (controller.CanPurchaseHomingPulseModule) controller.TryPurchaseHomingPulseModule();
 
             if (!controller.PulseBeamUnlocked || !controller.ArcBurstUnlocked || !controller.HomingPulseUnlocked)
-            {
-                if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.55d && controller.CanPurchaseRepairUpgrade)
-                    controller.TryPurchaseRepairUpgrade();
                 return;
-            }
 
             if (controller.CanPurchaseOverdrive) controller.TryPurchaseOverdrive();
             if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)

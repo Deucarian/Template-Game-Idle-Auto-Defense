@@ -3,12 +3,12 @@
   "contentSet": "contentset.template.basic-idle-auto-defense",
   "objective": {
     "id": "template-core",
-    "maximumHealth": 80,
-    "lives": 30,
+    "maximumHealth": 240,
+    "lives": 60,
     "contactRadius": 0.45
   },
   "spawnRing": {
-    "radius": 13.5,
+    "radius": 18.5,
     "channels": [
       "perimeter-north",
       "perimeter-northeast",
@@ -40,6 +40,12 @@
     "weapon.template.arc-burst-tower",
     "weapon.template.homing-spire"
   ],
+  "economy": {
+    "startingCredits": 10,
+    "startingParts": 0,
+    "rewardMultiplier": 1.0,
+    "sessionLengthTicks": 5600
+  },
   "spawnProfiles": [
     "wave.template.authored.opening",
     "wave.template.authored.runner-pressure",

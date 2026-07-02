@@ -23,14 +23,14 @@ MonoBehaviour:
   - _enemy: {fileID: 11400000, guid: d26d6941ca7242cb908816ba9502bf24, type: 2}
     _count: 1
     _batchSize: 1
-    _initialDelayTicks: 70
+    _initialDelayTicks: 320
     _intervalTicks: 0
     _spawnChannelId: perimeter-northeast
     _scalingTier: 3
   - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
-    _count: 4
+    _count: 12
     _batchSize: 1
-    _initialDelayTicks: 95
-    _intervalTicks: 34
+    _initialDelayTicks: 420
+    _intervalTicks: 70
     _spawnChannelId: perimeter-northwest
     _scalingTier: 3

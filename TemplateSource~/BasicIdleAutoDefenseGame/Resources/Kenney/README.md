@@ -1,6 +1,6 @@
 # Kenney Sample Assets
 
-Curated placeholder assets in this folder are used by the Basic Idle Auto Defense Game sample.
+Curated Kenney starter assets in this folder are used by the Basic Idle Auto Defense Game sample.
 
 - Source: Kenney, https://kenney.nl/assets
 - License: Creative Commons CC0 / Public Domain

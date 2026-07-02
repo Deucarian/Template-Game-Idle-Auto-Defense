@@ -23,7 +23,7 @@ The generated scene opens into a complete starter loop: a tower in the center, e
 The created folder includes:
 
 - `Scripts`: a renamed bootstrap and save/reset helper in the chosen namespace.
-- `Prefabs`, `Visuals`, `Audio`, and `Resources`: placeholder assets for replacing the starter look, including copied Kenney CC0 sample assets.
+- `Prefabs`, `Visuals`, `Audio`, and `Resources`: starter Kenney CC0 sample assets for the playable look, plus product-owned locations for future art swaps.
 - `Docs`: setup report and asset-flip checklist.
 
 The playable scene is generated in a fixed top-level folder so it is easy to find:
@@ -68,11 +68,11 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 ## Editing Content
 
-Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace placeholder visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
+Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace or extend the starter Kenney visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
 
 During play, the sample controller turns kills, wave progress, elite kills, boss kills, and a guaranteed early run moment into a visible three-choice reward draft. Early level-up drafts prefer at least one module unlock so the player gets a build direction quickly. Normal choices unlock or improve owned tower weapons; after three normal investments in a weapon, Epic choices can appear for that weapon, and after three Epic investments a Legendary choice can appear. Keep the authored weapons, attacks, enemies, waves, and starter upgrades under `Assets/GameContent`; use `IdleAutoDefenseRewardDraftSettings` on the generated controller for XP pacing, rarity weights, unlock weighting, progression thresholds, and projectile retarget tolerance. Use the generated controller's reward draft catalog for the actual unlock, normal, Epic, Legendary, and base reward entries.
 
-The starter balance is tuned as a short first-run sample. The shard launcher begins with short range and a slower cadence so enemies can be seen approaching. Pulse Beam, Arc Burst, and Homing Pulse unlocks have distinct cadence/range roles, while Overdrive is a temporary credit spend that boosts visible damage and cooldowns for pressure moments. To make the first two minutes easier or harder, tune authored enemy health/speed under `Assets/GameContent/IdleAutoDefense/Enemies`, wave timings under `Waves`, weapon cooldown/range under `Weapons`, and attack damage/range/projectile speed under `Attacks`.
+The starter balance is tuned as a 3-5 minute vertical slice. The Shard Launcher begins with short range, low starting credits, and a slower cadence so enemies survive multiple hits and can pressure the core. The first reward appears around 30-60 seconds, mid-run enemies should sometimes reach the base, and Pulse Beam, Arc Burst, Homing Pulse, and Overdrive create visible relief after pressure spikes. To make the first two minutes easier or harder, tune authored enemy health/speed under `Assets/GameContent/IdleAutoDefense/Enemies`, wave timings under `Waves`, weapon cooldown/range under `Weapons`, and attack damage/range/projectile speed under `Attacks`.
 
 The starter content intentionally stays generic and reusable:
 
@@ -92,7 +92,7 @@ This template depends on:
 - `com.deucarian.gameplay-foundation` for shared IDs, validation, and gameplay primitives used by template glue.
 - `com.deucarian.monetization` for SDK-free placement and mock/no-op monetization abstractions.
 
-Keep product-specific starter glue, setup reporting, template scene composition, placeholder content, and asset-flip helpers local to this template. Move reusable behavior down only through explicit governance.
+Keep product-specific starter glue, setup reporting, template scene composition, starter sample content, and asset-flip helpers local to this template. Move reusable behavior down only through explicit governance.
 
 ## Tests
 

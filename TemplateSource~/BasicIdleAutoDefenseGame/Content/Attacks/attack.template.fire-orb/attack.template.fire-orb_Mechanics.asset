@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: attack.template.fire-orb_Mechanics
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackMechanicsDefinitionAsset
   _cooldownTicks: 0
-  _range: 4.9
+  _range: 4.7
   _damageAmount: 3
   _damageTypeId: damage.template.fire

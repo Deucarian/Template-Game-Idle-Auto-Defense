@@ -14,23 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
   _entries:
   - _enemy: {fileID: 11400000, guid: a4faad016e5ca2f4080cbecc93bb55cb, type: 2}
-    _count: 4
+    _count: 8
     _batchSize: 1
     _initialDelayTicks: 0
-    _intervalTicks: 36
+    _intervalTicks: 46
     _spawnChannelId: perimeter-southwest
     _scalingTier: 1
   - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
-    _count: 3
+    _count: 5
     _batchSize: 1
-    _initialDelayTicks: 48
-    _intervalTicks: 44
+    _initialDelayTicks: 120
+    _intervalTicks: 58
     _spawnChannelId: perimeter-southeast
     _scalingTier: 1
   - _enemy: {fileID: 11400000, guid: 4602ef84828b8e24cafb0c6f599eef6b, type: 2}
-    _count: 2
+    _count: 3
     _batchSize: 1
-    _initialDelayTicks: 95
-    _intervalTicks: 56
+    _initialDelayTicks: 250
+    _intervalTicks: 84
     _spawnChannelId: perimeter-west
     _scalingTier: 2

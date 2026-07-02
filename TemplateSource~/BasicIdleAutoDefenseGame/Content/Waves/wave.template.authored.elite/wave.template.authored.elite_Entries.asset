@@ -21,16 +21,16 @@ MonoBehaviour:
     _spawnChannelId: perimeter-northwest
     _scalingTier: 3
   - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
-    _count: 3
+    _count: 6
     _batchSize: 1
-    _initialDelayTicks: 42
-    _intervalTicks: 42
+    _initialDelayTicks: 140
+    _intervalTicks: 56
     _spawnChannelId: perimeter-east
     _scalingTier: 2
   - _enemy: {fileID: 11400000, guid: 4602ef84828b8e24cafb0c6f599eef6b, type: 2}
-    _count: 1
+    _count: 3
     _batchSize: 1
-    _initialDelayTicks: 86
-    _intervalTicks: 56
+    _initialDelayTicks: 300
+    _intervalTicks: 82
     _spawnChannelId: perimeter-south
     _scalingTier: 2

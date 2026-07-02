@@ -95,7 +95,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
             AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 120, DamageType, 0.45f, 45, 2),
+                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 240, DamageType, 0.45f, 60, 2),
                 CreateSampleSpawnRing(),
                 enemies,
                 mounts,
@@ -121,7 +121,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static EncounterDefinition CreateEncounterDefinition(IReadOnlyList<WaveDefinitionAsset> waveDefinitions = null)
         {
             if (waveDefinitions == null || waveDefinitions.Count == 0)
-                return CreateFirstOrbitEncounterDefinition();
+                waveDefinitions = CreateWaveDefinitions();
             return new EncounterDefinition(
                 new EncounterId("encounter.template.first-orbit"),
                 null,
@@ -332,7 +332,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     WeaponFireMode.Projectile,
                     shard,
                     34,
-                    4.9f,
+                    4.7f,
                     ShardProjectileId.Value,
                     buildCost: 35,
                     upgradeGroupId: "upgrade.group.template.shard",
@@ -342,8 +342,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Pulse Beam",
                     WeaponFireMode.DirectAttack,
                     pulse,
-                    54,
-                    5.2f,
+                    72,
+                    5.0f,
                     buildCost: 25,
                     upgradeGroupId: "upgrade.group.template.pulse",
                     tags: new[] { "template", "hitscan", "tower" }),
@@ -352,8 +352,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Arc Burst Module",
                     WeaponFireMode.DirectAttack,
                     arc,
-                    82,
-                    4.4f,
+                    108,
+                    4.1f,
                     buildCost: 65,
                     upgradeGroupId: "upgrade.group.template.arc",
                     tags: new[] { "template", "area", "tower" }),
@@ -362,8 +362,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     "Homing Pulse Module",
                     WeaponFireMode.Projectile,
                     homing,
-                    68,
-                    6.8f,
+                    92,
+                    6.3f,
                     HomingPulseProjectileId.Value,
                     buildCost: 55,
                     upgradeGroupId: "upgrade.group.template.homing",
@@ -466,12 +466,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 16f, 0.72f, 1, 3f, DamageType.Value, 0.28f, tags: new[] { "template", "swarm" }),
-                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 20f, 1.02f, 2, 4f, DamageType.Value, 0.27f, tags: new[] { "template", "runner" }),
-                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 56f, 0.48f, 4, 8f, DamageType.Value, 0.48f, tags: new[] { "template", "tank" }),
-                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 34f, 0.66f, 3, 5f, DamageType.Value, 0.38f, tags: new[] { "template", "shielded" }),
-                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 120f, 0.56f, 8, 20f, DamageType.Value, 0.54f, tags: new[] { "template", "elite" }),
-                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 280f, 0.36f, 18, 40f, DamageType.Value, 0.82f, tags: new[] { "template", "boss" })
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 18f, 0.68f, 1, 4f, DamageType.Value, 0.28f, tags: new[] { "template", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 24f, 1.08f, 2, 5f, DamageType.Value, 0.27f, tags: new[] { "template", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 68f, 0.46f, 4, 10f, DamageType.Value, 0.48f, tags: new[] { "template", "tank" }),
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 42f, 0.62f, 3, 7f, DamageType.Value, 0.38f, tags: new[] { "template", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 155f, 0.52f, 8, 26f, DamageType.Value, 0.54f, tags: new[] { "template", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 360f, 0.34f, 18, 60f, DamageType.Value, 0.82f, tags: new[] { "template", "boss" })
             };
         }
 
@@ -557,74 +557,74 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     0,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 4, 1, 0, 42, "perimeter-north"),
-                        new WaveEntryRecipe(enemies[1], 1, 1, 60, 54, "perimeter-east"),
-                        new WaveEntryRecipe(enemies[2], 1, 1, 155, 0, "perimeter-northwest")
+                        new WaveEntryRecipe(enemies[0], 6, 1, 0, 72, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 2, 1, 240, 96, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[2], 1, 1, 420, 0, "perimeter-northwest")
                     },
                     new[] { "template", "opening" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.template.authored.runner-pressure",
                     "Runner Pressure",
-                    175,
+                    620,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[1], 4, 1, 0, 44, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[0], 4, 1, 34, 42, "perimeter-northeast", 1)
+                        new WaveEntryRecipe(enemies[1], 5, 1, 0, 64, "perimeter-southeast", 1),
+                        new WaveEntryRecipe(enemies[0], 6, 1, 90, 58, "perimeter-northeast", 1)
                     },
                     new[] { "template", "runner-pressure" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.template.authored.pressure",
                     "Mixed Pressure",
-                    295,
+                    1180,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[3], 2, 1, 0, 54, "perimeter-south", 1),
-                        new WaveEntryRecipe(enemies[2], 1, 1, 45, 52, "perimeter-west", 2),
-                        new WaveEntryRecipe(enemies[1], 3, 1, 80, 38, "perimeter-northeast", 2)
+                        new WaveEntryRecipe(enemies[3], 3, 1, 0, 78, "perimeter-south", 1),
+                        new WaveEntryRecipe(enemies[2], 2, 1, 110, 96, "perimeter-west", 2),
+                        new WaveEntryRecipe(enemies[1], 5, 1, 190, 54, "perimeter-northeast", 2)
                     },
                     new[] { "template", "pressure" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.template.authored.surge",
                     "Tank Break",
-                    425,
+                    1780,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 4, 1, 0, 36, "perimeter-southwest", 1),
-                        new WaveEntryRecipe(enemies[1], 3, 1, 48, 44, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[3], 2, 1, 95, 56, "perimeter-west", 2)
+                        new WaveEntryRecipe(enemies[0], 8, 1, 0, 46, "perimeter-southwest", 1),
+                        new WaveEntryRecipe(enemies[1], 5, 1, 120, 58, "perimeter-southeast", 1),
+                        new WaveEntryRecipe(enemies[3], 3, 1, 250, 84, "perimeter-west", 2)
                     },
                     new[] { "template", "tank-break" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.template.authored.elite",
                     "Elite Pressure",
-                    555,
+                    2480,
                     new[]
                     {
                         new WaveEntryRecipe(enemies[4], 1, 1, 0, 0, "perimeter-northwest", 3),
-                        new WaveEntryRecipe(enemies[1], 3, 1, 42, 42, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[3], 1, 1, 86, 56, "perimeter-south", 2)
+                        new WaveEntryRecipe(enemies[1], 6, 1, 140, 56, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[3], 3, 1, 300, 82, "perimeter-south", 2)
                     },
                     new[] { "template", "elite" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.template.authored.final",
                     "Final Surge",
-                    680,
+                    3200,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[2], 2, 1, 0, 62, "perimeter-north", 2),
-                        new WaveEntryRecipe(enemies[3], 2, 1, 38, 56, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[1], 3, 1, 90, 42, "perimeter-southwest", 3)
+                        new WaveEntryRecipe(enemies[2], 3, 1, 0, 110, "perimeter-north", 2),
+                        new WaveEntryRecipe(enemies[3], 4, 1, 150, 78, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[1], 7, 1, 310, 48, "perimeter-southwest", 3)
                     },
                     new[] { "template", "final" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.template.authored.boss",
                     "Boss Push",
-                    820,
+                    4100,
                     new[]
                     {
                         new WaveEntryRecipe(enemies[5], 1, 1, 0, 0, "perimeter-south", 4),
-                        new WaveEntryRecipe(enemies[4], 1, 1, 70, 0, "perimeter-northeast", 3),
-                        new WaveEntryRecipe(enemies[1], 4, 1, 95, 34, "perimeter-northwest", 3)
+                        new WaveEntryRecipe(enemies[4], 1, 1, 320, 0, "perimeter-northeast", 3),
+                        new WaveEntryRecipe(enemies[1], 12, 1, 420, 70, "perimeter-northwest", 3)
                     },
                     new[] { "template", "boss" })
             };
@@ -718,8 +718,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     AttackRecipeDeliveryMode.Hitscan,
                     DamageType.Value,
                     5.0f,
-                    0,
-                    5.2f,
+                    72,
+                    5.0f,
                     AttackRecipeTargetingMode.Nearest),
                 AttackDefinitionAsset.CreateTransient(
                     ShardAttackId.Value,
@@ -728,7 +728,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     DamageType.Value,
                     3.0f,
                     0,
-                    4.9f,
+                    4.7f,
                     AttackRecipeTargetingMode.Strongest,
                     projectileDefinitionId: ShardProjectileId.Value,
                     projectileSpawnableId: ProjectileSpawnableId.Value,
@@ -741,8 +741,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     AttackRecipeDeliveryMode.Area,
                     DamageType.Value,
                     8.0f,
-                    82,
-                    4.4f,
+                    108,
+                    4.1f,
                     AttackRecipeTargetingMode.Strongest),
                 AttackDefinitionAsset.CreateTransient(
                     HomingPulseAttackId.Value,
@@ -750,8 +750,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     AttackRecipeDeliveryMode.Projectile,
                     DamageType.Value,
                     8.0f,
-                    0,
-                    6.8f,
+                    92,
+                    6.3f,
                     AttackRecipeTargetingMode.LowestHealth,
                     projectileDefinitionId: HomingPulseProjectileId.Value,
                     projectileSpawnableId: HomingPulseProjectileId.Value,
@@ -1163,12 +1163,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                Enemy(SwarmEnemySpawnableId, 5, 1.1f, 1, 0.25f),
-                Enemy(RunnerEnemySpawnableId, 8, 1.6f, 2, 0.24f),
-                Enemy(TankEnemySpawnableId, 22, 0.7f, 3, 0.42f),
-                Enemy(ShieldedEnemySpawnableId, 14, 0.95f, 2, 0.34f),
-                Enemy(EliteEnemySpawnableId, 34, 0.9f, 5, 0.36f),
-                Enemy(BossEnemySpawnableId, 96, 0.55f, 12, 0.65f)
+                Enemy(SwarmEnemySpawnableId, 18, 0.68f, 1, 0.28f),
+                Enemy(RunnerEnemySpawnableId, 24, 1.08f, 2, 0.27f),
+                Enemy(TankEnemySpawnableId, 68, 0.46f, 4, 0.48f),
+                Enemy(ShieldedEnemySpawnableId, 42, 0.62f, 3, 0.38f),
+                Enemy(EliteEnemySpawnableId, 155, 0.52f, 8, 0.54f),
+                Enemy(BossEnemySpawnableId, 360, 0.34f, 18, 0.82f)
             };
         }
 
@@ -1387,32 +1387,32 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     public class IdleAutoDefenseTemplateController : MonoBehaviour
     {
         private readonly SpawnRequest[] _spawnBuffer = new SpawnRequest[16];
-        private const long DefaultRuntimeStartingCredits = 45;
-        private const long KillRewardCredits = 9;
+        private const long DefaultRuntimeStartingCredits = 10;
+        private const long KillRewardCredits = 5;
         private const int PassiveIncomeIntervalTicks = 60;
         private const int ManualTowerBaseCooldownTicks = 34;
         private const int ManualTowerMinimumCooldownTicks = 18;
         private const double ManualTowerBaseDamage = 3.0d;
         private const double ManualTowerDamageRankBonus = 1.6d;
-        private const double ManualTowerBaseRange = 4.9d;
+        private const double ManualTowerBaseRange = 4.7d;
         private const double ManualTowerRangeRankBonus = 0.4d;
-        private const double ManualTowerMaximumRange = 7.8d;
-        private const double PulseBeamModuleBaseRange = 5.2d;
-        private const double ArcBurstModuleBaseRange = 4.4d;
-        private const double HomingPulseModuleBaseRange = 6.8d;
+        private const double ManualTowerMaximumRange = 7.2d;
+        private const double PulseBeamModuleBaseRange = 5.0d;
+        private const double ArcBurstModuleBaseRange = 4.1d;
+        private const double HomingPulseModuleBaseRange = 6.3d;
         private const double ModuleRangeRankBonus = 0.35d;
         private const double SampleProjectileFinishThreshold = 3d;
         private const float TemplateSpawnLaneRadius = 18.5f;
         private const float TemplateVisibleArenaRadius = 14.75f;
-        private const int PulseBeamModuleUnlockCost = 18;
-        private const int ArcBurstModuleUnlockCost = 28;
-        private const int HomingPulseModuleUnlockCost = 34;
-        private const int PulseBeamModuleCooldownTicks = 58;
-        private const int ArcBurstModuleCooldownTicks = 88;
-        private const int HomingPulseModuleCooldownTicks = 74;
+        private const int PulseBeamModuleUnlockCost = 34;
+        private const int ArcBurstModuleUnlockCost = 62;
+        private const int HomingPulseModuleUnlockCost = 78;
+        private const int PulseBeamModuleCooldownTicks = 72;
+        private const int ArcBurstModuleCooldownTicks = 108;
+        private const int HomingPulseModuleCooldownTicks = 92;
         private const int MinimumProjectileImpactDelayTicks = 12;
         private const int MaximumProjectileImpactDelayTicks = 52;
-        private const float FirstRewardDraftTargetSeconds = 30f;
+        private const float FirstRewardDraftTargetSeconds = 32f;
         private const int OverdriveCostCredits = 22;
         private const float OverdriveDurationSeconds = 7f;
         private const float OverdriveCooldownSeconds = 18f;
@@ -1838,8 +1838,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EnsureRuntimeUiDocument();
             ConfigureGameplayCamera(definition.Objective.Position);
             CreateArenaBackdrop();
-            CreatePrimitive("Core Build Pad", PrimitiveType.Cylinder, definition.Objective.Position + new Vector3(0f, -0.08f, 0f), new Vector3(1.45f, 0.06f, 1.45f), new Color(0.35f, 0.88f, 1f), "Art/build_pad_target", true);
-            CreatePrimitive("Player Tower", PrimitiveType.Cylinder, definition.Objective.Position, new Vector3(0.8f, 0.9f, 0.8f), Color.cyan, "Art/tower_projectile_red", false, new Vector3(0f, 0.95f, -0.06f), new Vector3(1.15f, 1.15f, 1f));
+            CreatePrimitive("Core Build Pad", PrimitiveType.Cylinder, definition.Objective.Position + new Vector3(0f, -0.08f, 0f), new Vector3(1.45f, 0.06f, 1.45f), new Color(0.35f, 0.88f, 1f), "Art/build_pad_target", true, sortingOrder: -12, spriteTint: new Color(0.45f, 0.95f, 1f, 0.9f));
+            CreatePrimitive("Player Tower", PrimitiveType.Cylinder, definition.Objective.Position, new Vector3(0.8f, 0.9f, 0.8f), Color.cyan, "Art/tower_projectile_red", false, new Vector3(0f, 0.95f, -0.06f), new Vector3(1.15f, 1.15f, 1f), spriteTint: new Color(1f, 0.88f, 0.65f, 1f));
             CreatePlayAreaMarkers();
 
             _enemyPrefab = CreatePrefab("Template Idle Enemy Runtime Prefab", PrimitiveType.Capsule, Color.red, "Art/enemy_basic_green", new Vector3(1.25f, 1.25f, 1f));
@@ -4280,7 +4280,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             GameObject prefab = GameObject.CreatePrimitive(primitiveType);
             prefab.name = name;
             ApplyColor(prefab, color);
-            if (AttachKenneySprite(prefab, kenneyArtPath, false, new Vector3(0f, 0.55f, -0.06f), spriteScale ?? Vector3.one))
+            if (AttachKenneySprite(prefab, kenneyArtPath, false, new Vector3(0f, 0.55f, -0.06f), spriteScale ?? Vector3.one, tint: color))
                 HideMeshRenderers(prefab);
             prefab.SetActive(false);
             return prefab;
@@ -4301,16 +4301,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             DisableColliders(prefab);
             bool attachedSprite = prefab.GetComponentInChildren<SpriteRenderer>(true) != null ||
-                AttachKenneySprite(prefab, kenneyArtPath, false, spriteLocalPosition, spriteScale, sortingOrder);
+                AttachKenneySprite(prefab, kenneyArtPath, false, spriteLocalPosition, spriteScale, sortingOrder, color);
             if (attachedSprite)
+            {
+                TintSpriteRenderers(prefab, color);
                 HideMeshRenderers(prefab);
+            }
             if (projectile)
                 AddProjectileTrail(prefab, color);
             prefab.SetActive(false);
             return prefab;
         }
 
-        private GameObject CreatePrimitive(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color, string kenneyArtPath = null, bool groundSprite = false, Vector3? spriteLocalPosition = null, Vector3? spriteScale = null)
+        private GameObject CreatePrimitive(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color, string kenneyArtPath = null, bool groundSprite = false, Vector3? spriteLocalPosition = null, Vector3? spriteScale = null, int sortingOrder = 20, Color? spriteTint = null)
         {
             GameObject instance = GameObject.CreatePrimitive(primitiveType);
             instance.name = name;
@@ -4318,7 +4321,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             instance.transform.position = position;
             instance.transform.localScale = scale;
             ApplyColor(instance, color);
-            if (AttachKenneySprite(instance, kenneyArtPath, groundSprite, spriteLocalPosition ?? Vector3.zero, spriteScale ?? Vector3.one))
+            if (AttachKenneySprite(instance, kenneyArtPath, groundSprite, spriteLocalPosition ?? Vector3.zero, spriteScale ?? Vector3.one, sortingOrder, spriteTint ?? color))
                 HideMeshRenderers(instance);
             Collider collider = instance.GetComponent<Collider>();
             if (collider != null) collider.enabled = false;
@@ -4328,27 +4331,36 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void CreateModuleAttachment(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color, string kenneyArtPath = null)
         {
             if (_root == null) return;
-            CreatePrimitive(name, primitiveType, position, scale, color, kenneyArtPath, false, new Vector3(0f, 0.42f, -0.04f), new Vector3(0.8f, 0.8f, 1f));
+            CreatePrimitive(name, primitiveType, position, scale, color, kenneyArtPath, false, new Vector3(0f, 0.42f, -0.04f), new Vector3(0.86f, 0.86f, 1f), 26, color);
         }
 
         private void CreatePlayAreaMarkers()
         {
-            CreatePrimitive("Shard Launcher Module", PrimitiveType.Cube, new Vector3(0f, 0.35f, 0.9f), new Vector3(0.45f, 0.28f, 0.45f), new Color(1f, 0.45f, 0.1f), "Art/tower_projectile_red", false, new Vector3(0f, 0.38f, -0.04f), new Vector3(0.7f, 0.7f, 1f));
+            CreateModuleSlot("Shard Launcher Slot", new Vector3(0f, 0.02f, 0.9f), new Color(1f, 0.52f, 0.16f, 0.72f));
+            CreateModuleSlot("Pulse Beam Locked Pad", new Vector3(-0.9f, 0.02f, 0.35f), new Color(0.18f, 0.84f, 1f, 0.58f));
+            CreateModuleSlot("Arc Burst Locked Pad", new Vector3(0f, 0.02f, -0.9f), new Color(1f, 0.58f, 0.16f, 0.58f));
+            CreateModuleSlot("Homing Pulse Locked Pad", new Vector3(0.9f, 0.02f, 0.35f), new Color(0.72f, 0.42f, 1f, 0.58f));
+            CreatePrimitive("Shard Launcher Module", PrimitiveType.Cube, new Vector3(0f, 0.35f, 0.9f), new Vector3(0.45f, 0.28f, 0.45f), new Color(1f, 0.45f, 0.1f), "Art/tower_projectile_red", false, new Vector3(0f, 0.38f, -0.04f), new Vector3(0.76f, 0.76f, 1f), 25, new Color(1f, 0.78f, 0.45f, 1f));
             Color warningStrip = new Color(0.95f, 0.68f, 0.18f, 0.95f);
-            CreatePrimitive("Outer Spawn Zone North", PrimitiveType.Cube, new Vector3(0f, 0.03f, TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(21.5f, 0.32f, 1f));
-            CreatePrimitive("Outer Spawn Zone East", PrimitiveType.Cube, new Vector3(TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(0.32f, 21.5f, 1f));
-            CreatePrimitive("Outer Spawn Zone South", PrimitiveType.Cube, new Vector3(0f, 0.03f, -TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(21.5f, 0.32f, 1f));
-            CreatePrimitive("Outer Spawn Zone West", PrimitiveType.Cube, new Vector3(-TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(0.32f, 21.5f, 1f));
+            CreatePrimitive("Outer Spawn Zone North", PrimitiveType.Cube, new Vector3(0f, 0.03f, TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(21.5f, 0.32f, 1f), -28, warningStrip);
+            CreatePrimitive("Outer Spawn Zone East", PrimitiveType.Cube, new Vector3(TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(0.32f, 21.5f, 1f), -28, warningStrip);
+            CreatePrimitive("Outer Spawn Zone South", PrimitiveType.Cube, new Vector3(0f, 0.03f, -TemplateVisibleArenaRadius), new Vector3(21.5f, 0.04f, 0.18f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(21.5f, 0.32f, 1f), -28, warningStrip);
+            CreatePrimitive("Outer Spawn Zone West", PrimitiveType.Cube, new Vector3(-TemplateVisibleArenaRadius, 0.03f, 0f), new Vector3(0.18f, 0.04f, 21.5f), warningStrip, "Art/path_dirt", true, Vector3.zero, new Vector3(0.32f, 21.5f, 1f), -28, warningStrip);
+        }
+
+        private void CreateModuleSlot(string name, Vector3 position, Color tint)
+        {
+            CreatePrimitive(name, PrimitiveType.Cylinder, position + new Vector3(0f, -0.08f, 0f), new Vector3(0.72f, 0.035f, 0.72f), tint, "Art/build_pad_target", true, Vector3.zero, new Vector3(0.82f, 0.82f, 1f), -10, tint);
         }
 
         private void CreateArenaBackdrop()
         {
             if (_root == null) return;
-            CreatePrimitive("Kenney Grass Field", PrimitiveType.Cube, new Vector3(0f, -0.18f, 0f), new Vector3(39f, 0.03f, 39f), new Color(0.14f, 0.34f, 0.18f), "Art/ground_grass", true, Vector3.zero, new Vector3(38f, 38f, 1f));
-            CreatePrimitive("North Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.15f, 10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f));
-            CreatePrimitive("East Dirt Approach", PrimitiveType.Cube, new Vector3(10.2f, -0.145f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
-            CreatePrimitive("South Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.14f, -10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f));
-            CreatePrimitive("West Dirt Approach", PrimitiveType.Cube, new Vector3(-10.2f, -0.135f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.46f, 0.34f, 0.18f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f));
+            CreatePrimitive("Kenney Grass Field", PrimitiveType.Cube, new Vector3(0f, -0.18f, 0f), new Vector3(39f, 0.03f, 39f), new Color(0.18f, 0.58f, 0.28f), "Art/ground_grass", true, Vector3.zero, new Vector3(38f, 38f, 1f), -40, new Color(0.72f, 0.95f, 0.68f, 1f));
+            CreatePrimitive("North Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.15f, 10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.58f, 0.42f, 0.22f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f), -35, new Color(1f, 0.72f, 0.38f, 1f));
+            CreatePrimitive("East Dirt Approach", PrimitiveType.Cube, new Vector3(10.2f, -0.145f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.58f, 0.42f, 0.22f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f), -35, new Color(1f, 0.72f, 0.38f, 1f));
+            CreatePrimitive("South Dirt Approach", PrimitiveType.Cube, new Vector3(0f, -0.14f, -10.2f), new Vector3(3.2f, 0.035f, 19f), new Color(0.58f, 0.42f, 0.22f), "Art/path_dirt", true, Vector3.zero, new Vector3(4.5f, 17f, 1f), -35, new Color(1f, 0.72f, 0.38f, 1f));
+            CreatePrimitive("West Dirt Approach", PrimitiveType.Cube, new Vector3(-10.2f, -0.135f, 0f), new Vector3(19f, 0.035f, 3.2f), new Color(0.58f, 0.42f, 0.22f), "Art/path_dirt", true, Vector3.zero, new Vector3(17f, 4.5f, 1f), -35, new Color(1f, 0.72f, 0.38f, 1f));
         }
 
         private void ConfigureGameplayCamera(Vector3 focus)
@@ -4375,7 +4387,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _shakeCameraBaseCaptured = true;
         }
 
-        private static bool AttachKenneySprite(GameObject instance, string artPath, bool groundSprite, Vector3 localPosition, Vector3 localScale, int sortingOrder = 20)
+        private static bool AttachKenneySprite(GameObject instance, string artPath, bool groundSprite, Vector3 localPosition, Vector3 localScale, int sortingOrder = 20, Color? tint = null)
         {
             if (instance == null || string.IsNullOrWhiteSpace(artPath)) return false;
             Sprite sprite = Resources.Load<Sprite>(KenneyResourceRoot + artPath);
@@ -4393,7 +4405,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             spriteObject.transform.localScale = localScale;
             SpriteRenderer renderer = spriteObject.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
-            renderer.sortingOrder = groundSprite ? -20 : sortingOrder;
+            renderer.color = tint ?? Color.white;
+            renderer.sortingOrder = sortingOrder;
             if (!groundSprite)
             {
                 var billboard = spriteObject.AddComponent<KenneyBillboardVisual>();
@@ -4426,8 +4439,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (string.IsNullOrWhiteSpace(enemyId)) return "Art/enemy_basic_green";
             if (enemyId.IndexOf("runner", StringComparison.OrdinalIgnoreCase) >= 0) return "Art/enemy_fast_gray";
-            if (enemyId.IndexOf("tank", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                enemyId.IndexOf("boss", StringComparison.OrdinalIgnoreCase) >= 0) return "Art/enemy_tank_brown";
+            if (enemyId.IndexOf("boss", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                enemyId.IndexOf("elite", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                enemyId.IndexOf("shield", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                enemyId.IndexOf("tank", StringComparison.OrdinalIgnoreCase) >= 0) return "Art/enemy_tank_brown";
             return "Art/enemy_basic_green";
         }
 
@@ -4435,21 +4450,30 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (string.IsNullOrWhiteSpace(enemyId)) return Color.red;
             if (enemyId.IndexOf("runner", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(0.82f, 0.82f, 0.9f);
-            if (enemyId.IndexOf("tank", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(0.62f, 0.36f, 0.18f);
-            if (enemyId.IndexOf("elite", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(0.95f, 0.66f, 0.18f);
-            if (enemyId.IndexOf("boss", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(0.75f, 0.18f, 0.14f);
+            if (enemyId.IndexOf("boss", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(1f, 0.25f, 0.18f);
+            if (enemyId.IndexOf("elite", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(1f, 0.72f, 0.22f);
             if (enemyId.IndexOf("shield", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(0.32f, 0.58f, 1f);
-            return new Color(0.35f, 0.9f, 0.42f);
+            if (enemyId.IndexOf("tank", StringComparison.OrdinalIgnoreCase) >= 0) return new Color(0.78f, 0.48f, 0.22f);
+            return new Color(0.46f, 1f, 0.5f);
         }
 
         private static Vector3 ResolveEnemySpriteScale(string enemyId)
         {
             if (string.IsNullOrWhiteSpace(enemyId)) return new Vector3(1.1f, 1.1f, 1f);
-            if (enemyId.IndexOf("boss", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(2.2f, 2.2f, 1f);
-            if (enemyId.IndexOf("elite", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(1.65f, 1.65f, 1f);
+            if (enemyId.IndexOf("boss", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(2.7f, 2.7f, 1f);
+            if (enemyId.IndexOf("elite", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(1.9f, 1.9f, 1f);
             if (enemyId.IndexOf("tank", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(1.45f, 1.45f, 1f);
+            if (enemyId.IndexOf("shield", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(1.32f, 1.32f, 1f);
             if (enemyId.IndexOf("runner", StringComparison.OrdinalIgnoreCase) >= 0) return new Vector3(1.0f, 1.0f, 1f);
             return new Vector3(1.15f, 1.15f, 1f);
+        }
+
+        private static void TintSpriteRenderers(GameObject instance, Color tint)
+        {
+            if (instance == null) return;
+            SpriteRenderer[] renderers = instance.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+                renderers[i].color = tint;
         }
 
         private MonetizationFlowContext CreateMonetizationContext(DateTimeOffset nowUtc)

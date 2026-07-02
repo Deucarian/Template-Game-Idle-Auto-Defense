@@ -12,6 +12,11 @@ It contains the authored assets consumed by the generated scene:
 - `Upgrades` contains six run upgrades: Damage Boost, Fire Rate Boost, Range Boost, Projectile Speed, Core Reinforcement, and Credit Reward.
 - `starter-content.json` mirrors those IDs for quick inspection.
 
+The current authored tuning is a 3-5 minute vertical slice: low starting
+credits, visible offscreen approaches, a first reward around 30-60 seconds,
+mid-run near-leaks that can damage the core, and elite/boss pressure before
+the final reward moments.
+
 The starter runtime does not load the JSON directly. The actual playable loop
 uses the authored `GameContentPackAsset` and `GameContentSetAsset` references
 assigned in the scene.

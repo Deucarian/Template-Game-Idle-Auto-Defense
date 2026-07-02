@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.GameContentPackAsset
   _id: contentpack.template.basic-idle-auto-defense
   _displayName: Basic Idle Auto Defense Pack
-  _description: Starter content pack with complete generic authored assets for
-    authoring inspection and play smoke.
+  _description: Starter content pack with generic authored assets for a readable
+    3-5 minute vertical slice.
   _version: 0.1.0
   _author: Deucarian
   _icon: {fileID: 21300000, guid: 030ed80cce432184ea60781e960c5cb5, type: 3}
@@ -30,10 +30,11 @@ MonoBehaviour:
   - com.deucarian.run-upgrades
   - com.deucarian.game-content-authoring
   _minimumPackageVersions: []
-  _templateCompatibilityNotes: Starter placeholder round for idle auto-defense
+  _templateCompatibilityNotes: Kenney-styled vertical slice for idle auto-defense
     products.
   _tags:
   - idle-auto-defense
   - starter
   - content-pack
-  - placeholder-complete
+  - playable-vertical-slice
+  - kenney-readable

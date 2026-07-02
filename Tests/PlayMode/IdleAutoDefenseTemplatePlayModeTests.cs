@@ -17,7 +17,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
 
-            for (int i = 0; i < 2200; i++)
+            for (int i = 0; i < 6400; i++)
             {
                 BuyAvailableLivePurchases(controller);
                 controller.Step(1, 0.05f);
@@ -44,9 +44,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(3), controller.StatusSummary);
             Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.RewardDraftSelectionCount, Is.GreaterThan(0), controller.StatusSummary);
-            Assert.That(controller.FirstRewardDraftSeconds, Is.GreaterThan(0f).And.LessThan(90f), controller.StatusSummary);
+            Assert.That(controller.FirstRewardDraftSeconds, Is.GreaterThanOrEqualTo(30f).And.LessThanOrEqualTo(60f), controller.StatusSummary);
             Assert.That(controller.UpgradeFeedbackSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EliteOrBossSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ObjectiveDamageEvents, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
             Assert.That(controller.OverdriveActivationCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.True(controller.PulseBeamUnlocked, "Smoke should unlock Pulse Beam.");
@@ -54,6 +55,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.True(controller.HomingPulseUnlocked, "Smoke should unlock Homing Pulse.");
             Assert.AreEqual(0, controller.DraftTickCount, "Sample upgrades should be explicit live purchases only.");
             Assert.True(controller.EncounterCompleted, "Assisted sample run should complete. " + controller.StatusSummary);
+            Assert.That(controller.SurvivalSeconds, Is.GreaterThan(180f), controller.StatusSummary);
             Assert.That(controller.EncounterRewardCredits, Is.GreaterThanOrEqualTo(60));
             Assert.That(controller.EncounterRewardParts, Is.GreaterThanOrEqualTo(3));
 
@@ -85,7 +87,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             controller.enabled = false;
             controller.RewardDraftPausesCombat = false;
 
-            for (int i = 0; i < 2200; i++)
+            for (int i = 0; i < 6400; i++)
             {
                 controller.Step(1, 0.05f);
                 if (controller.EncounterCompleted || controller.EncounterFailed)
@@ -148,16 +150,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
         {
             if (controller.RewardDraftActive)
                 controller.TryChooseRewardDraftChoice(0);
+            if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)
+                controller.TryPurchaseRepairUpgrade();
             if (controller.CanPurchasePulseBeamModule) controller.TryPurchasePulseBeamModule();
+            if (controller.PulseBeamUnlocked && controller.CanPurchaseDamageUpgrade) controller.TryPurchaseDamageUpgrade();
+            if (controller.PulseBeamUnlocked && controller.CanPurchaseAttackSpeedUpgrade) controller.TryPurchaseAttackSpeedUpgrade();
             if (controller.CanPurchaseArcBurstModule) controller.TryPurchaseArcBurstModule();
+            if (controller.ArcBurstUnlocked && controller.CanPurchaseRangeUpgrade) controller.TryPurchaseRangeUpgrade();
             if (controller.CanPurchaseHomingPulseModule) controller.TryPurchaseHomingPulseModule();
 
             if (!controller.PulseBeamUnlocked || !controller.ArcBurstUnlocked || !controller.HomingPulseUnlocked)
-            {
-                if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.55d && controller.CanPurchaseRepairUpgrade)
-                    controller.TryPurchaseRepairUpgrade();
                 return;
-            }
 
             if (controller.CanPurchaseOverdrive) controller.TryPurchaseOverdrive();
             if (controller.ObjectiveHealth < controller.ObjectiveMaximumHealth * 0.7d && controller.CanPurchaseRepairUpgrade)

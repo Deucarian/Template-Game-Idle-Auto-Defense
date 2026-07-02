@@ -22,4 +22,4 @@ MonoBehaviour:
   _upgradeGroupId: template-area
   _stats: {fileID: 11400000, guid: edfafe75275d8fa4f9ddac03f809a70a, type: 2}
   _presentation: {fileID: 11400000, guid: bb26e4596b492104388cd55ca4f63d99, type: 2}
-  _balancingNotes: Generated placeholder starter-round weapon.
+  _balancingNotes: Readable starter vertical-slice weapon.
