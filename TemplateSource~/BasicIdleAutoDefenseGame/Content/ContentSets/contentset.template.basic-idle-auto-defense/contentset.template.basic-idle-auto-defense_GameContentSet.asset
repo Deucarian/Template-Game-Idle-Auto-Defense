@@ -94,191 +94,191 @@ MonoBehaviour:
     _rewardDraftCatalog:
       _weaponUnlocks:
       - _weaponId: weapon.template.pulse-cannon
-        _displayName: Beam Module
-        _effectDescription: Unlocks a steady beam module that hits the leading enemy.
+        _displayName: Pulse Beam Module
+        _effectDescription: Unlocks a precise beam module that burns down the leading enemy.
         _levelUpRarity: 1
         _eliteRarity: 2
         _bossRarity: 3
       - _weaponId: weapon.template.arc-burst-tower
-        _displayName: Area Module
-        _effectDescription: Unlocks an area burst module that can hit multiple enemies.
+        _displayName: Arc Cannon Module
+        _effectDescription: Unlocks a splash module that detonates around clustered enemies.
         _levelUpRarity: 1
         _eliteRarity: 2
         _bossRarity: 3
       - _weaponId: weapon.template.homing-spire
-        _displayName: Homing Module
-        _effectDescription: Unlocks a homing projectile module for low-health cleanup.
+        _displayName: Homing Spire Module
+        _effectDescription: Unlocks a seeker module for cleanup shots and pressure relief.
         _levelUpRarity: 1
         _eliteRarity: 2
         _bossRarity: 3
       _normalWeaponRewards:
       - _weaponId: weapon.template.shard-launcher
         _tierKey: normal.0
-        _displayName: Damage Calibration
+        _displayName: Sharper Shards
         _rarity: 0
         _typeName: Weapon Upgrade
-        _effectDescription: +2 damage ranks for visible hits.
+        _effectDescription: +2 damage ranks for shard impacts.
         _effectKind: 2
         _amount: 2
       - _weaponId: weapon.template.shard-launcher
         _tierKey: normal.1
-        _displayName: Cycle Tuning
+        _displayName: Quick Chisel
         _rarity: 1
         _typeName: Weapon Upgrade
-        _effectDescription: +2 fire-rate ranks for this run.
+        _effectDescription: +2 fire-rate ranks for faster shard volleys.
         _effectKind: 3
         _amount: 2
       - _weaponId: weapon.template.shard-launcher
         _tierKey: normal.2
-        _displayName: Range Pattern
+        _displayName: Split Tip
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank and a small damage bump.
-        _effectKind: 4
+        _effectDescription: Adds one extra shard to each visible volley.
+        _effectKind: 8
         _amount: 1
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: normal.0
-        _displayName: Damage Calibration
+        _displayName: Focused Lens
         _rarity: 0
         _typeName: Weapon Upgrade
-        _effectDescription: +2 damage ranks for visible hits.
+        _effectDescription: +2 damage ranks for beam impacts.
         _effectKind: 2
         _amount: 2
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: normal.1
-        _displayName: Cycle Tuning
+        _displayName: Faster Capacitors
         _rarity: 1
         _typeName: Weapon Upgrade
-        _effectDescription: +2 fire-rate ranks for this run.
+        _effectDescription: +2 fire-rate ranks for more beam pulses.
         _effectKind: 3
         _amount: 2
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: normal.2
-        _displayName: Range Pattern
+        _displayName: Extended Aperture
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank and a small damage bump.
+        _effectDescription: +1 range rank for the beam module.
         _effectKind: 4
         _amount: 1
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: normal.0
-        _displayName: Damage Calibration
+        _displayName: Packed Powder
         _rarity: 0
         _typeName: Weapon Upgrade
-        _effectDescription: +2 damage ranks for visible hits.
+        _effectDescription: +2 damage ranks for area detonations.
         _effectKind: 2
         _amount: 2
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: normal.1
-        _displayName: Cycle Tuning
+        _displayName: Fast Loader
         _rarity: 1
         _typeName: Weapon Upgrade
-        _effectDescription: +2 fire-rate ranks for this run.
+        _effectDescription: +2 fire-rate ranks for more splash bursts.
         _effectKind: 3
         _amount: 2
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: normal.2
-        _displayName: Range Pattern
+        _displayName: Bigger Shells
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank and a small damage bump.
+        _effectDescription: +1 range rank to catch clustered enemies sooner.
         _effectKind: 4
         _amount: 1
       - _weaponId: weapon.template.homing-spire
         _tierKey: normal.0
-        _displayName: Damage Calibration
+        _displayName: Sharper Signal
         _rarity: 0
         _typeName: Weapon Upgrade
-        _effectDescription: +2 damage ranks for visible hits.
+        _effectDescription: +2 damage ranks for seeker impacts.
         _effectKind: 2
         _amount: 2
       - _weaponId: weapon.template.homing-spire
         _tierKey: normal.1
-        _displayName: Cycle Tuning
+        _displayName: Efficient Engines
         _rarity: 1
         _typeName: Weapon Upgrade
-        _effectDescription: +2 fire-rate ranks for this run.
+        _effectDescription: +2 fire-rate ranks for more seeker launches.
         _effectKind: 3
         _amount: 2
       - _weaponId: weapon.template.homing-spire
         _tierKey: normal.2
-        _displayName: Range Pattern
+        _displayName: Longer Lock
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank and a small damage bump.
+        _effectDescription: +1 range rank for the homing spire.
         _effectKind: 4
         _amount: 1
       _epicWeaponRewards:
       - _weaponId: weapon.template.shard-launcher
         _tierKey: epic.0
-        _displayName: Split Payload
+        _displayName: Fracture Burst
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +2 shard projectiles per volley.
+        _effectDescription: Shard Launcher fires two extra visible shards per volley.
         _effectKind: 8
         _amount: 2
       - _weaponId: weapon.template.shard-launcher
         _tierKey: epic.1
-        _displayName: Accelerated Shards
+        _displayName: Ricochet Shards
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +25% projectile travel speed.
+        _effectDescription: Shard volleys travel faster and retarget more cleanly after impact.
         _effectKind: 7
         _amount: 0.25
       - _weaponId: weapon.template.shard-launcher
         _tierKey: epic.2
-        _displayName: Overloaded Payload
+        _displayName: Shard Storm
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +30% damage for visible attacks.
+        _effectDescription: Visible shard hits punch much harder across all weapons.
         _effectKind: 12
         _amount: 0.3
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: epic.0
-        _displayName: Wide Beam
+        _displayName: Refracting Beam
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: Pulse Beam hits one extra target.
+        _effectDescription: Pulse Beam hits one extra target with authored beam VFX.
         _effectKind: 9
         _amount: 1
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: epic.1
-        _displayName: Capacitor Loop
+        _displayName: Overcharged Pulse
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +1 fire-rate rank.
+        _effectDescription: Pulse Beam cycles faster for more visible beam shots.
         _effectKind: 3
         _amount: 1
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: epic.2
-        _displayName: Focused Beam
+        _displayName: Ion Burn
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +30% damage for visible attacks.
+        _effectDescription: Beam impacts deal a large visible damage spike.
         _effectKind: 12
         _amount: 0.3
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: epic.0
-        _displayName: Larger Burst
+        _displayName: Cluster Shells
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: Arc Burst hits one extra target.
+        _effectDescription: Arc Cannon blasts one extra enemy in the detonation.
         _effectKind: 10
         _amount: 1
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: epic.1
-        _displayName: Conductive Field
+        _displayName: Burning Ground
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +1 range rank.
+        _effectDescription: Arc Cannon holds pressure farther from the core.
         _effectKind: 4
         _amount: 1
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: epic.2
-        _displayName: Charged Detonation
+        _displayName: Shockwave Impact
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +30% damage for visible attacks.
+        _effectDescription: Area impacts hit harder and produce larger damage-number spikes.
         _effectKind: 12
         _amount: 0.3
       - _weaponId: weapon.template.homing-spire
@@ -286,56 +286,56 @@ MonoBehaviour:
         _displayName: Extra Seeker
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: Homing Pulse fires one extra seeker.
+        _effectDescription: Homing Pulse fires one extra authored seeker projectile.
         _effectKind: 11
         _amount: 1
       - _weaponId: weapon.template.homing-spire
         _tierKey: epic.1
-        _displayName: Smarter Guidance
+        _displayName: Target Painter
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +25% projectile travel speed.
-        _effectKind: 7
-        _amount: 0.25
+        _effectDescription: Marked targets take a large visible damage spike.
+        _effectKind: 12
+        _amount: 0.3
       - _weaponId: weapon.template.homing-spire
         _tierKey: epic.2
-        _displayName: Looping Return
+        _displayName: Overclocked Guidance
         _rarity: 3
         _typeName: Epic Weapon
-        _effectDescription: +1 fire-rate rank.
+        _effectDescription: The seeker module fires more often during pressure waves.
         _effectKind: 3
         _amount: 1
       _legendaryWeaponRewards:
       - _weaponId: weapon.template.shard-launcher
         _tierKey: legendary
-        _displayName: Shard Storm
+        _displayName: Crystal Tempest
         _rarity: 4
         _typeName: Legendary Weapon
-        _effectDescription: +3 shard projectiles per volley.
+        _effectDescription: Shard Launcher becomes a storm of three extra visible shards per volley.
         _effectKind: 8
         _amount: 3
       - _weaponId: weapon.template.pulse-cannon
         _tierKey: legendary
-        _displayName: Prism Beam
+        _displayName: Orbital Lance
         _rarity: 4
         _typeName: Legendary Weapon
-        _effectDescription: Pulse Beam hits two extra targets.
+        _effectDescription: Pulse Beam becomes a build-defining beam that hits two extra targets.
         _effectKind: 9
         _amount: 2
       - _weaponId: weapon.template.arc-burst-tower
         _tierKey: legendary
-        _displayName: Arc Singularity
+        _displayName: Siege Barrage
         _rarity: 4
         _typeName: Legendary Weapon
-        _effectDescription: Arc Burst hits two extra targets.
+        _effectDescription: Arc Cannon detonations hit two extra enemies during pressure spikes.
         _effectKind: 10
         _amount: 2
       - _weaponId: weapon.template.homing-spire
         _tierKey: legendary
-        _displayName: Homing Swarm
+        _displayName: Carrier Hive
         _rarity: 4
         _typeName: Legendary Weapon
-        _effectDescription: Homing Pulse fires two extra seekers.
+        _effectDescription: Homing Spire launches two extra authored seeker projectiles.
         _effectKind: 11
         _amount: 2
       _baseRewards:
@@ -344,30 +344,30 @@ MonoBehaviour:
         _rarity: 0
         _typeName: Base Upgrade
         _targetName: Tower
-        _effectDescription: +2 damage ranks.
+        _effectDescription: +2 damage ranks for immediate relief.
         _effectKind: 2
         _amount: 2
         _maxRank: 8
       - _key: base.fire-rate
-        _displayName: Reload Practice
+        _displayName: Tactical Overclock
         _rarity: 0
         _typeName: Base Upgrade
         _targetName: Tower
-        _effectDescription: +2 fire-rate ranks.
+        _effectDescription: +2 fire-rate ranks so weapons visibly fire faster.
         _effectKind: 3
         _amount: 2
         _maxRank: 6
       - _key: base.range
-        _displayName: Sensor Sweep
+        _displayName: Sensor Array
         _rarity: 1
         _typeName: Base Upgrade
         _targetName: Tower
-        _effectDescription: +1 range rank.
+        _effectDescription: +1 range rank to catch enemies before they leak.
         _effectKind: 4
         _amount: 1
         _maxRank: 6
       - _key: base.repair
-        _displayName: Field Repair
+        _displayName: Emergency Repairs
         _rarity: 0
         _typeName: Base Upgrade
         _targetName: Tower
@@ -376,20 +376,20 @@ MonoBehaviour:
         _amount: 1
         _maxRank: 5
       - _key: base.velocity
-        _displayName: Velocity Tuning
+        _displayName: Velocity Matrix
         _rarity: 1
         _typeName: Base Upgrade
         _targetName: Projectiles
-        _effectDescription: +25% projectile travel speed.
+        _effectDescription: +25% projectile travel speed for snappier impacts.
         _effectKind: 7
         _amount: 0.25
         _maxRank: 4
       - _key: base.credits
-        _displayName: Credit Routing
+        _displayName: Scrap Collector
         _rarity: 2
         _typeName: Economy
         _targetName: Tower
-        _effectDescription: +25% credits from kills.
+        _effectDescription: +25% credits from kills for more live purchases.
         _effectKind: 6
         _amount: 0.25
         _maxRank: 5

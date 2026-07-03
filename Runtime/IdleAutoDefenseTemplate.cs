@@ -1561,6 +1561,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int EnemyHitFlashCount { get; private set; }
         public int EnemyDeathPopCount { get; private set; }
         public int DamageNumberSpawnCount { get; private set; }
+        public int AuthoredVisibleInstanceStampCount { get; private set; }
+        public int FallbackVisibleGameplaySpawnCount { get; private set; }
         public int AuthoredWeaponPresentationSpawnCount { get; private set; }
         public int FallbackWeaponPresentationSpawnCount { get; private set; }
         public int AuthoredWeaponPresentationBindingCount { get; private set; }
@@ -1708,6 +1710,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " EnemyFacing=" + EnemyFacingUpdateCount +
             " EnemyHitFlash=" + EnemyHitFlashCount +
             " EnemyDeathPop=" + EnemyDeathPopCount +
+            " AuthoredStamps=" + AuthoredVisibleInstanceStampCount +
+            " FallbackVisible=" + FallbackVisibleGameplaySpawnCount +
             " Currency=" + RuntimeCurrency +
             " Level=" + CommanderLevel +
             " Overdrive=" + (OverdriveActive ? "on" : "off") +
@@ -3303,7 +3307,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 definition.Presentation != null &&
                 definition.Presentation.TryGetEvent(eventKind, out EnemyPresentationEventRecipe recipe))
             {
-                emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position);
+                emittedVfx = EmitPresentationVfx(
+                    recipe.VfxPrefab,
+                    position,
+                    "EnemyPresentation",
+                    definition.Id,
+                    string.Empty,
+                    string.Empty,
+                    eventKind.ToString());
                 emittedAudio = PlayPresentationAudio(recipe.AudioClip);
             }
 
@@ -3311,7 +3322,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 EmitFallbackPresentationVfx(position, ResolveEnemyEventColor(eventKind), 0.34f);
             if (!emittedAudio)
                 PlayPresentationAudio(null);
-            EmitKenneyEnemyEventBurst(position, eventKind);
         }
 
         private void UpdateEnemyModelPresentations(AutoDefenseRuntimeSnapshot snapshot, float deltaSeconds)
@@ -3374,16 +3384,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 }
                 else
                 {
-                    emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position) || emittedVfx;
+                    emittedVfx = EmitPresentationVfx(
+                        recipe.VfxPrefab,
+                        position,
+                        "AttackPresentation",
+                        attack.Id,
+                        ResolveWeaponIdForAttack(attack),
+                        attack.Id,
+                        eventKind.ToString()) || emittedVfx;
                 }
                 emittedAudio = PlayPresentationAudio(recipe.AudioClip);
             }
 
             if (!emittedVfx)
+            {
                 EmitFallbackPresentationVfx(eventPosition, ResolveAttackColor(attack), ResolveAttackEventScale(eventKind));
+                if (eventKind == AttackPresentationEventKind.OnFire)
+                    MuzzleFlashSpawnCount++;
+            }
             if (!emittedAudio && eventKind != AttackPresentationEventKind.OnTick)
                 PlayPresentationAudio(null);
-            EmitKenneyAttackEventBurst(attack, eventKind, eventPosition);
         }
 
         private bool TryEmitBeamVfx(AttackDefinitionAsset attack, Vector3 impactPosition, long targetEnemyId)
@@ -3407,6 +3427,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             GameObject instance = Instantiate(prefab);
             instance.name = prefab.name + " Runtime Beam";
             if (_root != null) instance.transform.SetParent(_root.transform, true);
+            StampAuthoredVisibleInstance(
+                instance,
+                "BeamVfx",
+                attack == null ? string.Empty : attack.Id,
+                prefab.name,
+                ResolveWeaponIdForAttack(attack),
+                attack == null ? string.Empty : attack.Id,
+                "Beam");
             ConfigureBeamLineRenderer(instance, prefab, attack);
             HideBeamMeshRenderers(instance);
             AlignBeamInstance(instance, prefab, origin, impactPosition);
@@ -3638,12 +3666,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 float.IsInfinity(value.x) || float.IsInfinity(value.y) || float.IsInfinity(value.z));
         }
 
-        private bool EmitPresentationVfx(GameObject prefab, Vector3 position)
+        private bool EmitPresentationVfx(
+            GameObject prefab,
+            Vector3 position,
+            string definitionType,
+            string contentId,
+            string ownerWeaponId,
+            string ownerAttackId,
+            string effectRole)
         {
             if (prefab == null) return false;
             GameObject instance = Instantiate(prefab, position, Quaternion.identity);
             instance.name = prefab.name + " Runtime";
             if (_root != null) instance.transform.SetParent(_root.transform, true);
+            StampAuthoredVisibleInstance(instance, definitionType, contentId, prefab.name, ownerWeaponId, ownerAttackId, effectRole);
             instance.SetActive(true);
             DisableColliders(instance);
             ParticleSystem[] particles = instance.GetComponentsInChildren<ParticleSystem>(true);
@@ -3654,6 +3690,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             AttackVfxSpawnCount++;
+            if (string.Equals(effectRole, AttackPresentationEventKind.OnFire.ToString(), StringComparison.OrdinalIgnoreCase))
+                MuzzleFlashSpawnCount++;
             DestroyPresentationObject(instance, 2f);
             return true;
         }
@@ -3661,6 +3699,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void EmitFallbackPresentationVfx(Vector3 position, Color color, float scale)
         {
             if (_root == null) return;
+            FallbackVisibleGameplaySpawnCount++;
             if (EmitKenneySpriteBurst("Kenney Presentation Burst", "Art/impact_flame", position, color, Mathf.Max(0.45f, scale * 1.8f), 0.42f, 0.18f, 50))
             {
                 AttackVfxSpawnCount++;
@@ -4199,7 +4238,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     new Vector3(0f, 0f, -0.02f),
                     new Vector3(0.72f, 0.72f, 1f),
                     true,
-                    35)
+                    35,
+                    "ProjectileVisual",
+                    attack != null && attack.Delivery != null ? attack.Delivery.ProjectileDefinitionId : key,
+                    ResolveWeaponIdForAttack(attack),
+                    attack == null ? string.Empty : attack.Id,
+                    "ProjectilePrefab")
                 : CreateProjectileModelPrefab("Kenney Projectile Runtime Prefab " + key, ResolveProjectileModelName(attack), color);
             _runtimeProjectilePrefabs[key] = prefab;
             return prefab;
@@ -4240,6 +4284,46 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return _weaponVisualBindings.TryGetValue(attack.Id, out IdleAutoDefenseWeaponVisualBinding binding) ? binding : null;
         }
 
+        private string ResolveWeaponIdForAttack(AttackDefinitionAsset attack)
+        {
+            if (attack == null || string.IsNullOrWhiteSpace(attack.Id) || _resolvedWeaponDefinitions == null)
+                return string.Empty;
+
+            for (int i = 0; i < _resolvedWeaponDefinitions.Length; i++)
+            {
+                WeaponDefinitionAsset weapon = _resolvedWeaponDefinitions[i];
+                AttackDefinitionAsset weaponAttack = weapon != null && weapon.Stats != null ? weapon.Stats.Attack : null;
+                if (weaponAttack != null && string.Equals(weaponAttack.Id, attack.Id, StringComparison.OrdinalIgnoreCase))
+                    return weapon.Id;
+            }
+
+            return string.Empty;
+        }
+
+        private void StampAuthoredVisibleInstance(
+            GameObject instance,
+            string definitionType,
+            string contentId,
+            string prefabName,
+            string ownerWeaponId,
+            string ownerAttackId,
+            string effectRole)
+        {
+            if (AuthoredContentInstance.Stamp(
+                    instance,
+                    definitionType,
+                    contentId,
+                    string.Empty,
+                    string.Empty,
+                    prefabName,
+                    ownerWeaponId,
+                    ownerAttackId,
+                    effectRole) != null)
+            {
+                AuthoredVisibleInstanceStampCount++;
+            }
+        }
+
         private void PlayWeaponFirePresentation(AttackDefinitionAsset attack, Vector3 targetPosition)
         {
             IdleAutoDefenseWeaponVisualBinding binding = FindWeaponVisualBinding(attack);
@@ -4248,8 +4332,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 TurretAimUpdateCount++;
             if (binding.TriggerRecoil())
                 RecoilEventCount++;
-            if (binding.EmitMuzzleFlash(_root != null ? _root.transform : transform, ResolveAttackColor(attack)))
-                MuzzleFlashSpawnCount++;
         }
 
         private void UpdateWeaponPresentationTargets(AutoDefenseRuntimeSnapshot snapshot, float deltaSeconds)
@@ -4797,7 +4879,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     new Vector3(0f, 0.62f, -0.08f),
                     ResolveEnemySpriteScale(id),
                     false,
-                    24)
+                    24,
+                    "EnemyVisual",
+                    id,
+                    string.Empty,
+                    string.Empty,
+                    "EnemyPrefab")
                 : CreateEnemyModelPrefab("Kenney Enemy Runtime Prefab " + id, id, color);
             EnsureEnemyModelPresentation(prefab, color);
             _runtimeEnemyPrefabs[id] = prefab;
@@ -4833,6 +4920,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             GameObject core = new GameObject("Kenney 3D Core Base");
             core.transform.SetParent(_root.transform, false);
             core.transform.position = position;
+            StampAuthoredVisibleInstance(core, "ObjectivePresentation", "objective.template-core", core.name, string.Empty, string.Empty, "CoreBase");
             InstantiateKenneyModel("tower-round-base", core.transform, Vector3.zero, Quaternion.identity, Vector3.one * 1.35f, new Color(0.78f, 0.9f, 1f));
             InstantiateKenneyModel("tower-round-middle-a", core.transform, new Vector3(0f, 0.46f, 0f), Quaternion.identity, Vector3.one * 1.12f, new Color(0.78f, 0.9f, 1f));
             InstantiateKenneyModel("tower-round-crystals", core.transform, new Vector3(0f, 0.92f, 0f), Quaternion.identity, Vector3.one * 0.92f, new Color(0.35f, 0.9f, 1f));
@@ -4863,6 +4951,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             root.transform.localPosition = position;
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
+            StampAuthoredVisibleInstance(root, "WeaponPresentation", weaponId, displayName, weaponId, attackId, "WeaponMount");
 
             InstantiateKenneyModel(baseModelName, root.transform, Vector3.zero, Quaternion.identity, Vector3.one * 0.72f, tint);
             Transform yawPivot = new GameObject(displayName + " Yaw Pivot").transform;
@@ -4885,6 +4974,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 GameObject authoredInstance = Instantiate(authoredPrefab, recoilPivot, false);
                 authoredInstance.name = displayName + " Authored Weapon Visual";
+                StampAuthoredVisibleInstance(authoredInstance, "WeaponPrefab", weaponId, authoredPrefab.name, weaponId, attackId, "WeaponVisual");
                 authoredInstance.transform.localPosition = Vector3.zero;
                 authoredInstance.transform.localRotation = Quaternion.identity;
                 authoredInstance.transform.localScale = Vector3.one;
@@ -4899,6 +4989,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 InstantiateKenneyModel(weaponModelName, recoilPivot, Vector3.zero, Quaternion.identity, Vector3.one * 0.74f, tint);
                 FallbackWeaponPresentationSpawnCount++;
+                FallbackVisibleGameplaySpawnCount++;
             }
 
             Transform muzzle = new GameObject(displayName + " Muzzle").transform;
@@ -5063,7 +5154,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
-        private GameObject CreateRuntimeVisualPrefab(string name, GameObject sourcePrefab, PrimitiveType fallbackPrimitive, Color color, string kenneyArtPath, Vector3 spriteLocalPosition, Vector3 spriteScale, bool projectile, int sortingOrder)
+        private GameObject CreateRuntimeVisualPrefab(
+            string name,
+            GameObject sourcePrefab,
+            PrimitiveType fallbackPrimitive,
+            Color color,
+            string kenneyArtPath,
+            Vector3 spriteLocalPosition,
+            Vector3 spriteScale,
+            bool projectile,
+            int sortingOrder,
+            string definitionType,
+            string contentId,
+            string ownerWeaponId,
+            string ownerAttackId,
+            string effectRole)
         {
             GameObject prefab = sourcePrefab != null
                 ? Instantiate(sourcePrefab)
@@ -5080,9 +5185,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 for (int i = 0; i < authoredModels.Length; i++)
                     authoredModels[i].EnsureModel();
                 TintRenderers(prefab, color);
+                StampAuthoredVisibleInstance(prefab, definitionType, contentId, sourcePrefab.name, ownerWeaponId, ownerAttackId, effectRole);
             }
             else
             {
+                FallbackVisibleGameplaySpawnCount++;
                 ApplyColor(prefab, color);
                 bool attachedSprite = prefab.GetComponentInChildren<SpriteRenderer>(true) != null ||
                     AttachKenneySprite(prefab, kenneyArtPath, false, spriteLocalPosition, spriteScale, sortingOrder, color);
@@ -5393,6 +5500,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EnemyHitFlashCount = 0;
             EnemyDeathPopCount = 0;
             DamageNumberSpawnCount = 0;
+            AuthoredVisibleInstanceStampCount = 0;
+            FallbackVisibleGameplaySpawnCount = 0;
             AuthoredWeaponPresentationSpawnCount = 0;
             FallbackWeaponPresentationSpawnCount = 0;
             AuthoredWeaponPresentationBindingCount = 0;

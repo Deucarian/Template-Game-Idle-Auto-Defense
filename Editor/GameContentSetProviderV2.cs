@@ -1098,7 +1098,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (weapon == null) return "Missing weapon";
             if (weapon.Stats == null) return "Missing stats";
             if (weapon.Stats.Attack == null) return "Missing attack";
-            return GetAssetName(weapon.Stats.Attack, weapon.Stats.Attack.Id);
+            AttackDefinitionAsset attack = weapon.Stats.Attack;
+            AttackDeliveryDefinitionAsset delivery = attack.Delivery;
+            return GetAssetName(attack, attack.Id)
+                + " | Mode " + (delivery == null ? "Missing" : delivery.Mode.ToString())
+                + " | Projectile " + GetPrefabName(delivery == null ? null : delivery.ProjectilePrefab)
+                + " | Beam " + GetPrefabName(delivery == null ? null : delivery.BeamVfxPrefab)
+                + " | Fire " + GetAttackEventPrefabName(attack, AttackPresentationEventKind.OnFire)
+                + " | Impact " + GetAttackEventPrefabName(attack, AttackPresentationEventKind.OnImpact);
         }
 
         public static string BuildUpgradeTargetSummary(RunUpgradeDefinitionAsset upgrade)
@@ -1383,14 +1390,78 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static string BuildAdvancedReport(GameContentLibraryItem item, GameContentSetAuthoringState state)
         {
-            return "Content Set: " + state.DisplayName + Environment.NewLine
-                + "ID: " + state.ContentSetId + Environment.NewLine
-                + "Path: " + (item == null ? "(draft)" : item.Path) + Environment.NewLine
-                + "Starting Weapon: " + GetAssetName(state.StartingWeapon, "Missing") + Environment.NewLine
-                + "Weapons: " + JoinIds(state.AvailableWeapons) + Environment.NewLine
-                + "Enemies: " + JoinIds(state.EnemyPool) + Environment.NewLine
-                + "Waves: " + JoinIds(state.WaveSet) + Environment.NewLine
-                + "Upgrades: " + JoinIds(state.UpgradePool);
+            var builder = new StringBuilder()
+                .Append("Content Set: ").Append(state.DisplayName).AppendLine()
+                .Append("ID: ").Append(state.ContentSetId).AppendLine()
+                .Append("Path: ").Append(item == null ? "(draft)" : item.Path).AppendLine()
+                .Append("Starting Weapon: ").Append(GetAssetName(state.StartingWeapon, "Missing")).AppendLine()
+                .Append("Weapons: ").Append(JoinIds(state.AvailableWeapons)).AppendLine()
+                .Append("Enemies: ").Append(JoinIds(state.EnemyPool)).AppendLine()
+                .Append("Waves: ").Append(JoinIds(state.WaveSet)).AppendLine()
+                .Append("Upgrades: ").Append(JoinIds(state.UpgradePool)).AppendLine()
+                .AppendLine()
+                .AppendLine("Weapon / Attack Visual Matrix:");
+            for (int i = 0; i < state.AvailableWeapons.Count; i++)
+            {
+                WeaponDefinitionAsset weapon = state.AvailableWeapons[i];
+                builder
+                    .Append("- ")
+                    .Append(GetAssetName(weapon, "Missing weapon"))
+                    .Append(": ")
+                    .Append(BuildWeaponAttackSummary(weapon))
+                    .AppendLine();
+            }
+
+            builder.AppendLine().AppendLine("Reward Tracks:");
+            AppendRewardTrackReport(builder, state.RuntimeSettings == null ? null : state.RuntimeSettings.RewardDraftCatalog, state.AvailableWeapons);
+            return builder.ToString();
+        }
+
+        private static string GetAttackEventPrefabName(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind)
+        {
+            if (attack == null || attack.Presentation == null || !attack.Presentation.TryGetEvent(eventKind, out AttackPresentationEventRecipe recipe) || recipe == null)
+                return "None";
+            return GetPrefabName(recipe.VfxPrefab);
+        }
+
+        private static string GetPrefabName(UnityEngine.Object prefab)
+        {
+            return prefab == null ? "None" : prefab.name;
+        }
+
+        private static void AppendRewardTrackReport(StringBuilder builder, IdleAutoDefenseRewardDraftCatalog catalog, IReadOnlyList<WeaponDefinitionAsset> weapons)
+        {
+            if (catalog == null)
+            {
+                builder.AppendLine("- Missing reward draft catalog");
+                return;
+            }
+
+            for (int i = 0; i < weapons.Count; i++)
+            {
+                WeaponDefinitionAsset weapon = weapons[i];
+                if (weapon == null || string.IsNullOrWhiteSpace(weapon.Id)) continue;
+                builder
+                    .Append("- ")
+                    .Append(GetAssetName(weapon, weapon.Id))
+                    .Append(": normal=")
+                    .Append(CountRewards(catalog.NormalWeaponRewards, weapon.Id).ToString(CultureInfo.InvariantCulture))
+                    .Append(", epic=")
+                    .Append(CountRewards(catalog.EpicWeaponRewards, weapon.Id).ToString(CultureInfo.InvariantCulture))
+                    .Append(", legendary=")
+                    .Append(CountRewards(catalog.LegendaryWeaponRewards, weapon.Id).ToString(CultureInfo.InvariantCulture))
+                    .AppendLine();
+            }
+        }
+
+        private static int CountRewards(IReadOnlyList<IdleAutoDefenseWeaponRewardDefinition> rewards, string weaponId)
+        {
+            int count = 0;
+            if (rewards == null) return 0;
+            for (int i = 0; i < rewards.Count; i++)
+                if (rewards[i] != null && string.Equals(rewards[i].WeaponId, weaponId, StringComparison.OrdinalIgnoreCase))
+                    count++;
+            return count;
         }
 
         private static UnityEngine.Object GetPrimaryPreviewAsset(GameContentSetAuthoringState state)

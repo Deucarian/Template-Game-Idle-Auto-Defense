@@ -4,6 +4,7 @@ using System.Globalization;
 using Deucarian.Attacks.Authoring;
 using Deucarian.RunUpgrades.Authoring;
 using Deucarian.WeaponSystems.Authoring;
+using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense
 {
@@ -197,6 +198,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
                 WeaponDefinitionValidationReport report = WeaponDefinitionValidator.Validate(weapon, WeaponDefinitionValidationOptions.RuntimeFriendly);
                 AddWeaponIssues(path, report, issues);
+                ValidateWeaponVisualSource(path, weapon, issues);
                 if (!string.IsNullOrWhiteSpace(weapon.Id) && !ids.Add(weapon.Id.Trim()))
                     issues.Add(GameContentSetValidationIssue.Error(path + ".Id", "Duplicate weapon ID: " + weapon.Id));
                 if (weapon == contentSet.StartingWeapon) startingWeaponIncluded = true;
@@ -205,6 +207,93 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (contentSet.StartingWeapon != null && !startingWeaponIncluded)
                 issues.Add(GameContentSetValidationIssue.Error("StartingWeapon", "Starting weapon must also appear in Available Weapons so the runtime can mount it."));
             return ids;
+        }
+
+        private static void ValidateWeaponVisualSource(string path, WeaponDefinitionAsset weapon, List<GameContentSetValidationIssue> issues)
+        {
+            AttackDefinitionAsset attack = weapon != null && weapon.Stats != null ? weapon.Stats.Attack : null;
+            if (attack == null)
+                return;
+
+            string attackPath = path + ".Attack[" + attack.Id + "]";
+            if (attack.Delivery == null)
+            {
+                issues.Add(GameContentSetValidationIssue.Error(attackPath + ".Delivery", "Attack delivery must be authored so runtime knows whether to spawn projectile, beam, or impact VFX."));
+                return;
+            }
+
+            AttackDeliveryDefinitionAsset delivery = attack.Delivery;
+            bool beamAttack = delivery.Mode == AttackRecipeDeliveryMode.Hitscan;
+            bool strictAuthoredReferences = !IsTransientAsset(attack) && !IsTransientAsset(delivery);
+            if (delivery.Mode == AttackRecipeDeliveryMode.Projectile)
+            {
+                if (strictAuthoredReferences && delivery.ProjectilePrefab == null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".ProjectilePrefab", "Projectile attacks must reference an authored projectile prefab."));
+                if (delivery.BeamVfxPrefab != null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".BeamVfxPrefab", "Projectile attacks must not carry a beam VFX prefab."));
+                if (strictAuthoredReferences && delivery.ImpactVfxPrefab == null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".ImpactVfxPrefab", "Projectile attacks must reference an authored impact VFX prefab."));
+            }
+            else if (beamAttack)
+            {
+                if (strictAuthoredReferences && delivery.BeamVfxPrefab == null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".BeamVfxPrefab", "Beam attacks must reference an authored beam VFX prefab."));
+                if (delivery.ProjectilePrefab != null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".ProjectilePrefab", "Beam attacks must not also reference a projectile prefab."));
+            }
+            else
+            {
+                if (delivery.BeamVfxPrefab != null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".BeamVfxPrefab", "Area/aura/direct attacks must not use beam VFX unless they are authored as beam delivery."));
+                if (strictAuthoredReferences && delivery.ImpactVfxPrefab == null)
+                    issues.Add(GameContentSetValidationIssue.Error(attackPath + ".ImpactVfxPrefab", "Area/aura/direct attacks need an authored impact or area VFX prefab."));
+            }
+
+            if (!beamAttack && IsPulseBeamVfx(delivery.BeamVfxPrefab))
+                issues.Add(GameContentSetValidationIssue.Error(attackPath + ".BeamVfxPrefab", "PulseBeamVfx is restricted to authored beam attacks."));
+
+            ValidateAttackPresentationVisuals(attackPath, attack, beamAttack, strictAuthoredReferences, issues);
+        }
+
+        private static void ValidateAttackPresentationVisuals(string path, AttackDefinitionAsset attack, bool beamAttack, bool strictAuthoredReferences, List<GameContentSetValidationIssue> issues)
+        {
+            if (attack.Presentation == null)
+            {
+                if (strictAuthoredReferences)
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".Presentation", "Attack presentation must be authored; runtime fallback VFX is not accepted for the playable sample."));
+                return;
+            }
+
+            bool hasFireVfx = false;
+            bool hasImpactVfx = false;
+            IReadOnlyList<AttackPresentationEventRecipe> events = attack.Presentation.Events;
+            for (int i = 0; i < events.Count; i++)
+            {
+                AttackPresentationEventRecipe evt = events[i];
+                if (evt == null) continue;
+                string eventPath = path + ".Presentation." + evt.EventKind;
+                if (evt.EventKind == AttackPresentationEventKind.OnFire && evt.VfxPrefab != null)
+                    hasFireVfx = true;
+                if (evt.EventKind == AttackPresentationEventKind.OnImpact && evt.VfxPrefab != null)
+                    hasImpactVfx = true;
+                if (!beamAttack && IsPulseBeamVfx(evt.VfxPrefab))
+                    issues.Add(GameContentSetValidationIssue.Error(eventPath, "Non-beam attacks must not use PulseBeamVfx for cast, fire, impact, tick, or expire events."));
+            }
+
+            if (strictAuthoredReferences && !hasFireVfx)
+                issues.Add(GameContentSetValidationIssue.Error(path + ".Presentation.OnFire", "OnFire needs an authored muzzle/fire VFX prefab."));
+            if (strictAuthoredReferences && !hasImpactVfx)
+                issues.Add(GameContentSetValidationIssue.Error(path + ".Presentation.OnImpact", "OnImpact needs an authored hit/impact VFX prefab."));
+        }
+
+        private static bool IsTransientAsset(UnityEngine.Object asset)
+        {
+            return asset != null && (asset.hideFlags & HideFlags.HideAndDontSave) == HideFlags.HideAndDontSave;
+        }
+
+        private static bool IsPulseBeamVfx(GameObject prefab)
+        {
+            return prefab != null && string.Equals(prefab.name, "PulseBeamVfx", StringComparison.OrdinalIgnoreCase);
         }
 
         private static HashSet<string> ValidateEnemies(GameContentSetAsset contentSet, List<GameContentSetValidationIssue> issues)
@@ -416,6 +505,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
                 if (!weaponIds.Contains(reward.WeaponId.Trim()))
                     issues.Add(GameContentSetValidationIssue.Error(path + ".WeaponId", "Reward targets a weapon outside this content set: " + reward.WeaponId));
+                if (reward.EffectKind == IdleAutoDefenseRewardEffectKind.None)
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".EffectKind", "Reward must apply an authored gameplay effect."));
+                if ((reward.Rarity == IdleAutoDefenseRewardRarity.Epic || reward.Rarity == IdleAutoDefenseRewardRarity.Legendary) &&
+                    string.IsNullOrWhiteSpace(reward.EffectDescription))
+                {
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".EffectDescription", "Epic and Legendary rewards must describe the visible behavior change they create."));
+                }
                 string key = reward.WeaponId.Trim() + ":" + reward.TierKey.Trim() + ":" + reward.Rarity;
                 if (!keys.Add(key))
                     issues.Add(GameContentSetValidationIssue.Error(path, "Duplicate reward track entry: " + key));

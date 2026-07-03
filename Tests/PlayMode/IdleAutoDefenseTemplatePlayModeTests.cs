@@ -55,6 +55,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.EnemyFacingUpdateCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyHitFlashCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyDeathPopCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.AuthoredVisibleInstanceStampCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
             Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(3), controller.StatusSummary);
             Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);

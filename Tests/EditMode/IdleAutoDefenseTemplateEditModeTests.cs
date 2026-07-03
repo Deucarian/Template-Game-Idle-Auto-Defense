@@ -141,6 +141,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(catalog.GetEpicWeaponReward(weaponIds[i], 2).EffectDescription, Is.Not.Empty);
                 Assert.That(catalog.GetLegendaryWeaponReward(weaponIds[i]).Rarity, Is.EqualTo(IdleAutoDefenseRewardRarity.Legendary));
             }
+
+            Assert.That(catalog.GetNormalWeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, 2).DisplayName, Is.EqualTo("Split Tip"));
+            Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, 0).DisplayName, Is.EqualTo("Fracture Burst"));
+            Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, 0).DisplayName, Is.EqualTo("Refracting Beam"));
+            Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, 0).DisplayName, Is.EqualTo("Cluster Shells"));
+            Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, 1).DisplayName, Is.EqualTo("Target Painter"));
+            Assert.That(catalog.GetLegendaryWeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value).DisplayName, Is.EqualTo("Crystal Tempest"));
+            Assert.That(catalog.GetLegendaryWeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value).DisplayName, Is.EqualTo("Orbital Lance"));
+            Assert.That(catalog.GetLegendaryWeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value).DisplayName, Is.EqualTo("Siege Barrage"));
+            Assert.That(catalog.GetLegendaryWeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value).DisplayName, Is.EqualTo("Carrier Hive"));
         }
 
         [Test]
@@ -312,6 +322,34 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
             Assert.IsFalse(report.IsValid);
             AssertHasIssue(report, "RuntimeSettings.WeaponPresentationBindings");
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksPulseBeamPresentationOnNonBeamWeapons()
+        {
+            GameObject pulseBeamVfx = new GameObject("PulseBeamVfx");
+            GameObject impactVfx = new GameObject("ImpactVfx");
+            try
+            {
+                AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+                attacks[1].Presentation.Configure(new[]
+                {
+                    new AttackPresentationEventRecipe(AttackPresentationEventKind.OnFire, vfxPrefab: pulseBeamVfx, spawnPointRole: AttackPresentationSpawnPointRole.Muzzle),
+                    new AttackPresentationEventRecipe(AttackPresentationEventKind.OnImpact, vfxPrefab: impactVfx, spawnPointRole: AttackPresentationSpawnPointRole.ImpactPoint)
+                });
+                WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+                GameContentSetAsset contentSet = CreateValidContentSet(weaponsOverride: weapons);
+
+                GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+                Assert.IsFalse(report.IsValid);
+                AssertHasIssue(report, "Presentation.OnFire");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(pulseBeamVfx);
+                UnityEngine.Object.DestroyImmediate(impactVfx);
+            }
         }
 
         [Test]
@@ -839,6 +877,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertChip(GameContentSetProviderV2PreviewModel.BuildChips(state, previewState, report), "Debug", DeucarianEditorStatus.Warning);
             AssertChip(GameContentSetProviderV2PreviewModel.BuildChips(state, previewState, report), "2x", DeucarianEditorStatus.Info);
             Assert.That(GameContentSetProviderV2View.BuildWeaponAttackSummary(state.StartingWeapon), Is.Not.EqualTo("Missing attack"));
+            Assert.That(GameContentSetProviderV2View.BuildWeaponAttackSummary(state.StartingWeapon), Does.Contain("Mode"));
+            Assert.That(GameContentSetProviderV2View.BuildWeaponAttackSummary(state.StartingWeapon), Does.Contain("Projectile"));
+            Assert.That(GameContentSetProviderV2View.BuildWeaponAttackSummary(state.StartingWeapon), Does.Contain("Impact"));
             Assert.That(GameContentSetProviderV2View.BuildEnemyMixSummary(state.WaveSet), Does.Contain("x"));
         }
 
@@ -1464,6 +1505,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "canonical-game-flow.md"), "apply upgrade drafts");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "TemplateSource~");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "default-content-and-balance.md"), "ContentPacks");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "idle-auto-defense-content-source-audit.md"), "Shard Launcher");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "idle-auto-defense-content-source-audit.md"), "PulseBeamVfx is restricted");
+            AssertFileContains(Path.Combine(packageRoot, "Documentation~", "idle-auto-defense-authored-content-validation-report.md"), "Weapon / Attack Visual Matrix");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "asset-flip-workflow.md"), "Create Playable Game");
             AssertFileContains(Path.Combine(packageRoot, "Documentation~", "override-guide.md"), "Spawn profiles");
             AssertFileContains(Path.Combine(packageRoot, "package.json"), "\"com.deucarian.editor\"");
@@ -1478,6 +1522,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(menuPath, "Open Template Docs");
             AssertFileDoesNotContain(menuPath, "Open Starter Scene");
             AssertFileDoesNotContain(menuPath, "Reset Sample Save");
+            AssertFileContains(Path.Combine(packageRoot, "Editor", "IdleAutoDefenseAuthoredContentValidationMenu.cs"), "Validate Authored Content");
 
             string contentRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Content");
             AssertDirectoryExists(Path.Combine(contentRoot, "Attacks"));
@@ -1510,6 +1555,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string contentSetAsset = Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset");
             AssertFileContains(contentSetAsset, "_runtimeSettings:");
             AssertFileContains(contentSetAsset, "_rewardDraftCatalog:");
+            AssertFileContains(contentSetAsset, "Crystal Tempest");
+            AssertFileContains(contentSetAsset, "Orbital Lance");
+            AssertFileContains(contentSetAsset, "Siege Barrage");
+            AssertFileContains(contentSetAsset, "Carrier Hive");
             AssertFileContains(contentSetAsset, "_presentationDebug:");
             AssertFileContains(contentSetAsset, "_showDebugAimLines: 0");
             AssertFileContains(contentSetAsset, "_weaponPresentationBindings:");
@@ -1567,6 +1616,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_impactVfxPrefab: {fileID: 0");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "_audioClip: {fileID: 8300000");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "_vfxPrefab: {fileID:");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "cf9e006673d1663419fc7abacc16e5a6");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.arc-burst", "attack.template.arc-burst_Presentation.asset"), "cf9e006673d1663419fc7abacc16e5a6");
+            AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Presentation.asset"), "cf9e006673d1663419fc7abacc16e5a6");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Presentation.asset"), "cf9e006673d1663419fc7abacc16e5a6");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "a74521512239d7e48ab7287d657f16e8");
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.swarm", "enemy.template.swarm_Presentation.asset"), "_audioClip: {fileID: 8300000");
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.swarm", "enemy.template.swarm_Presentation.asset"), "_vfxPrefab: {fileID:");
             AssertFileContains(Path.Combine(contentRoot, "Enemies", "enemy.template.elite", "enemy.template.elite_Presentation.asset"), "_audioClip: {fileID: 8300000");
@@ -1622,6 +1676,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "ShowDebugAimLines");
             AssertFileContains(runtimePath, "DebugAimTracerSpawnCount");
             AssertFileContains(runtimePath, "AuthoredWeaponPresentationSpawnCount");
+            AssertFileContains(runtimePath, "AuthoredVisibleInstanceStampCount");
+            AssertFileContains(runtimePath, "FallbackVisibleGameplaySpawnCount");
             AssertFileContains(runtimePath, "FindWeaponDefinitionForPresentation");
             AssertFileContains(runtimePath, "ProjectileImpactCallbackCount");
             AssertFileContains(runtimePath, "ProjectileDamageResolvedFromImpactCount");
@@ -1660,6 +1716,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(presentationRoot, "IdleAutoDefenseKenneyPresentationEffects.cs"), "internal sealed class KenneySpriteBurstVisual");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseKenneyModelPrefab.cs"));
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseKenneyModelPrefab.cs"), "Resources.Load<GameObject>(DefaultResourceRoot + modelName)");
+            AssertFileContains(Path.Combine(packageRoot, "Runtime", "AuthoredContentInstance.cs"), "public sealed class AuthoredContentInstance");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"));
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"), "unity-theme://default");
 

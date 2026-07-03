@@ -15,12 +15,12 @@ MonoBehaviour:
   _events:
   - _eventKind: 0
     _audioClip: {fileID: 8300000, guid: 674da652a5e18fa40a9affdc6d46f447, type: 3}
-    _vfxPrefab: {fileID: 7949990876258194118, guid: cf9e006673d1663419fc7abacc16e5a6, type: 3}
+    _vfxPrefab: {fileID: 5703739830888076867, guid: a74521512239d7e48ab7287d657f16e8, type: 3}
     _spawnPointRole: 0
     _attachToSpawnPoint: 0
   - _eventKind: 1
     _audioClip: {fileID: 8300000, guid: 5492bb30cc265af46950999d80fb1a6c, type: 3}
-    _vfxPrefab: {fileID: 7949990876258194118, guid: cf9e006673d1663419fc7abacc16e5a6, type: 3}
+    _vfxPrefab: {fileID: 3798696826337731743, guid: a4938706dc2350e4284968dc3bd17387, type: 3}
     _spawnPointRole: 1
     _attachToSpawnPoint: 0
   - _eventKind: 2
