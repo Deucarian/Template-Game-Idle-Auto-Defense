@@ -10,6 +10,7 @@ It contains the authored assets consumed by the generated scene:
 - `Weapons` contains four tower weapon definitions paired with those attacks.
 - `Waves` contains seven spawn profiles: Opening Wave, Runner Pressure, Mixed Pressure, Tank Break, Elite Pressure, Final Surge, and Boss Push.
 - `Upgrades` contains six run upgrades: Damage Boost, Fire Rate Boost, Range Boost, Projectile Speed, Core Reinforcement, and Credit Reward.
+- The content set also owns reward draft settings/catalog, debug defaults, and Kenney 3D weapon presentation bindings.
 - `starter-content.json` mirrors those IDs for quick inspection.
 
 The current authored tuning is a 3-5 minute vertical slice: low starting

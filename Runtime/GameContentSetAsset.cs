@@ -26,6 +26,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] private int _sessionLengthTicks = 180;
         [SerializeField] private bool _endless;
         [SerializeField] private string[] _tags = Array.Empty<string>();
+        [SerializeField] private IdleAutoDefenseContentSetRuntimeSettings _runtimeSettings = IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
 
         public string Id => _id ?? string.Empty;
         public string DisplayName => _displayName ?? string.Empty;
@@ -44,6 +45,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int SessionLengthTicks => _sessionLengthTicks;
         public bool Endless => _endless;
         public IReadOnlyList<string> Tags => _tags ?? Array.Empty<string>();
+        public IdleAutoDefenseContentSetRuntimeSettings RuntimeSettings => _runtimeSettings ??= IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
 
         public void Configure(
             string id,
@@ -62,7 +64,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             float difficultyMultiplier,
             int sessionLengthTicks,
             bool endless,
-            IReadOnlyList<string> tags)
+            IReadOnlyList<string> tags,
+            IdleAutoDefenseContentSetRuntimeSettings runtimeSettings = null)
         {
             _id = id ?? string.Empty;
             _displayName = displayName ?? string.Empty;
@@ -81,6 +84,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _sessionLengthTicks = sessionLengthTicks;
             _endless = endless;
             _tags = CopyTags(tags);
+            _runtimeSettings = runtimeSettings == null ? IdleAutoDefenseContentSetRuntimeSettings.CreateDefault() : runtimeSettings.Clone();
         }
 
         public static GameContentSetAsset CreateTransient(
@@ -98,7 +102,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             int sessionLengthTicks = 180,
             bool endless = false,
             string description = "",
-            IReadOnlyList<string> tags = null)
+            IReadOnlyList<string> tags = null,
+            IdleAutoDefenseContentSetRuntimeSettings runtimeSettings = null)
         {
             var asset = CreateInstance<GameContentSetAsset>();
             asset.hideFlags = HideFlags.HideAndDontSave;
@@ -119,7 +124,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 difficultyMultiplier,
                 sessionLengthTicks,
                 endless,
-                tags ?? Array.Empty<string>());
+                tags ?? Array.Empty<string>(),
+                runtimeSettings ?? IdleAutoDefenseContentSetRuntimeSettings.CreateDefault());
             return asset;
         }
 

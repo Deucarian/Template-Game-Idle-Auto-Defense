@@ -28,6 +28,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new IdleAutoDefenseRewardDraftSettings();
         }
 
+        public IdleAutoDefenseRewardDraftSettings Clone()
+        {
+            return new IdleAutoDefenseRewardDraftSettings
+            {
+                _choiceCount = _choiceCount,
+                _normalEnemyExperience = _normalEnemyExperience,
+                _eliteEnemyExperience = _eliteEnemyExperience,
+                _bossEnemyExperience = _bossEnemyExperience,
+                _waveCompletionExperience = _waveCompletionExperience,
+                _baseExperienceToNextLevel = _baseExperienceToNextLevel,
+                _experienceToNextLevelGrowth = _experienceToNextLevelGrowth,
+                _normalInvestmentsForEpic = _normalInvestmentsForEpic,
+                _epicInvestmentsForLegendary = _epicInvestmentsForLegendary,
+                _projectileRetargetRadius = _projectileRetargetRadius,
+                _levelUpUnlockWeightMultiplier = _levelUpUnlockWeightMultiplier,
+                _eliteUnlockWeightMultiplier = _eliteUnlockWeightMultiplier,
+                _bossUnlockWeightMultiplier = _bossUnlockWeightMultiplier,
+                _levelUpRarityWeights = LevelUpRarityWeights.Clone(),
+                _eliteRarityWeights = EliteRarityWeights.Clone(),
+                _bossRarityWeights = BossRarityWeights.Clone()
+            };
+        }
+
         public int ChoiceCount
         {
             get => ClampInt(_choiceCount, 1, 3);
@@ -92,6 +115,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public IdleAutoDefenseRarityWeights EliteRarityWeights => _eliteRarityWeights ??= new IdleAutoDefenseRarityWeights(22d, 56d, 78d, 44d, 10d);
         public IdleAutoDefenseRarityWeights BossRarityWeights => _bossRarityWeights ??= new IdleAutoDefenseRarityWeights(8d, 24d, 58d, 86d, 42d);
 
+        public double LevelUpUnlockWeightMultiplier
+        {
+            get => Math.Max(0.1d, _levelUpUnlockWeightMultiplier);
+            set => _levelUpUnlockWeightMultiplier = Math.Max(0.1d, value);
+        }
+
+        public double EliteUnlockWeightMultiplier
+        {
+            get => Math.Max(0.1d, _eliteUnlockWeightMultiplier);
+            set => _eliteUnlockWeightMultiplier = Math.Max(0.1d, value);
+        }
+
+        public double BossUnlockWeightMultiplier
+        {
+            get => Math.Max(0.1d, _bossUnlockWeightMultiplier);
+            set => _bossUnlockWeightMultiplier = Math.Max(0.1d, value);
+        }
+
         public long CalculateExperienceToNextLevel(int level)
         {
             return BaseExperienceToNextLevel + Math.Max(0, level - 1) * ExperienceToNextLevelGrowth;
@@ -109,10 +150,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public double GetUnlockWeightMultiplier(IdleAutoDefenseRewardDraftKind kind)
         {
             if (kind == IdleAutoDefenseRewardDraftKind.BossDefeated)
-                return Math.Max(0.1d, _bossUnlockWeightMultiplier);
+                return BossUnlockWeightMultiplier;
             if (kind == IdleAutoDefenseRewardDraftKind.EliteDefeated)
-                return Math.Max(0.1d, _eliteUnlockWeightMultiplier);
-            return Math.Max(0.1d, _levelUpUnlockWeightMultiplier);
+                return EliteUnlockWeightMultiplier;
+            return LevelUpUnlockWeightMultiplier;
         }
 
         private static int ClampInt(int value, int minimum, int maximum)
@@ -146,6 +187,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public double Rare { get => Math.Max(0d, _rare); set => _rare = Math.Max(0d, value); }
         public double Epic { get => Math.Max(0d, _epic); set => _epic = Math.Max(0d, value); }
         public double Legendary { get => Math.Max(0d, _legendary); set => _legendary = Math.Max(0d, value); }
+
+        public IdleAutoDefenseRarityWeights Clone()
+        {
+            return new IdleAutoDefenseRarityWeights(Common, Uncommon, Rare, Epic, Legendary);
+        }
 
         public double GetWeight(IdleAutoDefenseRewardRarity rarity)
         {

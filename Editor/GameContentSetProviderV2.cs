@@ -513,12 +513,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             state.DifficultyMultiplier = context.Authoring.DrawFloatField("Difficulty Multiplier", state.DifficultyMultiplier);
             state.SessionLengthTicks = context.Authoring.DrawIntField("Session Length Ticks", state.SessionLengthTicks);
             state.Endless = context.Authoring.DrawToggle("Endless", state.Endless);
+            DrawRuntimeSettings(context, state);
 
             DrawSummaryRows(
                 Row("Starting Resources", state.StartingCredits.ToString(CultureInfo.InvariantCulture) + " credits, " + state.StartingParts.ToString(CultureInfo.InvariantCulture) + " parts"),
                 Row("Economy", "Rewards x" + FormatFloat(state.RewardMultiplier)),
                 Row("Difficulty", "Difficulty x" + FormatFloat(state.DifficultyMultiplier)),
                 Row("Session", state.Endless ? "Endless" : state.SessionLengthTicks.ToString(CultureInfo.InvariantCulture) + " ticks"));
+        }
+
+        private static void DrawRuntimeSettings(GameContentAuthoringSurfaceContext context, GameContentSetAuthoringState state)
+        {
+            IdleAutoDefenseContentSetRuntimeSettings runtime = state.RuntimeSettings ??= IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
+            IdleAutoDefenseRewardDraftSettings rewards = runtime.RewardDraftSettings;
+            IdleAutoDefensePresentationDebugSettings debug = runtime.PresentationDebug;
+
+            GUILayout.Space(DeucarianEditorSpacing.Small);
+            EditorGUILayout.LabelField("Reward Draft", DeucarianEditorStyles.SectionTitle);
+            rewards.NormalEnemyExperience = context.Authoring.DrawIntField("Normal Enemy XP", (int)rewards.NormalEnemyExperience);
+            rewards.EliteEnemyExperience = context.Authoring.DrawIntField("Elite Enemy XP", (int)rewards.EliteEnemyExperience);
+            rewards.BossEnemyExperience = context.Authoring.DrawIntField("Boss Enemy XP", (int)rewards.BossEnemyExperience);
+            rewards.WaveCompletionExperience = context.Authoring.DrawIntField("Wave Completion XP", (int)rewards.WaveCompletionExperience);
+            rewards.BaseExperienceToNextLevel = context.Authoring.DrawIntField("Base XP To Level", (int)rewards.BaseExperienceToNextLevel);
+            rewards.ExperienceToNextLevelGrowth = context.Authoring.DrawIntField("XP Growth", (int)rewards.ExperienceToNextLevelGrowth);
+            rewards.ProjectileRetargetRadius = context.Authoring.DrawFloatField("Projectile Retarget Radius", rewards.ProjectileRetargetRadius);
+            rewards.LevelUpUnlockWeightMultiplier = context.Authoring.DrawFloatField("Level-Up Unlock Weight", (float)rewards.LevelUpUnlockWeightMultiplier);
+            rewards.EliteUnlockWeightMultiplier = context.Authoring.DrawFloatField("Elite Unlock Weight", (float)rewards.EliteUnlockWeightMultiplier);
+            rewards.BossUnlockWeightMultiplier = context.Authoring.DrawFloatField("Boss Unlock Weight", (float)rewards.BossUnlockWeightMultiplier);
+
+            GUILayout.Space(DeucarianEditorSpacing.Small);
+            EditorGUILayout.LabelField("Debug Presentation", DeucarianEditorStyles.SectionTitle);
+            debug.ShowDebugAimLines = context.Authoring.DrawToggle("Show Debug Aim Lines", debug.ShowDebugAimLines);
+            debug.ShowDebugRanges = context.Authoring.DrawToggle("Show Debug Ranges", debug.ShowDebugRanges);
+            debug.ShowDebugSpawnRing = context.Authoring.DrawToggle("Show Debug Spawn Ring", debug.ShowDebugSpawnRing);
+
+            DrawSummaryRows(
+                Row("Reward Cards", rewards.ChoiceCount.ToString(CultureInfo.InvariantCulture)),
+                Row("Reward Catalog", runtime.RewardDraftCatalog.WeaponUnlocks.Count.ToString(CultureInfo.InvariantCulture) + " unlocks, " + runtime.RewardDraftCatalog.BaseRewards.Count.ToString(CultureInfo.InvariantCulture) + " base rewards"),
+                Row("Presentation Bindings", runtime.WeaponPresentationBindings.Count.ToString(CultureInfo.InvariantCulture)),
+                Row("Debug Defaults", debug.AnyEnabled ? "Debug visuals enabled" : "Debug visuals off"));
         }
 
         private static void DrawReferences(GameContentLibraryItem item)
@@ -912,6 +945,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             state.SessionLengthTicks = asset.SessionLengthTicks;
             state.Endless = asset.Endless;
             state.TagsCsv = string.Join(", ", asset.Tags);
+            state.RuntimeSettings = asset.RuntimeSettings.Clone();
             state.OutputRoot = string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(asset))
                 ? state.OutputRoot
                 : System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(asset)).Replace("\\", "/");
@@ -936,11 +970,51 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 .Append(state.DifficultyMultiplier.ToString(CultureInfo.InvariantCulture)).Append('|')
                 .Append(state.SessionLengthTicks.ToString(CultureInfo.InvariantCulture)).Append('|')
                 .Append(state.Endless ? "1" : "0").Append('|')
-                .Append(state.TagsCsv);
+                .Append(state.TagsCsv).Append('|')
+                .Append(BuildRuntimeSettingsFingerprint(state.RuntimeSettings));
             AppendAssetIds(builder, state.AvailableWeapons);
             AppendAssetIds(builder, state.EnemyPool);
             AppendAssetIds(builder, state.WaveSet);
             AppendAssetIds(builder, state.UpgradePool);
+            return builder.ToString();
+        }
+
+        private static string BuildRuntimeSettingsFingerprint(IdleAutoDefenseContentSetRuntimeSettings settings)
+        {
+            if (settings == null) return string.Empty;
+            IdleAutoDefenseRewardDraftSettings rewards = settings.RewardDraftSettings;
+            IdleAutoDefensePresentationDebugSettings debug = settings.PresentationDebug;
+            var builder = new StringBuilder()
+                .Append(rewards.ChoiceCount).Append(':')
+                .Append(rewards.NormalEnemyExperience).Append(':')
+                .Append(rewards.EliteEnemyExperience).Append(':')
+                .Append(rewards.BossEnemyExperience).Append(':')
+                .Append(rewards.WaveCompletionExperience).Append(':')
+                .Append(rewards.BaseExperienceToNextLevel).Append(':')
+                .Append(rewards.ExperienceToNextLevelGrowth).Append(':')
+                .Append(rewards.ProjectileRetargetRadius.ToString(CultureInfo.InvariantCulture)).Append(':')
+                .Append(rewards.LevelUpUnlockWeightMultiplier.ToString(CultureInfo.InvariantCulture)).Append(':')
+                .Append(rewards.EliteUnlockWeightMultiplier.ToString(CultureInfo.InvariantCulture)).Append(':')
+                .Append(rewards.BossUnlockWeightMultiplier.ToString(CultureInfo.InvariantCulture)).Append(':')
+                .Append(debug.ShowDebugAimLines ? "1" : "0").Append(':')
+                .Append(debug.ShowDebugRanges ? "1" : "0").Append(':')
+                .Append(debug.ShowDebugSpawnRing ? "1" : "0");
+            IReadOnlyList<IdleAutoDefenseWeaponPresentationBinding> bindings = settings.WeaponPresentationBindings;
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                IdleAutoDefenseWeaponPresentationBinding binding = bindings[i];
+                if (binding == null) continue;
+                builder.Append('|')
+                    .Append(binding.WeaponId).Append(':')
+                    .Append(binding.AttackId).Append(':')
+                    .Append(binding.DisplayName).Append(':')
+                    .Append(binding.BaseModelName).Append(':')
+                    .Append(binding.WeaponModelName).Append(':')
+                    .Append(binding.MuzzleLocalPosition.ToString("F3")).Append(':')
+                    .Append(binding.TurnSpeedDegrees.ToString(CultureInfo.InvariantCulture)).Append(':')
+                    .Append(binding.StartsUnlocked ? "1" : "0");
+            }
+
             return builder.ToString();
         }
 

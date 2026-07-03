@@ -58,6 +58,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             };
         }
 
+        public IdleAutoDefenseRewardDraftCatalog Clone()
+        {
+            return new IdleAutoDefenseRewardDraftCatalog
+            {
+                _weaponUnlocks = CopyRewards(_weaponUnlocks),
+                _normalWeaponRewards = CopyRewards(_normalWeaponRewards),
+                _epicWeaponRewards = CopyRewards(_epicWeaponRewards),
+                _legendaryWeaponRewards = CopyRewards(_legendaryWeaponRewards),
+                _baseRewards = CopyRewards(_baseRewards)
+            };
+        }
+
         public IReadOnlyList<IdleAutoDefenseWeaponUnlockReward> WeaponUnlocks => _weaponUnlocks ?? Array.Empty<IdleAutoDefenseWeaponUnlockReward>();
         public IReadOnlyList<IdleAutoDefenseBaseRewardDefinition> BaseRewards => _baseRewards ?? Array.Empty<IdleAutoDefenseBaseRewardDefinition>();
         public IReadOnlyList<IdleAutoDefenseWeaponRewardDefinition> NormalWeaponRewards => _normalWeaponRewards ?? Array.Empty<IdleAutoDefenseWeaponRewardDefinition>();
@@ -170,6 +182,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (string.Equals(weaponIds[i], weaponId, StringComparison.OrdinalIgnoreCase))
                     return true;
             return false;
+        }
+
+        private static TReward[] CopyRewards<TReward>(IReadOnlyList<TReward> source)
+        {
+            if (source == null || source.Count == 0) return Array.Empty<TReward>();
+            var copy = new TReward[source.Count];
+            for (int i = 0; i < source.Count; i++) copy[i] = source[i];
+            return copy;
         }
     }
 

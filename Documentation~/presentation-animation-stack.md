@@ -1,6 +1,6 @@
 # Idle Auto Defense Presentation Stack
 
-Idle Auto Defense now contains the first local implementation of a Deucarian presentation/animation layer. It is intentionally concrete and sample-owned: the goal is to prove turret aiming, muzzle-origin firing, recoil, muzzle flash, enemy facing, hit feedback, and death feedback in the playable template before extracting reusable packages.
+Idle Auto Defense now contains the first local implementation of a Deucarian presentation/animation layer. It is intentionally concrete and sample-owned: the goal is to prove turret aiming, muzzle-origin firing, recoil, muzzle flash, enemy facing, hit feedback, and death feedback in the playable template before extracting reusable packages. The editable presentation map is authored on the idle-defense `GameContentSetAsset`, not duplicated as controller-only constants.
 
 The curated Kenney Tower Defense Kit subset is intentionally present in two places:
 
@@ -17,7 +17,7 @@ The curated Kenney Tower Defense Kit subset is intentionally present in two plac
 - Auto Defense composes mounted weapons, objective defense, enemy selection, and spawn pressure for this genre.
 - Idle Auto Defense currently owns the local 3D bindings and presenters.
 
-Future extraction candidates are `Weapon-Presentation` or `Presentation-Animation`, but only after this pattern proves useful in this template and at least one more playable template/sample.
+Future extraction candidate: `Deucarian/Weapon-Presentation` (`com.deucarian.weapon-presentation`). Do not extract it yet. The current slice is still coupled to this sample's content set, Kenney model names, reward loop, and controller event timing; extracting now would create a package with only one consumer and too many sample assumptions. The right extraction point is after a second playable template needs the same yaw aiming, muzzle binding, recoil, muzzle flash, and fire-intent adapters.
 
 ## New Tower Model Setup
 
@@ -26,8 +26,8 @@ Future extraction candidates are `Weapon-Presentation` or `Presentation-Animatio
 3. Add a pitch/barrel pivot if the model needs one; the current slice uses yaw-only weapons.
 4. Add a muzzle transform at the projectile/fire origin.
 5. Assign a projectile model and muzzle flash behavior.
-6. Tune turn speed, recoil distance, and flash color on the visual binding.
-7. Connect the binding to the weapon or attack ID used by the runtime.
+6. Tune turn speed, recoil distance, and flash color on the content set's weapon presentation binding.
+7. Connect the binding to the weapon and attack ID used by the runtime.
 8. Open `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`, press Play, and verify the turret tracks, recoils, flashes, and fires from the muzzle.
 
 The starter mappings use Kenney Tower Defense Kit models:

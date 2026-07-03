@@ -15,8 +15,8 @@ MonoBehaviour:
   _id: contentset.template.basic-idle-auto-defense
   _displayName: Basic Idle Auto Defense Content Set
   _description: Playable generated-game vertical slice with four generic attacks,
-    six enemies, seven spawn profiles paced for pressure, six upgrades, Kenney sprites, VFX,
-    icons, and audio.
+    six enemies, seven spawn profiles paced for pressure, six upgrades, authored rewards,
+    debug defaults, Kenney 3D presentation bindings, VFX, icons, and audio.
   _icon: {fileID: 21300000, guid: 030ed80cce432184ea60781e960c5cb5, type: 3}
   _banner: {fileID: 2800000, guid: 251693a7ff26afe44ae62250f856b7a1, type: 3}
   _startingWeapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
@@ -58,3 +58,383 @@ MonoBehaviour:
   - starter
   - playable-vertical-slice
   - kenney-readable
+  _runtimeSettings:
+    _rewardDraftSettings:
+      _choiceCount: 3
+      _normalEnemyExperience: 9
+      _eliteEnemyExperience: 42
+      _bossEnemyExperience: 120
+      _waveCompletionExperience: 18
+      _baseExperienceToNextLevel: 38
+      _experienceToNextLevelGrowth: 18
+      _normalInvestmentsForEpic: 3
+      _epicInvestmentsForLegendary: 3
+      _projectileRetargetRadius: 3.25
+      _levelUpUnlockWeightMultiplier: 1.35
+      _eliteUnlockWeightMultiplier: 1.1
+      _bossUnlockWeightMultiplier: 1.1
+      _levelUpRarityWeights:
+        _common: 100
+        _uncommon: 70
+        _rare: 36
+        _epic: 12
+        _legendary: 2
+      _eliteRarityWeights:
+        _common: 22
+        _uncommon: 56
+        _rare: 78
+        _epic: 44
+        _legendary: 10
+      _bossRarityWeights:
+        _common: 8
+        _uncommon: 24
+        _rare: 58
+        _epic: 86
+        _legendary: 42
+    _rewardDraftCatalog:
+      _weaponUnlocks:
+      - _weaponId: weapon.template.pulse-cannon
+        _displayName: Beam Module
+        _effectDescription: Unlocks a steady beam module that hits the leading enemy.
+        _levelUpRarity: 1
+        _eliteRarity: 2
+        _bossRarity: 3
+      - _weaponId: weapon.template.arc-burst-tower
+        _displayName: Area Module
+        _effectDescription: Unlocks an area burst module that can hit multiple enemies.
+        _levelUpRarity: 1
+        _eliteRarity: 2
+        _bossRarity: 3
+      - _weaponId: weapon.template.homing-spire
+        _displayName: Homing Module
+        _effectDescription: Unlocks a homing projectile module for low-health cleanup.
+        _levelUpRarity: 1
+        _eliteRarity: 2
+        _bossRarity: 3
+      _normalWeaponRewards:
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: normal.0
+        _displayName: Damage Calibration
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for visible hits.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: normal.1
+        _displayName: Cycle Tuning
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for this run.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: normal.2
+        _displayName: Range Pattern
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank and a small damage bump.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: normal.0
+        _displayName: Damage Calibration
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for visible hits.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: normal.1
+        _displayName: Cycle Tuning
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for this run.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: normal.2
+        _displayName: Range Pattern
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank and a small damage bump.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: normal.0
+        _displayName: Damage Calibration
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for visible hits.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: normal.1
+        _displayName: Cycle Tuning
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for this run.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: normal.2
+        _displayName: Range Pattern
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank and a small damage bump.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: normal.0
+        _displayName: Damage Calibration
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for visible hits.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: normal.1
+        _displayName: Cycle Tuning
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for this run.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: normal.2
+        _displayName: Range Pattern
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank and a small damage bump.
+        _effectKind: 4
+        _amount: 1
+      _epicWeaponRewards:
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: epic.0
+        _displayName: Split Payload
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +2 shard projectiles per volley.
+        _effectKind: 8
+        _amount: 2
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: epic.1
+        _displayName: Accelerated Shards
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +25% projectile travel speed.
+        _effectKind: 7
+        _amount: 0.25
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: epic.2
+        _displayName: Overloaded Payload
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +30% damage for visible attacks.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: epic.0
+        _displayName: Wide Beam
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Pulse Beam hits one extra target.
+        _effectKind: 9
+        _amount: 1
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: epic.1
+        _displayName: Capacitor Loop
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +1 fire-rate rank.
+        _effectKind: 3
+        _amount: 1
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: epic.2
+        _displayName: Focused Beam
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +30% damage for visible attacks.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: epic.0
+        _displayName: Larger Burst
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Arc Burst hits one extra target.
+        _effectKind: 10
+        _amount: 1
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: epic.1
+        _displayName: Conductive Field
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +1 range rank.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: epic.2
+        _displayName: Charged Detonation
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +30% damage for visible attacks.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: epic.0
+        _displayName: Extra Seeker
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Homing Pulse fires one extra seeker.
+        _effectKind: 11
+        _amount: 1
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: epic.1
+        _displayName: Smarter Guidance
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +25% projectile travel speed.
+        _effectKind: 7
+        _amount: 0.25
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: epic.2
+        _displayName: Looping Return
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: +1 fire-rate rank.
+        _effectKind: 3
+        _amount: 1
+      _legendaryWeaponRewards:
+      - _weaponId: weapon.template.shard-launcher
+        _tierKey: legendary
+        _displayName: Shard Storm
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: +3 shard projectiles per volley.
+        _effectKind: 8
+        _amount: 3
+      - _weaponId: weapon.template.pulse-cannon
+        _tierKey: legendary
+        _displayName: Prism Beam
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Pulse Beam hits two extra targets.
+        _effectKind: 9
+        _amount: 2
+      - _weaponId: weapon.template.arc-burst-tower
+        _tierKey: legendary
+        _displayName: Arc Singularity
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Arc Burst hits two extra targets.
+        _effectKind: 10
+        _amount: 2
+      - _weaponId: weapon.template.homing-spire
+        _tierKey: legendary
+        _displayName: Homing Swarm
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Homing Pulse fires two extra seekers.
+        _effectKind: 11
+        _amount: 2
+      _baseRewards:
+      - _key: base.damage
+        _displayName: Targeting Drill
+        _rarity: 0
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: +2 damage ranks.
+        _effectKind: 2
+        _amount: 2
+        _maxRank: 8
+      - _key: base.fire-rate
+        _displayName: Reload Practice
+        _rarity: 0
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: +2 fire-rate ranks.
+        _effectKind: 3
+        _amount: 2
+        _maxRank: 6
+      - _key: base.range
+        _displayName: Sensor Sweep
+        _rarity: 1
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: +1 range rank.
+        _effectKind: 4
+        _amount: 1
+        _maxRank: 6
+      - _key: base.repair
+        _displayName: Field Repair
+        _rarity: 0
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: Repair and increase maximum HP.
+        _effectKind: 5
+        _amount: 1
+        _maxRank: 5
+      - _key: base.velocity
+        _displayName: Velocity Tuning
+        _rarity: 1
+        _typeName: Base Upgrade
+        _targetName: Projectiles
+        _effectDescription: +25% projectile travel speed.
+        _effectKind: 7
+        _amount: 0.25
+        _maxRank: 4
+      - _key: base.credits
+        _displayName: Credit Routing
+        _rarity: 2
+        _typeName: Economy
+        _targetName: Tower
+        _effectDescription: +25% credits from kills.
+        _effectKind: 6
+        _amount: 0.25
+        _maxRank: 5
+    _presentationDebug:
+      _showDebugAimLines: 0
+      _showDebugRanges: 0
+      _showDebugSpawnRing: 0
+    _weaponPresentationBindings:
+    - _weaponId: weapon.template.shard-launcher
+      _attackId: attack.template.shard-launcher
+      _displayName: Shard Launcher
+      _mountLocalPosition: {x: 0, y: 0.06, z: 1.05}
+      _baseModelName: tower-round-bottom-a
+      _weaponModelName: weapon-ballista
+      _tint: {r: 1, g: 0.45, b: 0.1, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.64, z: 0.66}
+      _turnSpeedDegrees: 340
+      _startsUnlocked: 1
+    - _weaponId: weapon.template.pulse-cannon
+      _attackId: attack.template.pulse-cannon
+      _displayName: Pulse Beam
+      _mountLocalPosition: {x: -1.02, y: 0.06, z: 0.36}
+      _baseModelName: tower-square-bottom-a
+      _weaponModelName: weapon-turret
+      _tint: {r: 0.15, g: 0.75, b: 1, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.44, z: 0.72}
+      _turnSpeedDegrees: 420
+      _startsUnlocked: 0
+    - _weaponId: weapon.template.arc-burst-tower
+      _attackId: attack.template.arc-burst
+      _displayName: Arc Burst
+      _mountLocalPosition: {x: 0, y: 0.06, z: -1.05}
+      _baseModelName: tower-round-bottom-a
+      _weaponModelName: weapon-catapult
+      _tint: {r: 0.95, g: 0.55, b: 0.15, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.5, z: 0.82}
+      _turnSpeedDegrees: 240
+      _startsUnlocked: 0
+    - _weaponId: weapon.template.homing-spire
+      _attackId: attack.template.homing-pulse
+      _displayName: Homing Pulse
+      _mountLocalPosition: {x: 1.02, y: 0.06, z: 0.36}
+      _baseModelName: tower-square-bottom-a
+      _weaponModelName: weapon-cannon
+      _tint: {r: 0.65, g: 0.35, b: 1, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.42, z: 0.8}
+      _turnSpeedDegrees: 320
+      _startsUnlocked: 0

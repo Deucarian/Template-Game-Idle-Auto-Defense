@@ -274,6 +274,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(4, resolution.Weapons.Count);
             Assert.AreEqual(6, resolution.Upgrades.Count);
             Assert.AreSame(contentSet.StartingWeapon, resolution.Weapons[0]);
+            Assert.NotNull(contentSet.RuntimeSettings);
+            Assert.AreEqual(3, contentSet.RuntimeSettings.RewardDraftCatalog.WeaponUnlocks.Count);
+            Assert.AreEqual(4, contentSet.RuntimeSettings.WeaponPresentationBindings.Count);
+            Assert.IsFalse(contentSet.RuntimeSettings.PresentationDebug.AnyEnabled);
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksMissingRuntimePresentationBinding()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            IdleAutoDefenseContentSetRuntimeSettings incomplete = IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
+            FieldInfo bindingsField = typeof(IdleAutoDefenseContentSetRuntimeSettings).GetField("_weaponPresentationBindings", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(bindingsField);
+            bindingsField.SetValue(incomplete, new[] { IdleAutoDefenseWeaponPresentationBinding.CreateDefaultBindings()[0] });
+            contentSet.Configure(
+                contentSet.Id,
+                contentSet.DisplayName,
+                contentSet.Description,
+                contentSet.Icon,
+                contentSet.Banner,
+                contentSet.StartingWeapon,
+                contentSet.AvailableWeapons,
+                contentSet.EnemyPool,
+                contentSet.WaveSet,
+                contentSet.UpgradePool,
+                contentSet.StartingCredits,
+                contentSet.StartingParts,
+                contentSet.RewardMultiplier,
+                contentSet.DifficultyMultiplier,
+                contentSet.SessionLengthTicks,
+                contentSet.Endless,
+                contentSet.Tags,
+                incomplete);
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "RuntimeSettings.WeaponPresentationBindings");
         }
 
         [Test]
@@ -566,6 +604,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.AreEqual(0, controller.InvalidAssignedWaveCount);
                 Assert.AreEqual(0, controller.InvalidAssignedWeaponCount);
                 Assert.AreEqual(0, controller.InvalidAssignedUpgradeCount);
+                Assert.IsTrue(controller.UsingContentSetRuntimeSettings);
+                Assert.That(controller.AuthoredWeaponPresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.AreEqual(0, controller.FallbackWeaponPresentationBindingCount, controller.StatusSummary);
             }
             finally
             {
@@ -590,6 +631,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.AreEqual(0, controller.InvalidAssignedWaveCount);
                 Assert.AreEqual(0, controller.InvalidAssignedWeaponCount);
                 Assert.AreEqual(0, controller.InvalidAssignedUpgradeCount);
+                Assert.IsTrue(controller.UsingContentSetRuntimeSettings);
+                Assert.That(controller.AuthoredWeaponPresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.AreEqual(0, controller.FallbackWeaponPresentationBindingCount, controller.StatusSummary);
             }
             finally
             {
@@ -1463,6 +1507,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Weapons", "README.md"), "Pulse Beam");
             AssertFileContains(Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Prefabs", "Projectiles", "README.md"), "projectile");
             AssertFileContains(Path.Combine(contentRoot, "ContentPacks", "contentpack.template.basic-idle-auto-defense", "contentpack.template.basic-idle-auto-defense_ContentPack.asset"), "contentpack.template.basic-idle-auto-defense");
+            string contentSetAsset = Path.Combine(contentRoot, "ContentSets", "contentset.template.basic-idle-auto-defense", "contentset.template.basic-idle-auto-defense_GameContentSet.asset");
+            AssertFileContains(contentSetAsset, "_runtimeSettings:");
+            AssertFileContains(contentSetAsset, "_rewardDraftCatalog:");
+            AssertFileContains(contentSetAsset, "_presentationDebug:");
+            AssertFileContains(contentSetAsset, "_showDebugAimLines: 0");
+            AssertFileContains(contentSetAsset, "_weaponPresentationBindings:");
+            AssertFileContains(contentSetAsset, "weapon-ballista");
         }
 
         [Test]
@@ -2264,7 +2315,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 RewardMultiplier = contentSet.RewardMultiplier,
                 DifficultyMultiplier = contentSet.DifficultyMultiplier,
                 SessionLengthTicks = contentSet.SessionLengthTicks,
-                Endless = contentSet.Endless
+                Endless = contentSet.Endless,
+                RuntimeSettings = contentSet.RuntimeSettings.Clone()
             };
             state.AvailableWeapons.AddRange(contentSet.AvailableWeapons);
             state.EnemyPool.AddRange(contentSet.EnemyPool);

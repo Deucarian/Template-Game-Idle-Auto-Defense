@@ -99,6 +99,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 _state.DifficultyMultiplier = context.DrawFloatField("Difficulty Multiplier", _state.DifficultyMultiplier);
                 _state.SessionLengthTicks = context.DrawIntField("Session Length Ticks", _state.SessionLengthTicks);
                 _state.Endless = context.DrawToggle("Endless", _state.Endless);
+                DrawRuntimeSettings(context, _state);
             });
 
             context.DrawSection("Preview", () =>
@@ -112,6 +113,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     context.SetCreationResult(GameContentSetAssetCreator.CreateAssets(_state));
                 context.DrawCreationResult();
             });
+        }
+
+        private static void DrawRuntimeSettings(GameContentAuthoringContext context, GameContentSetAuthoringState state)
+        {
+            IdleAutoDefenseContentSetRuntimeSettings runtime = state.RuntimeSettings ??= IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
+            IdleAutoDefenseRewardDraftSettings rewards = runtime.RewardDraftSettings;
+            IdleAutoDefensePresentationDebugSettings debug = runtime.PresentationDebug;
+            EditorGUILayout.LabelField("Reward Draft", context.SectionTitleStyle);
+            rewards.NormalEnemyExperience = context.DrawIntField("Normal Enemy XP", (int)rewards.NormalEnemyExperience);
+            rewards.EliteEnemyExperience = context.DrawIntField("Elite Enemy XP", (int)rewards.EliteEnemyExperience);
+            rewards.BossEnemyExperience = context.DrawIntField("Boss Enemy XP", (int)rewards.BossEnemyExperience);
+            rewards.WaveCompletionExperience = context.DrawIntField("Wave Completion XP", (int)rewards.WaveCompletionExperience);
+            rewards.BaseExperienceToNextLevel = context.DrawIntField("Base XP To Level", (int)rewards.BaseExperienceToNextLevel);
+            rewards.ExperienceToNextLevelGrowth = context.DrawIntField("XP Growth", (int)rewards.ExperienceToNextLevelGrowth);
+            rewards.ProjectileRetargetRadius = context.DrawFloatField("Projectile Retarget Radius", rewards.ProjectileRetargetRadius);
+            EditorGUILayout.LabelField("Debug Presentation", context.SectionTitleStyle);
+            debug.ShowDebugAimLines = context.DrawToggle("Show Debug Aim Lines", debug.ShowDebugAimLines);
+            debug.ShowDebugRanges = context.DrawToggle("Show Debug Ranges", debug.ShowDebugRanges);
+            debug.ShowDebugSpawnRing = context.DrawToggle("Show Debug Spawn Ring", debug.ShowDebugSpawnRing);
         }
 
         private static void DrawAssetList<TAsset>(GameContentAuthoringContext context, string title, List<TAsset> assets, string addLabel) where TAsset : UnityEngine.Object
@@ -176,6 +196,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         public bool Endless;
         public string TagsCsv = "template, run";
         public string OutputRoot = "Assets/GameContent/ContentSets";
+        public IdleAutoDefenseContentSetRuntimeSettings RuntimeSettings = IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
     }
 
     internal sealed class GameContentSetPreviewController
@@ -454,7 +475,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 state.DifficultyMultiplier,
                 state.SessionLengthTicks,
                 state.Endless,
-                GameContentAuthoringEditorAssets.SplitCsv(state.TagsCsv));
+                GameContentAuthoringEditorAssets.SplitCsv(state.TagsCsv),
+                state.RuntimeSettings);
             return asset;
         }
 
@@ -571,7 +593,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 state.DifficultyMultiplier,
                 state.SessionLengthTicks,
                 state.Endless,
-                GameContentAuthoringEditorAssets.SplitCsv(state.TagsCsv));
+                GameContentAuthoringEditorAssets.SplitCsv(state.TagsCsv),
+                state.RuntimeSettings);
             EditorUtility.SetDirty(root);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

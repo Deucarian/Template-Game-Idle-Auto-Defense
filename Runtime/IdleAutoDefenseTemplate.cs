@@ -1557,6 +1557,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int DamageNumberSpawnCount { get; private set; }
         public int AuthoredWeaponPresentationSpawnCount { get; private set; }
         public int FallbackWeaponPresentationSpawnCount { get; private set; }
+        public int AuthoredWeaponPresentationBindingCount { get; private set; }
+        public int FallbackWeaponPresentationBindingCount { get; private set; }
+        public bool UsingContentSetRuntimeSettings { get; private set; }
         public int DebugAimTracerSpawnCount { get; private set; }
         public int EnemyDamageSurvivedCount { get; private set; }
         public int RangeRejectedTargetCount { get; private set; }
@@ -1691,6 +1694,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " Recoil=" + RecoilEventCount +
             " AuthoredWeapons=" + AuthoredWeaponPresentationSpawnCount +
             " FallbackWeapons=" + FallbackWeaponPresentationSpawnCount +
+            " AuthoredBindings=" + AuthoredWeaponPresentationBindingCount +
+            " FallbackBindings=" + FallbackWeaponPresentationBindingCount +
             " DebugAimLines=" + DebugAimTracerSpawnCount +
             " EnemyFacing=" + EnemyFacingUpdateCount +
             " EnemyHitFlash=" + EnemyHitFlashCount +
@@ -1703,6 +1708,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private AutoDefenseRuntimeState RuntimeState => _runtime == null ? AutoDefenseRuntimeState.Created : _runtime.State;
         private IdleAutoDefenseRewardDraftSettings RewardDraftSettings => _rewardDraftSettings ??= IdleAutoDefenseRewardDraftSettings.CreateDefault();
         private IdleAutoDefenseRewardDraftCatalog RewardDraftCatalog => _rewardDraftCatalog ??= IdleAutoDefenseRewardDraftCatalog.CreateDefault();
+        private IdleAutoDefenseContentSetRuntimeSettings ContentSetRuntimeSettings => _resolvedContentSet != null && _resolvedContentSet.IsValid && _resolvedContentSet.ContentSet != null
+            ? _resolvedContentSet.ContentSet.RuntimeSettings
+            : null;
 
         protected virtual void Awake()
         {
@@ -2739,13 +2747,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateWeaponPresentation(
                 BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value,
                 BasicIdleAutoDefenseGame.PulseAttackId.Value,
-                "Pulse Beam",
-                new Vector3(-1.02f, 0.06f, 0.36f),
-                "tower-square-bottom-a",
-                "weapon-turret",
-                new Color(0.15f, 0.75f, 1f),
-                new Vector3(0f, 0.44f, 0.72f),
-                420f,
                 true);
             return true;
         }
@@ -2757,13 +2758,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateWeaponPresentation(
                 BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value,
                 BasicIdleAutoDefenseGame.ArcBurstAttackId.Value,
-                "Arc Burst",
-                new Vector3(0f, 0.06f, -1.05f),
-                "tower-round-bottom-a",
-                "weapon-catapult",
-                new Color(0.95f, 0.55f, 0.15f),
-                new Vector3(0f, 0.5f, 0.82f),
-                240f,
                 true);
             return true;
         }
@@ -2775,13 +2769,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateWeaponPresentation(
                 BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value,
                 BasicIdleAutoDefenseGame.HomingPulseAttackId.Value,
-                "Homing Pulse",
-                new Vector3(1.02f, 0.06f, 0.36f),
-                "tower-square-bottom-a",
-                "weapon-cannon",
-                new Color(0.65f, 0.35f, 1f),
-                new Vector3(0f, 0.42f, 0.8f),
-                320f,
                 true);
             return true;
         }
@@ -4261,7 +4248,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _resolvedWaveDefinitions = CopyResolved(resolution.Waves);
             _resolvedWeaponDefinitions = CopyResolved(resolution.Weapons);
             _resolvedUpgradeDefinitions = CopyResolved(resolution.Upgrades);
+            ApplyContentSetRuntimeSettings(resolution.ContentSet);
             UsingAssignedContentSet = true;
+        }
+
+        private void ApplyContentSetRuntimeSettings(GameContentSetAsset contentSet)
+        {
+            if (contentSet == null || contentSet.RuntimeSettings == null) return;
+            IdleAutoDefenseContentSetRuntimeSettings settings = contentSet.RuntimeSettings;
+            _rewardDraftSettings = settings.RewardDraftSettings.Clone();
+            _rewardDraftCatalog = settings.RewardDraftCatalog.Clone();
+            IdleAutoDefensePresentationDebugSettings debug = settings.PresentationDebug;
+            _showDebugAimLines = debug != null && debug.ShowDebugAimLines;
+            _showDebugRanges = debug != null && debug.ShowDebugRanges;
+            _showDebugSpawnRing = debug != null && debug.ShowDebugSpawnRing;
+            UsingContentSetRuntimeSettings = true;
         }
 
         private WeaponDefinitionAsset[] ResolveActiveWeaponDefinitionsForRun()
@@ -4534,28 +4535,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateWeaponPresentation(
                 BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value,
                 BasicIdleAutoDefenseGame.ShardAttackId.Value,
-                "Shard Launcher",
-                new Vector3(0f, 0.06f, 1.05f),
-                "tower-round-bottom-a",
-                "weapon-ballista",
-                new Color(1f, 0.45f, 0.1f),
-                new Vector3(0f, 0.64f, 0.66f),
-                340f,
                 true);
         }
 
         private IdleAutoDefenseWeaponVisualBinding CreateWeaponPresentation(
             string weaponId,
             string attackId,
-            string displayName,
-            Vector3 position,
-            string baseModelName,
-            string weaponModelName,
-            Color tint,
-            Vector3 muzzleLocalPosition,
-            float turnSpeedDegrees,
             bool enabled)
         {
+            IdleAutoDefenseWeaponPresentationBinding presentation = ResolveWeaponPresentationBinding(weaponId, attackId);
+            string displayName = presentation.DisplayName;
+            Vector3 position = presentation.MountLocalPosition;
+            string baseModelName = presentation.BaseModelName;
+            string weaponModelName = presentation.WeaponModelName;
+            Color tint = presentation.Tint;
+            Vector3 muzzleLocalPosition = presentation.MuzzleLocalPosition;
+            float turnSpeedDegrees = presentation.TurnSpeedDegrees;
             if (_root == null || string.IsNullOrWhiteSpace(attackId)) return null;
             GameObject root = new GameObject(displayName + " 3D Mount");
             root.transform.SetParent(_root.transform, false);
@@ -4612,6 +4607,39 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DisableColliders(root);
             _weaponVisualBindings[attackId] = binding;
             return binding;
+        }
+
+        private IdleAutoDefenseWeaponPresentationBinding ResolveWeaponPresentationBinding(string weaponId, string attackId)
+        {
+            IdleAutoDefenseContentSetRuntimeSettings settings = ContentSetRuntimeSettings;
+            if (settings != null && settings.TryFindWeaponPresentationBinding(weaponId, attackId, out IdleAutoDefenseWeaponPresentationBinding authored) && authored != null)
+            {
+                AuthoredWeaponPresentationBindingCount++;
+                return authored;
+            }
+
+            IdleAutoDefenseWeaponPresentationBinding[] defaults = IdleAutoDefenseWeaponPresentationBinding.CreateDefaultBindings();
+            for (int i = 0; i < defaults.Length; i++)
+            {
+                if (defaults[i] != null && defaults[i].Matches(weaponId, attackId))
+                {
+                    FallbackWeaponPresentationBindingCount++;
+                    return defaults[i];
+                }
+            }
+
+            FallbackWeaponPresentationBindingCount++;
+            return new IdleAutoDefenseWeaponPresentationBinding(
+                weaponId,
+                attackId,
+                string.IsNullOrWhiteSpace(weaponId) ? "Tower Module" : weaponId,
+                Vector3.zero,
+                "tower-round-bottom-a",
+                "weapon-ballista",
+                Color.white,
+                new Vector3(0f, 0.5f, 0.7f),
+                300f,
+                false);
         }
 
         private WeaponDefinitionAsset FindWeaponDefinitionForPresentation(string weaponId, string attackId)
@@ -4792,6 +4820,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateModuleSlot("Pulse Beam Locked Pad", new Vector3(-0.9f, 0.02f, 0.35f), new Color(0.18f, 0.84f, 1f, 0.58f));
             CreateModuleSlot("Arc Burst Locked Pad", new Vector3(0f, 0.02f, -0.9f), new Color(1f, 0.58f, 0.16f, 0.58f));
             CreateModuleSlot("Homing Pulse Locked Pad", new Vector3(0.9f, 0.02f, 0.35f), new Color(0.72f, 0.42f, 1f, 0.58f));
+            if (!_showDebugSpawnRing) return;
             Color warningStrip = new Color(0.95f, 0.68f, 0.18f, 0.95f);
             CreateKenneyMarkerLine("Outer Spawn Zone North", new Vector3(0f, 0f, TemplateVisibleArenaRadius), Quaternion.identity, 6, warningStrip);
             CreateKenneyMarkerLine("Outer Spawn Zone East", new Vector3(TemplateVisibleArenaRadius, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), 6, warningStrip);
@@ -5055,6 +5084,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DamageNumberSpawnCount = 0;
             AuthoredWeaponPresentationSpawnCount = 0;
             FallbackWeaponPresentationSpawnCount = 0;
+            AuthoredWeaponPresentationBindingCount = 0;
+            FallbackWeaponPresentationBindingCount = 0;
+            UsingContentSetRuntimeSettings = false;
             DebugAimTracerSpawnCount = 0;
             EnemyDamageSurvivedCount = 0;
             RangeRejectedTargetCount = 0;
