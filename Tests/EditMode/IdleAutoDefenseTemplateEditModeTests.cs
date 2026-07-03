@@ -1556,6 +1556,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "settings.sortingOrder = 32767");
             AssertFileContains(runtimePath, "settings.clearColor = false");
             AssertFileContains(runtimePath, "CreateRuntimeVisualPrefab");
+            AssertFileContains(runtimePath, "Kenney3DResourceRoot");
+            AssertFileContains(runtimePath, "IdleAutoDefenseWeaponVisualBinding");
+            AssertFileContains(runtimePath, "TemplateProjectileMuzzlePoseResolver");
+            AssertFileContains(runtimePath, "ResolveTowerMuzzlePosition");
+            AssertFileContains(runtimePath, "CreateWeaponPresentation");
+            AssertFileContains(runtimePath, "CreateEnemyModelPrefab");
+            AssertFileContains(runtimePath, "CreateProjectileModelPrefab");
             AssertFileContains(runtimePath, "AttachKenneySprite");
             AssertFileContains(runtimePath, "Pulse Beam Locked Pad");
             AssertFileContains(runtimePath, "Arc Burst Locked Pad");
@@ -1579,6 +1586,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-projectile.prefab"));
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Audio", "template-fire.wav"));
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Audio", "template-impact.wav"));
+            string kenney3dRoot = Path.Combine(templateSourceRoot, "Resources", "Kenney", "IdleAutoDefense", "Models", "TowerDefenseKit");
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "License.txt"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "tower-round-base.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "weapon-ballista.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "weapon-cannon.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "enemy-ufo-a.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "enemy-ufo-d.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "weapon-ammo-arrow.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "FBX", "tile.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(kenney3dRoot, "Textures", "colormap.png"));
+            string runtimeKenney3dRoot = Path.Combine(packageRoot, "Runtime", "Resources", "Kenney", "IdleAutoDefense", "Models", "TowerDefenseKit");
+            AssertFileExistsAtFullPath(Path.Combine(runtimeKenney3dRoot, "License.txt"));
+            AssertFileExistsAtFullPath(Path.Combine(runtimeKenney3dRoot, "FBX", "tower-round-base.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(runtimeKenney3dRoot, "FBX", "weapon-ballista.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(runtimeKenney3dRoot, "FBX", "enemy-ufo-a.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(runtimeKenney3dRoot, "FBX", "weapon-ammo-arrow.fbx"));
+            AssertFileExistsAtFullPath(Path.Combine(runtimeKenney3dRoot, "Textures", "colormap.png"));
         }
 
         [Test]

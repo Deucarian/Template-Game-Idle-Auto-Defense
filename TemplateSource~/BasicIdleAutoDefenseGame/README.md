@@ -10,7 +10,7 @@ Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game
 
 The generated scene references the generated content pack and content set after GUID remapping. Open the generated scene at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`. Edit generated code/docs/visuals/resources under the chosen game root, and edit gameplay definitions under `Assets/GameContent/IdleAutoDefense` or the setup wizard's chosen content root.
 
-The generated sample is meant to be played, not inspected as a static showcase. It demonstrates short-range starter defense, offscreen-style enemy approach, visible projectile/VFX/audio feedback, damage numbers, early reward cards, module unlocks, and a live Overdrive button. Tune the first two minutes through generated authored assets first, then swap Kenney visuals under the generated runtime resources.
+The generated sample is meant to be played, not inspected as a static showcase. It demonstrates short-range starter defense, offscreen-style enemy approach, Kenney 3D towers/enemies/projectiles, turret aiming, muzzle-based firing, recoil, muzzle flash, visible projectile/VFX/audio feedback, damage numbers, early reward cards, module unlocks, and a live Overdrive button. Tune the first two minutes through generated authored assets first, then swap Kenney visuals under the generated runtime resources.
 
 ## Folder Map
 
@@ -27,6 +27,9 @@ BasicIdleAutoDefenseGame
 |   `-- ContentPacks
 |-- Prefabs
 |-- Resources
+|   `-- Kenney
+|       `-- IdleAutoDefense
+|           `-- Models
 |-- Scenes
 |-- Scripts
 `-- Visuals

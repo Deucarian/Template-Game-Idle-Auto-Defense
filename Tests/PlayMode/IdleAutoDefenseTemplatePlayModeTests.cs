@@ -40,6 +40,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.Kenney3DModelSpawnCount, Is.GreaterThan(12), controller.StatusSummary);
+            Assert.That(controller.TurretAimUpdateCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.MuzzleProjectileLaunchCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.MuzzleFlashSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.RecoilEventCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.EnemyFacingUpdateCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.EnemyHitFlashCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.EnemyDeathPopCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.DirectOrCombatKillCount + controller.ProjectileAdapterKillCount, Is.GreaterThan(0));
             Assert.That(controller.SelectedUpgradeCount, Is.GreaterThanOrEqualTo(3), controller.StatusSummary);
             Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);

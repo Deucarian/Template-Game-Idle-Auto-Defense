@@ -1,6 +1,6 @@
 # Prefabs
 
-The starter scene creates simple runtime primitives so it can import without binary assets. Use this folder for project-specific core, enemy, weapon, and projectile prefabs when the product game is ready for authored visuals.
+The starter scene now builds visible gameplay from the curated Kenney Tower Defense Kit 3D models under `Resources/Kenney/IdleAutoDefense/Models/TowerDefenseKit`. Use this folder for project-specific core, enemy, weapon, projectile, muzzle flash, and impact prefabs when the product game is ready for authored visuals.
 
 Suggested first folders:
 
@@ -12,6 +12,6 @@ Prefabs
 - Weapons
 ```
 
-Keep the primitive runtime markers until each replacement prefab has been tested in Play Mode. The visible scene markers are intentionally simple so prefab problems are easy to isolate.
+Keep invisible colliders/helpers separate from visible art. Visible towers should expose a yaw pivot and muzzle transform so the local presentation binding can aim, recoil, flash, and launch from the muzzle.
 
-Phase 2J adds starter README files under `Enemies`, `Weapons`, and `Projectiles` so copied product folders have obvious asset drop zones.
+The starter README files under `Enemies`, `Weapons`, and `Projectiles` give copied product folders obvious asset drop zones.
