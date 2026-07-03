@@ -726,15 +726,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                AttackDefinitionAsset.CreateTransient(
-                    PulseAttackId.Value,
-                    "Pulse Beam",
-                    AttackRecipeDeliveryMode.Hitscan,
-                    DamageType.Value,
-                    5.0f,
-                    72,
-                    5.0f,
-                    AttackRecipeTargetingMode.Nearest),
+                CreatePulseBeamAttackRecipe(),
                 AttackDefinitionAsset.CreateTransient(
                     ShardAttackId.Value,
                     "Shard Projectile",
@@ -774,6 +766,39 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     homing: true,
                     pierceCount: 1)
             };
+        }
+
+        private static AttackDefinitionAsset CreatePulseBeamAttackRecipe()
+        {
+            AttackDefinitionAsset recipe = AttackDefinitionAsset.CreateTransient(
+                PulseAttackId.Value,
+                "Pulse Beam",
+                AttackRecipeDeliveryMode.Hitscan,
+                DamageType.Value,
+                5.0f,
+                72,
+                5.0f,
+                AttackRecipeTargetingMode.Nearest);
+            recipe.Delivery.ConfigureHitscan(
+                CreateTransientPrimitiveVfxPrefab("Template Transient Pulse Beam VFX", PrimitiveType.Cube, new Vector3(0.16f, 0.16f, 1f), new Color(0.15f, 0.8f, 1f)),
+                CreateTransientPrimitiveVfxPrefab("Template Transient Pulse Impact VFX", PrimitiveType.Sphere, Vector3.one * 0.34f, new Color(0.35f, 0.9f, 1f)));
+            return recipe;
+        }
+
+        private static GameObject CreateTransientPrimitiveVfxPrefab(string name, PrimitiveType primitive, Vector3 scale, Color color)
+        {
+            GameObject prefab = GameObject.CreatePrimitive(primitive);
+            prefab.name = name;
+            prefab.hideFlags = HideFlags.HideAndDontSave;
+            prefab.transform.localScale = scale;
+            Collider collider = prefab.GetComponent<Collider>();
+            if (collider != null) collider.enabled = false;
+            Renderer renderer = prefab.GetComponent<Renderer>();
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (renderer != null && shader != null)
+                renderer.sharedMaterial = new Material(shader) { color = color };
+            prefab.SetActive(false);
+            return prefab;
         }
 
         public static AttackDefinitionAsset[] ResolveAttackRecipesForTemplate(IReadOnlyList<AttackDefinitionAsset> assignedRecipes, out int rejectedRecipeCount)
@@ -1540,10 +1565,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int AuthoredProjectileVisualSpawnCount { get; private set; }
         public int ProjectileMotionObservedCount { get; private set; }
         public int ProjectileDamageAppliedCount { get; private set; }
+        public int ProjectileImpactCallbackCount { get; private set; }
+        public int ProjectileDamageResolvedFromImpactCount { get; private set; }
         public int ProjectileImpactRetargetCount { get; private set; }
         public int ProjectileImpactMissCount { get; private set; }
+        public int ProjectileImpactRejectedCount { get; private set; }
         public int ProjectileExpiryDeferralCount { get; private set; }
         public int AttackVfxSpawnCount { get; private set; }
+        public int BeamVisualSpawnCount { get; private set; }
+        public int BeamVisualInvalidEndpointCount { get; private set; }
         public int AttackAudioPlayCount { get; private set; }
         public int EnemyPresentationEventCount { get; private set; }
         public int Kenney3DModelSpawnCount { get; private set; }
@@ -1681,6 +1711,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " Spawned=" + SpawnedCount +
             " Kills=" + (DirectOrCombatKillCount + ProjectileAdapterKillCount) +
             " Projectiles=" + ProjectileLaunchCount +
+            " ProjectileImpacts=" + ProjectileImpactCallbackCount +
+            " BeamVisuals=" + BeamVisualSpawnCount +
             " Upgrades=" + SelectedUpgradeCount +
             " Drafts=" + RewardDraftOpenedCount +
             " Modules=" + UnlockedModuleCount +
@@ -2454,21 +2486,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 }
 
                 _pendingProjectileImpacts.RemoveAt(i);
-                if (pending.ProjectileId.Value > 0)
-                    _projectiles?.Cleanup(pending.ProjectileId, ProjectileExpiryReason.HitLimitReached);
-
                 bool hasImpactTarget = TryFindProjectileImpactTarget(pending, out AutoDefenseEnemySnapshot impactTarget);
                 Vector3 impactPosition = hasImpactTarget
                     ? CreateEnemyAimPosition(impactTarget.Position)
                     : pending.Destination;
-                EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnImpact, impactPosition);
 
                 if (!hasImpactTarget)
                 {
                     ProjectileImpactMissCount++;
+                    EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnExpire, impactPosition);
+                    CleanupProjectileWithoutDamage(pending.ProjectileId);
                     continue;
                 }
 
+                if (!TryReportProjectileImpact(pending, impactTarget, out _))
+                {
+                    ProjectileImpactRejectedCount++;
+                    EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnExpire, impactPosition);
+                    continue;
+                }
+
+                ProjectileImpactCallbackCount++;
+                EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnImpact, impactPosition);
+                ProjectileDamageResolvedFromImpactCount++;
                 ProjectileDamageAppliedCount++;
                 if (!TryApplyVisibleEnemyDamage(impactTarget, pending.Attack, pending.DamageThreshold, impactPosition, out bool killed))
                     continue;
@@ -2480,6 +2520,28 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             return kills;
+        }
+
+        private bool TryReportProjectileImpact(
+            PendingProjectileImpact pending,
+            AutoDefenseEnemySnapshot impactTarget,
+            out ProjectileImpactResult result)
+        {
+            result = default;
+            if (_projectiles == null || pending.ProjectileId.Value <= 0 || impactTarget.Id <= 0 || impactTarget.CombatantId.IsEmpty)
+                return false;
+
+            double currentHealth = Math.Max(0.01d, impactTarget.Health);
+            double maximumHealth = Math.Max(currentHealth, Math.Max(1d, ResolveAttackDamage(pending.Attack)));
+            var targetHealth = new HealthState(impactTarget.CombatantId, maximumHealth, currentHealth);
+            result = _projectiles.ReportImpact(new ProjectileImpactRequest(pending.ProjectileId, impactTarget.CombatantId, targetHealth));
+            return result.Succeeded;
+        }
+
+        private void CleanupProjectileWithoutDamage(ProjectileInstanceId projectileId)
+        {
+            if (_projectiles == null || projectileId.Value <= 0) return;
+            _projectiles.Cleanup(projectileId, ProjectileExpiryReason.ManualCleanup);
         }
 
         private void EmitProjectileExpiryFeedback(ProjectileTickResult result)
@@ -3316,12 +3378,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             bool emittedVfx = false;
             bool emittedAudio = false;
+            if (eventKind == AttackPresentationEventKind.OnImpact)
+                emittedVfx = TryEmitBeamVfx(attack, eventPosition);
             if (attack != null &&
                 attack.Presentation != null &&
                 attack.Presentation.TryGetEvent(eventKind, out AttackPresentationEventRecipe recipe))
             {
                 Vector3 position = ResolveAttackEventPosition(attack, recipe, eventPosition);
-                emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position);
+                bool recipeUsesBeamPrefab = IsBeamPresentationPrefab(attack, recipe.VfxPrefab);
+                if (recipeUsesBeamPrefab)
+                {
+                    if (eventKind == AttackPresentationEventKind.OnImpact && !emittedVfx)
+                        emittedVfx = TryEmitBeamVfx(attack, eventPosition);
+                    else
+                        emittedVfx = true;
+                }
+                else
+                {
+                    emittedVfx = EmitPresentationVfx(recipe.VfxPrefab, position) || emittedVfx;
+                }
                 emittedAudio = PlayPresentationAudio(recipe.AudioClip);
             }
 
@@ -3330,6 +3405,74 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!emittedAudio && eventKind != AttackPresentationEventKind.OnTick)
                 PlayPresentationAudio(null);
             EmitKenneyAttackEventBurst(attack, eventKind, eventPosition);
+        }
+
+        private bool TryEmitBeamVfx(AttackDefinitionAsset attack, Vector3 impactPosition)
+        {
+            if (!TryGetBeamVfxPrefab(attack, out GameObject prefab)) return false;
+            Vector3 origin = ResolveTowerMuzzlePosition(attack);
+            if (!IsFiniteVector(origin) || !IsFiniteVector(impactPosition))
+            {
+                BeamVisualInvalidEndpointCount++;
+                return false;
+            }
+
+            Vector3 delta = impactPosition - origin;
+            float distance = delta.magnitude;
+            if (distance <= 0.05f)
+            {
+                BeamVisualInvalidEndpointCount++;
+                return false;
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            GameObject instance = Instantiate(prefab, origin + delta * 0.5f, rotation);
+            instance.name = prefab.name + " Runtime Beam";
+            if (_root != null) instance.transform.SetParent(_root.transform, true);
+            instance.transform.localScale = ResolveBeamWorldScale(prefab, distance);
+            instance.SetActive(true);
+            TintRenderers(instance, ResolveAttackColor(attack));
+            DisableColliders(instance);
+
+            ParticleSystem[] particles = instance.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].gameObject.SetActive(true);
+                particles[i].Play(true);
+            }
+
+            AttackVfxSpawnCount++;
+            BeamVisualSpawnCount++;
+            DestroyPresentationObject(instance, 0.22f);
+            return true;
+        }
+
+        private static bool TryGetBeamVfxPrefab(AttackDefinitionAsset attack, out GameObject prefab)
+        {
+            prefab = null;
+            if (attack == null || attack.Delivery == null) return false;
+            if (attack.Delivery.Mode != AttackRecipeDeliveryMode.Hitscan) return false;
+            prefab = attack.Delivery.BeamVfxPrefab;
+            return prefab != null;
+        }
+
+        private static bool IsBeamPresentationPrefab(AttackDefinitionAsset attack, GameObject prefab)
+        {
+            if (prefab == null) return false;
+            return TryGetBeamVfxPrefab(attack, out GameObject beamPrefab) && prefab == beamPrefab;
+        }
+
+        private static Vector3 ResolveBeamWorldScale(GameObject prefab, float distance)
+        {
+            Vector3 sourceScale = prefab == null ? Vector3.one : prefab.transform.localScale;
+            float width = Mathf.Clamp(Mathf.Max(Mathf.Abs(sourceScale.x), Mathf.Abs(sourceScale.y), 0.08f), 0.08f, 0.38f);
+            return new Vector3(width, width, Mathf.Max(0.05f, distance));
+        }
+
+        private static bool IsFiniteVector(Vector3 value)
+        {
+            return !(float.IsNaN(value.x) || float.IsNaN(value.y) || float.IsNaN(value.z) ||
+                float.IsInfinity(value.x) || float.IsInfinity(value.y) || float.IsInfinity(value.z));
         }
 
         private bool EmitPresentationVfx(GameObject prefab, Vector3 position)
@@ -5067,10 +5210,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AuthoredProjectileVisualSpawnCount = 0;
             ProjectileMotionObservedCount = 0;
             ProjectileDamageAppliedCount = 0;
+            ProjectileImpactCallbackCount = 0;
+            ProjectileDamageResolvedFromImpactCount = 0;
             ProjectileImpactRetargetCount = 0;
             ProjectileImpactMissCount = 0;
+            ProjectileImpactRejectedCount = 0;
             ProjectileExpiryDeferralCount = 0;
             AttackVfxSpawnCount = 0;
+            BeamVisualSpawnCount = 0;
+            BeamVisualInvalidEndpointCount = 0;
             AttackAudioPlayCount = 0;
             EnemyPresentationEventCount = 0;
             Kenney3DModelSpawnCount = 0;

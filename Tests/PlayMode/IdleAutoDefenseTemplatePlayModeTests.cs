@@ -35,9 +35,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0));
             Assert.That(controller.ProjectileVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ProjectileMotionObservedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ProjectileImpactCallbackCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ProjectileDamageResolvedFromImpactCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ProjectileDamageAppliedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.AreEqual(controller.ProjectileDamageResolvedFromImpactCount, controller.ProjectileDamageAppliedCount, controller.StatusSummary);
+            Assert.AreEqual(0, controller.ProjectileImpactRejectedCount, controller.StatusSummary);
             Assert.That(controller.DamageNumberSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.BeamVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.AreEqual(0, controller.BeamVisualInvalidEndpointCount, controller.StatusSummary);
             Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.Kenney3DModelSpawnCount, Is.GreaterThan(12), controller.StatusSummary);
@@ -86,6 +92,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.AreEqual(IdleProgressionResultCode.Success, controller.LastOfflineRewardCode);
             Assert.That(controller.OfflineRewardCredits, Is.GreaterThanOrEqualTo(1260));
             Assert.That(controller.OfflineRewardParts, Is.GreaterThanOrEqualTo(15));
+
+            UnityEngine.Object.Destroy(host);
+        }
+
+        [UnityTest]
+        public IEnumerator ProjectileDamageWaitsForImpactCallback()
+        {
+            GameObject host = new GameObject("idle-auto-defense-template-projectile-impact-probe");
+            var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            controller.enabled = false;
+            controller.RewardDraftPausesCombat = false;
+
+            for (int i = 0; i < 2600; i++)
+            {
+                controller.Step(1, 0.05f);
+                if (controller.ProjectileLaunchCount > 0)
+                    break;
+                if (i % 30 == 0) yield return null;
+            }
+
+            Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.AreEqual(0, controller.ProjectileImpactCallbackCount, controller.StatusSummary);
+            Assert.AreEqual(0, controller.ProjectileDamageAppliedCount, controller.StatusSummary);
+            Assert.AreEqual(0, controller.DamageNumberSpawnCount, controller.StatusSummary);
+
+            for (int i = 0; i < 260; i++)
+            {
+                controller.Step(1, 0.05f);
+                if (controller.ProjectileImpactCallbackCount > 0)
+                    break;
+                if (i % 15 == 0) yield return null;
+            }
+
+            Assert.That(controller.ProjectileImpactCallbackCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ProjectileDamageResolvedFromImpactCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.AreEqual(controller.ProjectileDamageResolvedFromImpactCount, controller.ProjectileDamageAppliedCount, controller.StatusSummary);
+            Assert.That(controller.DamageNumberSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.AreEqual(0, controller.ProjectileImpactRejectedCount, controller.StatusSummary);
 
             UnityEngine.Object.Destroy(host);
         }
