@@ -1636,6 +1636,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "Art/impact_flame");
             AssertFileContains(runtimePath, "Art/currency_coin_gold");
             AssertFileDoesNotContain(runtimePath, "ScriptableObject.CreateInstance<ThemeStyleSheet>()");
+            AssertFileDoesNotContain(runtimePath, "private sealed class IdleAutoDefenseWeaponVisualBinding");
+            AssertFileDoesNotContain(runtimePath, "private sealed class IdleAutoDefenseEnemyModelPresentation");
+            AssertFileDoesNotContain(runtimePath, "private sealed class TemplateProjectileMuzzlePoseResolver");
+            string presentationRoot = Path.Combine(packageRoot, "Runtime", "Presentation");
+            AssertFileContains(Path.Combine(presentationRoot, "IdleAutoDefenseWeaponVisualBinding.cs"), "internal sealed class IdleAutoDefenseWeaponVisualBinding");
+            AssertFileContains(Path.Combine(presentationRoot, "IdleAutoDefenseWeaponVisualBinding.cs"), "EmitMuzzleFlash");
+            AssertFileContains(Path.Combine(presentationRoot, "IdleAutoDefenseEnemyModelPresentation.cs"), "internal sealed class IdleAutoDefenseEnemyModelPresentation");
+            AssertFileContains(Path.Combine(presentationRoot, "TemplateProjectileMuzzlePoseResolver.cs"), "internal sealed class TemplateProjectileMuzzlePoseResolver");
+            AssertFileContains(Path.Combine(presentationRoot, "IdleAutoDefenseKenneyPresentationEffects.cs"), "internal sealed class KenneySpriteBurstVisual");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseKenneyModelPrefab.cs"));
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseKenneyModelPrefab.cs"), "Resources.Load<GameObject>(DefaultResourceRoot + modelName)");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"));

@@ -3811,7 +3811,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return false;
         }
 
-        private AttackDefinitionAsset FindAttackRecipeForPresentation(string attackId)
+        internal AttackDefinitionAsset FindAttackRecipeForPresentation(string attackId)
         {
             if (string.IsNullOrWhiteSpace(attackId)) return null;
             for (int i = 0; i < _resolvedAttackRecipes.Length; i++)
@@ -3920,7 +3920,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : SampleProjectileFinishThreshold;
         }
 
-        private Vector3 ResolveTowerMuzzlePosition(AttackDefinitionAsset attack)
+        internal Vector3 ResolveTowerMuzzlePosition(AttackDefinitionAsset attack)
         {
             IdleAutoDefenseWeaponVisualBinding binding = FindWeaponVisualBinding(attack);
             if (binding != null && binding.Muzzle != null)
@@ -3995,7 +3995,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return hasSelected;
         }
 
-        private bool TrySelectPresentationEnemyWithinAnyRange(out AutoDefenseEnemySnapshot selected)
+        internal bool TrySelectPresentationEnemyWithinAnyRange(out AutoDefenseEnemySnapshot selected)
         {
             selected = default;
             if (_runtime == null) return false;
@@ -4007,7 +4007,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return objectivePosition + Vector3.up * 0.75f;
         }
 
-        private static Vector3 CreateEnemyAimPosition(Vector3 enemyPosition)
+        internal static Vector3 CreateEnemyAimPosition(Vector3 enemyPosition)
         {
             return enemyPosition + Vector3.up * 0.35f;
         }
@@ -5262,271 +5262,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _damageNumbers.Clear();
         }
 
-        private sealed class KenneyBillboardVisual : MonoBehaviour
-        {
-            private bool _enabledBillboard;
-
-            public void Configure(bool enabledBillboard)
-            {
-                _enabledBillboard = enabledBillboard;
-            }
-
-            private void LateUpdate()
-            {
-                if (!_enabledBillboard) return;
-                Camera camera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
-                if (camera == null) return;
-                Vector3 direction = transform.position - camera.transform.position;
-                if (direction.sqrMagnitude <= 0.0001f) return;
-                transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
-            }
-        }
-
-        private sealed class KenneySpriteBurstVisual : MonoBehaviour
-        {
-            private SpriteRenderer _renderer;
-            private Vector3 _startScale;
-            private Color _startColor;
-            private float _duration;
-            private float _rise;
-            private float _elapsed;
-
-            public void Configure(SpriteRenderer renderer, float duration, float rise, Vector3 startScale)
-            {
-                _renderer = renderer;
-                _duration = Mathf.Max(0.1f, duration);
-                _rise = Mathf.Max(0f, rise);
-                _startScale = startScale;
-                _startColor = renderer != null ? renderer.color : Color.white;
-            }
-
-            private void Update()
-            {
-                _elapsed += Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
-                float t = Mathf.Clamp01(_elapsed / Mathf.Max(0.1f, _duration));
-                float punch = 1f + Mathf.Sin(t * Mathf.PI) * 0.55f;
-                transform.localScale = _startScale * punch;
-                transform.position += Vector3.up * (_rise * Time.deltaTime / Mathf.Max(0.1f, _duration));
-                if (_renderer != null)
-                {
-                    Color color = _startColor;
-                    color.a *= Mathf.Clamp01(1f - t);
-                    _renderer.color = color;
-                }
-
-                if (t >= 1f)
-                    Destroy(gameObject);
-            }
-        }
-
-        private sealed class IdleAutoDefenseWeaponVisualBinding : MonoBehaviour
-        {
-            private Transform _yawPivot;
-            private Transform _recoilPivot;
-            private Transform _muzzle;
-            private Vector3 _recoilRestLocalPosition;
-            private Color _flashColor;
-            private float _turnSpeedDegrees = 360f;
-            private float _recoilSeconds;
-
-            public Transform Muzzle => _muzzle;
-
-            public void Configure(Transform yawPivot, Transform recoilPivot, Transform muzzle, float turnSpeedDegrees, Color flashColor)
-            {
-                _yawPivot = yawPivot;
-                _recoilPivot = recoilPivot;
-                _muzzle = muzzle;
-                _turnSpeedDegrees = Mathf.Max(30f, turnSpeedDegrees);
-                _flashColor = flashColor;
-                _recoilRestLocalPosition = _recoilPivot != null ? _recoilPivot.localPosition : Vector3.zero;
-            }
-
-            public bool AimAt(Vector3 worldTarget, bool snap, float deltaSeconds)
-            {
-                if (_yawPivot == null) return false;
-                Vector3 flatDirection = worldTarget - _yawPivot.position;
-                flatDirection.y = 0f;
-                if (flatDirection.sqrMagnitude <= 0.0001f) return false;
-                Quaternion desired = Quaternion.LookRotation(flatDirection.normalized, Vector3.up);
-                _yawPivot.rotation = snap
-                    ? desired
-                    : Quaternion.RotateTowards(_yawPivot.rotation, desired, _turnSpeedDegrees * Mathf.Max(0.016f, deltaSeconds));
-                return true;
-            }
-
-            public bool Rest(float deltaSeconds)
-            {
-                if (_yawPivot == null) return false;
-                Quaternion desired = Quaternion.identity;
-                _yawPivot.localRotation = Quaternion.RotateTowards(_yawPivot.localRotation, desired, _turnSpeedDegrees * 0.32f * Mathf.Max(0.016f, deltaSeconds));
-                return true;
-            }
-
-            public bool TriggerRecoil()
-            {
-                if (_recoilPivot == null) return false;
-                _recoilSeconds = 0.18f;
-                _recoilPivot.localPosition = _recoilRestLocalPosition + Vector3.back * 0.18f;
-                return true;
-            }
-
-            public bool EmitMuzzleFlash(Transform parent, Color color)
-            {
-                if (_muzzle == null) return false;
-                GameObject flash = new GameObject("Idle Auto Defense Muzzle Flash");
-                flash.transform.SetParent(parent, true);
-                flash.transform.position = _muzzle.position;
-                flash.transform.rotation = _muzzle.rotation;
-                ParticleSystem particles = flash.AddComponent<ParticleSystem>();
-                particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                ParticleSystem.MainModule main = particles.main;
-                main.playOnAwake = false;
-                main.duration = 0.12f;
-                main.startLifetime = 0.1f;
-                main.startSpeed = 2.2f;
-                main.startSize = 0.26f;
-                Color flashColor = color == default(Color) ? _flashColor : color;
-                main.startColor = flashColor;
-                main.loop = false;
-                ParticleSystem.EmissionModule emission = particles.emission;
-                emission.rateOverTime = 0f;
-                emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 9) });
-                ParticleSystem.ShapeModule shape = particles.shape;
-                shape.shapeType = ParticleSystemShapeType.Cone;
-                shape.angle = 18f;
-                shape.radius = 0.06f;
-                particles.Play(true);
-                DestroyPresentationObject(flash, 0.35f);
-                return true;
-            }
-
-            private void Update()
-            {
-                if (_recoilPivot == null || _recoilSeconds <= 0f) return;
-                float delta = Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
-                _recoilSeconds = Mathf.Max(0f, _recoilSeconds - delta);
-                _recoilPivot.localPosition = Vector3.Lerp(_recoilPivot.localPosition, _recoilRestLocalPosition, 1f - Mathf.Pow(0.001f, delta));
-            }
-        }
-
-        private sealed class IdleAutoDefenseEnemyModelPresentation : MonoBehaviour
-        {
-            private readonly List<Material> _materials = new List<Material>();
-            private Color _baseTint = Color.white;
-            private Vector3 _lastPosition;
-            private Vector3 _baseScale = Vector3.one;
-            private long _enemyId;
-            private float _hitFlashSeconds;
-            private float _deathSeconds;
-            private bool _bound;
-
-            public bool IsBound => _bound;
-
-            public void Configure(Color tint, Vector3 baseScale)
-            {
-                _baseTint = tint;
-                _baseScale = baseScale == Vector3.zero ? Vector3.one : baseScale;
-                CacheMaterials();
-            }
-
-            public void Bind(long enemyId, Vector3 worldPosition, Color tint)
-            {
-                _enemyId = enemyId;
-                _bound = true;
-                _lastPosition = worldPosition;
-                _baseTint = tint;
-                CacheMaterials();
-            }
-
-            public bool FaceMovement(Vector3 worldPosition, float deltaSeconds)
-            {
-                if (!_bound) return false;
-                Vector3 delta = worldPosition - _lastPosition;
-                _lastPosition = worldPosition;
-                if (delta.sqrMagnitude <= 0.00001f) return false;
-                delta.y = 0f;
-                if (delta.sqrMagnitude <= 0.00001f) return false;
-                Quaternion desired = Quaternion.LookRotation(delta.normalized, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, desired, 520f * Mathf.Max(0.016f, deltaSeconds));
-                return true;
-            }
-
-            public bool PlayHitFeedback()
-            {
-                _hitFlashSeconds = 0.16f;
-                ApplyTint(Color.white);
-                return true;
-            }
-
-            public bool PlayDeathFeedback()
-            {
-                _deathSeconds = 0.32f;
-                transform.localScale = _baseScale * 1.28f;
-                ApplyTint(new Color(1f, 0.22f, 0.08f));
-                return true;
-            }
-
-            private void Update()
-            {
-                float delta = Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
-                if (_hitFlashSeconds > 0f)
-                {
-                    _hitFlashSeconds = Mathf.Max(0f, _hitFlashSeconds - delta);
-                    Color color = Color.Lerp(_baseTint, Color.white, _hitFlashSeconds / 0.16f);
-                    ApplyTint(color);
-                }
-
-                if (_deathSeconds > 0f)
-                {
-                    _deathSeconds = Mathf.Max(0f, _deathSeconds - delta);
-                    float t = 1f - _deathSeconds / 0.32f;
-                    transform.localScale = _baseScale * (1.28f + Mathf.Sin(t * Mathf.PI) * 0.38f);
-                    if (_deathSeconds <= 0f)
-                        ApplyTint(_baseTint);
-                }
-                else if (_bound)
-                {
-                    float bob = Mathf.Sin(Time.time * 7.5f + _enemyId * 0.17f) * 0.035f;
-                    Vector3 scale = _baseScale;
-                    scale.y *= 1f + bob;
-                    transform.localScale = scale;
-                }
-            }
-
-            private void CacheMaterials()
-            {
-                _materials.Clear();
-                Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
-                for (int i = 0; i < renderers.Length; i++)
-                {
-                    Material[] materials = renderers[i].sharedMaterials;
-                    if (Application.isPlaying)
-                    {
-                        var runtimeMaterials = new Material[materials.Length];
-                        for (int j = 0; j < materials.Length; j++)
-                            runtimeMaterials[j] = materials[j] != null ? new Material(materials[j]) : null;
-                        renderers[i].sharedMaterials = runtimeMaterials;
-                        materials = runtimeMaterials;
-                    }
-
-                    for (int j = 0; j < materials.Length; j++)
-                        if (materials[j] != null)
-                            _materials.Add(materials[j]);
-                }
-                ApplyTint(_baseTint);
-            }
-
-            private void ApplyTint(Color tint)
-            {
-                for (int i = 0; i < _materials.Count; i++)
-                {
-                    Material material = _materials[i];
-                    if (material != null && material.HasProperty("_Color"))
-                        material.color = Color.Lerp(material.color, tint, 0.35f);
-                }
-            }
-        }
-
         private sealed class TemplateJitteredPerimeterPoseResolver : IAutoDefensePoseResolver, ISpawnPoseResolver
         {
             private const float AngleJitterDegrees = 17.5f;
@@ -5609,37 +5344,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
                     return hash;
                 }
-            }
-        }
-
-        private sealed class TemplateProjectileMuzzlePoseResolver : ISpawnPoseResolver
-        {
-            private readonly IdleAutoDefenseTemplateController _controller;
-            private readonly WorldSpawnChannelId _channelId;
-
-            public TemplateProjectileMuzzlePoseResolver(IdleAutoDefenseTemplateController controller, WorldSpawnChannelId channelId)
-            {
-                _controller = controller ?? throw new ArgumentNullException(nameof(controller));
-                _channelId = channelId;
-            }
-
-            public SpawnPoseResult TryResolvePose(WorldSpawnRequest request)
-            {
-                if (!request.ChannelId.Equals(_channelId))
-                    return SpawnPoseResult.Failure("Unknown projectile spawn channel: " + request.ChannelId);
-
-                AttackDefinitionAsset attack = _controller.FindAttackRecipeForPresentation(request.Context.WaveId);
-                Vector3 position = _controller.ResolveTowerMuzzlePosition(attack);
-                Vector3 forward = Vector3.forward;
-                if (_controller.TrySelectPresentationEnemyWithinAnyRange(out AutoDefenseEnemySnapshot target))
-                {
-                    forward = CreateEnemyAimPosition(target.Position) - position;
-                    forward.y = 0f;
-                }
-
-                if (forward.sqrMagnitude <= 0.0001f)
-                    forward = Vector3.forward;
-                return SpawnPoseResult.Success(new SpawnPose(position, Quaternion.LookRotation(forward.normalized, Vector3.up)));
             }
         }
 
