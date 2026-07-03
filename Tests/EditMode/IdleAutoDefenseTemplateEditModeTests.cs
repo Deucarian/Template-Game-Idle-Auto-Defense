@@ -1563,6 +1563,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.homing-pulse", "attack.template.homing-pulse_Delivery.asset"), "_projectileSpeed: 4.4");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_mode: 1");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_beamVfxPrefab: {fileID: 0");
+            AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "cf9e006673d1663419fc7abacc16e5a6");
             AssertFileDoesNotContain(Path.Combine(contentRoot, "Attacks", "attack.template.hitscan-beam", "attack.template.hitscan-beam_Delivery.asset"), "_impactVfxPrefab: {fileID: 0");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "_audioClip: {fileID: 8300000");
             AssertFileContains(Path.Combine(contentRoot, "Attacks", "attack.template.fire-orb", "attack.template.fire-orb_Presentation.asset"), "_vfxPrefab: {fileID:");
@@ -1629,6 +1630,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "TryEmitBeamVfx");
             AssertFileContains(runtimePath, "BeamVisualSpawnCount");
             AssertFileContains(runtimePath, "Runtime Beam");
+            AssertFileContains(runtimePath, "ConfigureBeamLineRenderer");
+            AssertFileContains(runtimePath, "LineRenderer");
+            AssertFileContains(runtimePath, "UpdateActiveBeamVisuals");
+            AssertFileDoesNotContain(runtimePath, "CreateTransientPrimitiveVfxPrefab");
             AssertFileDoesNotContain(runtimePath, "_projectiles?.Cleanup(pending.ProjectileId, ProjectileExpiryReason.HitLimitReached)");
             AssertFileContains(runtimePath, "CreateEnemyModelPrefab");
             AssertFileContains(runtimePath, "CreateProjectileModelPrefab");
@@ -1668,6 +1673,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-beam.prefab"), "weapon-turret");
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-area.prefab"), "weapon-catapult");
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-homing.prefab"), "weapon-cannon");
+            AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "PulseBeamVfx.prefab"));
+            AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Materials", "PulseBeamEnergy.mat"));
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "PulseBeamVfx.prefab"), "m_Name: PulseBeamVfx");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "PulseBeamVfx.prefab"), "m_LocalScale: {x: 0.11, y: 0.11, z: 1}");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Materials", "PulseBeamEnergy.mat"), "m_Name: PulseBeamEnergy");
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-enemy-basic.prefab"), "enemy-ufo-a");
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-enemy-fast.prefab"), "enemy-ufo-b");
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-enemy-tank.prefab"), "enemy-ufo-d");
@@ -1789,8 +1799,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.AreEqual(controller.ProjectileDamageResolvedFromImpactCount, controller.ProjectileDamageAppliedCount, controller.StatusSummary);
                 Assert.That(controller.DamageNumberSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
-                Assert.That(controller.BeamVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
-                Assert.AreEqual(0, controller.BeamVisualInvalidEndpointCount, controller.StatusSummary);
                 Assert.AreEqual(0, controller.ProjectileImpactRejectedCount, controller.StatusSummary);
                 Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);

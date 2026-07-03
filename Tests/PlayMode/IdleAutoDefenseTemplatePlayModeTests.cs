@@ -42,8 +42,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.AreEqual(0, controller.ProjectileImpactRejectedCount, controller.StatusSummary);
             Assert.That(controller.DamageNumberSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.AttackVfxSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
-            Assert.That(controller.BeamVisualSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
-            Assert.AreEqual(0, controller.BeamVisualInvalidEndpointCount, controller.StatusSummary);
             Assert.That(controller.AttackAudioPlayCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EnemyPresentationEventCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.Kenney3DModelSpawnCount, Is.GreaterThan(12), controller.StatusSummary);

@@ -726,7 +726,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                CreatePulseBeamAttackRecipe(),
+                AttackDefinitionAsset.CreateTransient(
+                    PulseAttackId.Value,
+                    "Pulse Beam",
+                    AttackRecipeDeliveryMode.Hitscan,
+                    DamageType.Value,
+                    5.0f,
+                    72,
+                    5.0f,
+                    AttackRecipeTargetingMode.Nearest),
                 AttackDefinitionAsset.CreateTransient(
                     ShardAttackId.Value,
                     "Shard Projectile",
@@ -766,39 +774,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     homing: true,
                     pierceCount: 1)
             };
-        }
-
-        private static AttackDefinitionAsset CreatePulseBeamAttackRecipe()
-        {
-            AttackDefinitionAsset recipe = AttackDefinitionAsset.CreateTransient(
-                PulseAttackId.Value,
-                "Pulse Beam",
-                AttackRecipeDeliveryMode.Hitscan,
-                DamageType.Value,
-                5.0f,
-                72,
-                5.0f,
-                AttackRecipeTargetingMode.Nearest);
-            recipe.Delivery.ConfigureHitscan(
-                CreateTransientPrimitiveVfxPrefab("Template Transient Pulse Beam VFX", PrimitiveType.Cube, new Vector3(0.16f, 0.16f, 1f), new Color(0.15f, 0.8f, 1f)),
-                CreateTransientPrimitiveVfxPrefab("Template Transient Pulse Impact VFX", PrimitiveType.Sphere, Vector3.one * 0.34f, new Color(0.35f, 0.9f, 1f)));
-            return recipe;
-        }
-
-        private static GameObject CreateTransientPrimitiveVfxPrefab(string name, PrimitiveType primitive, Vector3 scale, Color color)
-        {
-            GameObject prefab = GameObject.CreatePrimitive(primitive);
-            prefab.name = name;
-            prefab.hideFlags = HideFlags.HideAndDontSave;
-            prefab.transform.localScale = scale;
-            Collider collider = prefab.GetComponent<Collider>();
-            if (collider != null) collider.enabled = false;
-            Renderer renderer = prefab.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
-            if (renderer != null && shader != null)
-                renderer.sharedMaterial = new Material(shader) { color = color };
-            prefab.SetActive(false);
-            return prefab;
         }
 
         public static AttackDefinitionAsset[] ResolveAttackRecipesForTemplate(IReadOnlyList<AttackDefinitionAsset> assignedRecipes, out int rejectedRecipeCount)
@@ -1513,6 +1488,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private readonly HashSet<string> _weaponLegendaryUnlocks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _baseRewardRanks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly List<DamageNumberView> _damageNumbers = new List<DamageNumberView>();
+        private readonly List<ActiveBeamVisual> _activeBeamVisuals = new List<ActiveBeamVisual>();
         private readonly Dictionary<long, Vector3> _lastProjectileAgentPositions = new Dictionary<long, Vector3>();
         private UIDocument _runtimeUiDocument;
         private PanelSettings _runtimePanelSettings;
@@ -2114,6 +2090,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             UpdateOverdriveTimers(deltaSeconds);
             if (RewardDraftActive && RewardDraftPausesCombat)
             {
+                UpdateActiveBeamVisuals(deltaSeconds);
                 UpdateDamageNumbers(deltaSeconds);
                 UpdateCameraShake(deltaSeconds);
                 return;
@@ -2123,6 +2100,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             OfferFirstRewardDraftIfReady();
             if (RewardDraftActive && RewardDraftPausesCombat)
             {
+                UpdateActiveBeamVisuals(deltaSeconds);
                 UpdateDamageNumbers(deltaSeconds);
                 UpdateCameraShake(deltaSeconds);
                 return;
@@ -2195,6 +2173,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             GrantPassiveIncomeIfReady(ticks);
             AwardExperienceForCompletedWaves();
             ApplyEncounterRewardIfTerminal();
+            UpdateActiveBeamVisuals(deltaSeconds);
             UpdateDamageNumbers(deltaSeconds);
             UpdateCameraShake(deltaSeconds);
         }
@@ -2507,7 +2486,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 }
 
                 ProjectileImpactCallbackCount++;
-                EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnImpact, impactPosition);
+                EmitAttackEvent(pending.Attack, AttackPresentationEventKind.OnImpact, impactPosition, impactTarget.Id);
                 ProjectileDamageResolvedFromImpactCount++;
                 ProjectileDamageAppliedCount++;
                 if (!TryApplyVisibleEnemyDamage(impactTarget, pending.Attack, pending.DamageThreshold, impactPosition, out bool killed))
@@ -2577,7 +2556,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, origin);
                 if (hadBefore || hasAfter)
                     EmitAttackTracer(origin, targetPosition, ResolveAttackColor(attack));
-                EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, targetPosition);
+                EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, targetPosition, target.Id);
                 if (hadBefore)
                 {
                     double damage = hasAfter
@@ -2613,7 +2592,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     Vector3 destination = CreateEnemyAimPosition(enemy.Position);
                     PlayWeaponFirePresentation(attack, destination);
                     EmitAttackTracer(origin, destination, ResolveAttackColor(attack));
-                    EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, CreateEnemyAimPosition(enemy.Position));
+                    EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, CreateEnemyAimPosition(enemy.Position), enemy.Id);
                 }
 
                 EmitDamageNumber(CreateEnemyAimPosition(enemy.Position), Math.Max(ResolveAttackDamage(attack), enemy.Health), ResolveAttackColor(attack), "-");
@@ -2633,7 +2612,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EmitAttackEvent(attack, AttackPresentationEventKind.OnCast, origin);
             EmitAttackEvent(attack, AttackPresentationEventKind.OnFire, origin);
             EmitAttackTracer(origin, destination, ResolveAttackColor(attack));
-            EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, destination);
+            EmitAttackEvent(attack, AttackPresentationEventKind.OnImpact, destination, enemy.Id);
             return TryApplyVisibleEnemyDamage(enemy, attack, damageAmount, destination, out killed);
         }
 
@@ -3374,12 +3353,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return best;
         }
 
-        private void EmitAttackEvent(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind, Vector3 eventPosition)
+        private void EmitAttackEvent(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind, Vector3 eventPosition, long targetEnemyId = 0)
         {
             bool emittedVfx = false;
             bool emittedAudio = false;
             if (eventKind == AttackPresentationEventKind.OnImpact)
-                emittedVfx = TryEmitBeamVfx(attack, eventPosition);
+                emittedVfx = TryEmitBeamVfx(attack, eventPosition, targetEnemyId);
             if (attack != null &&
                 attack.Presentation != null &&
                 attack.Presentation.TryGetEvent(eventKind, out AttackPresentationEventRecipe recipe))
@@ -3389,7 +3368,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (recipeUsesBeamPrefab)
                 {
                     if (eventKind == AttackPresentationEventKind.OnImpact && !emittedVfx)
-                        emittedVfx = TryEmitBeamVfx(attack, eventPosition);
+                        emittedVfx = TryEmitBeamVfx(attack, eventPosition, targetEnemyId);
                     else
                         emittedVfx = true;
                 }
@@ -3407,7 +3386,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EmitKenneyAttackEventBurst(attack, eventKind, eventPosition);
         }
 
-        private bool TryEmitBeamVfx(AttackDefinitionAsset attack, Vector3 impactPosition)
+        private bool TryEmitBeamVfx(AttackDefinitionAsset attack, Vector3 impactPosition, long targetEnemyId)
         {
             if (!TryGetBeamVfxPrefab(attack, out GameObject prefab)) return false;
             Vector3 origin = ResolveTowerMuzzlePosition(attack);
@@ -3425,13 +3404,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 return false;
             }
 
-            Quaternion rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
-            GameObject instance = Instantiate(prefab, origin + delta * 0.5f, rotation);
+            GameObject instance = Instantiate(prefab);
             instance.name = prefab.name + " Runtime Beam";
             if (_root != null) instance.transform.SetParent(_root.transform, true);
-            instance.transform.localScale = ResolveBeamWorldScale(prefab, distance);
+            ConfigureBeamLineRenderer(instance, prefab, attack);
+            HideBeamMeshRenderers(instance);
+            AlignBeamInstance(instance, prefab, origin, impactPosition);
             instance.SetActive(true);
-            TintRenderers(instance, ResolveAttackColor(attack));
+            PrepareBeamRenderers(instance, ResolveAttackColor(attack));
             DisableColliders(instance);
 
             ParticleSystem[] particles = instance.GetComponentsInChildren<ParticleSystem>(true);
@@ -3443,7 +3423,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             AttackVfxSpawnCount++;
             BeamVisualSpawnCount++;
-            DestroyPresentationObject(instance, 0.22f);
+            _activeBeamVisuals.Add(new ActiveBeamVisual(instance, prefab, attack, targetEnemyId, impactPosition, ResolveBeamDurationSeconds(attack)));
             return true;
         }
 
@@ -3467,6 +3447,189 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             Vector3 sourceScale = prefab == null ? Vector3.one : prefab.transform.localScale;
             float width = Mathf.Clamp(Mathf.Max(Mathf.Abs(sourceScale.x), Mathf.Abs(sourceScale.y), 0.08f), 0.08f, 0.38f);
             return new Vector3(width, width, Mathf.Max(0.05f, distance));
+        }
+
+        private static float ResolveBeamDurationSeconds(AttackDefinitionAsset attack)
+        {
+            float authoredTick = attack != null && attack.Delivery != null ? attack.Delivery.TickIntervalSeconds : 0.5f;
+            return Mathf.Clamp(authoredTick * 0.44f, 0.14f, 0.3f);
+        }
+
+        private static bool AlignBeamInstance(GameObject instance, GameObject prefab, Vector3 origin, Vector3 impactPosition)
+        {
+            if (instance == null || !IsFiniteVector(origin) || !IsFiniteVector(impactPosition)) return false;
+            Vector3 delta = impactPosition - origin;
+            float distance = delta.magnitude;
+            if (distance <= 0.05f) return false;
+            LineRenderer lineRenderer = instance.GetComponentInChildren<LineRenderer>(true);
+            if (lineRenderer != null)
+            {
+                instance.transform.position = origin;
+                instance.transform.rotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one;
+                lineRenderer.useWorldSpace = true;
+                lineRenderer.positionCount = 2;
+                lineRenderer.SetPosition(0, origin);
+                lineRenderer.SetPosition(1, impactPosition);
+                return true;
+            }
+
+            instance.transform.position = origin + delta * 0.5f;
+            instance.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            instance.transform.localScale = ResolveBeamWorldScale(prefab, distance);
+            return true;
+        }
+
+        private static void ConfigureBeamLineRenderer(GameObject instance, GameObject prefab, AttackDefinitionAsset attack)
+        {
+            if (instance == null) return;
+            LineRenderer lineRenderer = instance.GetComponentInChildren<LineRenderer>(true);
+            if (lineRenderer == null)
+                lineRenderer = instance.AddComponent<LineRenderer>();
+
+            float width = ResolveBeamLineWidth(prefab);
+            lineRenderer.enabled = true;
+            lineRenderer.useWorldSpace = true;
+            lineRenderer.positionCount = 2;
+            lineRenderer.widthMultiplier = width;
+            lineRenderer.widthCurve = new AnimationCurve(
+                new Keyframe(0f, 0.35f),
+                new Keyframe(0.08f, 1f),
+                new Keyframe(0.82f, 0.72f),
+                new Keyframe(1f, 0.22f));
+            lineRenderer.numCapVertices = 8;
+            lineRenderer.numCornerVertices = 2;
+            lineRenderer.alignment = LineAlignment.View;
+            lineRenderer.textureMode = LineTextureMode.Stretch;
+            lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lineRenderer.receiveShadows = false;
+            lineRenderer.generateLightingData = false;
+            lineRenderer.sortingOrder = 18;
+            lineRenderer.sharedMaterial = CreateBeamLineMaterial(prefab);
+            ApplyBeamLineColors(lineRenderer, ResolveAttackColor(attack));
+        }
+
+        private static float ResolveBeamLineWidth(GameObject prefab)
+        {
+            Vector3 sourceScale = prefab == null ? Vector3.one : prefab.transform.localScale;
+            float width = Mathf.Max(Mathf.Abs(sourceScale.x), Mathf.Abs(sourceScale.y), 0.08f);
+            return Mathf.Clamp(width * 1.8f, 0.16f, 0.42f);
+        }
+
+        private static Material ResolveBeamSourceMaterial(GameObject prefab)
+        {
+            if (prefab != null)
+            {
+                Renderer[] renderers = prefab.GetComponentsInChildren<Renderer>(true);
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    if (renderers[i] != null && renderers[i].sharedMaterial != null)
+                        return renderers[i].sharedMaterial;
+                }
+            }
+
+            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Standard");
+            return shader != null ? new Material(shader) : null;
+        }
+
+        private static Material CreateBeamLineMaterial(GameObject prefab)
+        {
+            Material source = ResolveBeamSourceMaterial(prefab);
+            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Standard");
+            Material material = shader != null ? new Material(shader) : (source != null ? new Material(source) : null);
+            if (material == null) return null;
+            material.name = (source != null ? source.name : "PulseBeamEnergy") + " Runtime Line";
+            Color sourceColor = Color.white;
+            if (source != null)
+            {
+                if (source.HasProperty("_EmissionColor"))
+                    sourceColor = source.GetColor("_EmissionColor");
+                else if (source.HasProperty("_Color"))
+                    sourceColor = source.color;
+            }
+
+            sourceColor.a = 1f;
+            if (material.HasProperty("_Color"))
+                material.color = sourceColor;
+            if (material.HasProperty("_EmissionColor"))
+                material.SetColor("_EmissionColor", sourceColor * 1.35f);
+            return material;
+        }
+
+        private static void HideBeamMeshRenderers(GameObject instance)
+        {
+            if (instance == null) return;
+            MeshRenderer[] meshRenderers = instance.GetComponentsInChildren<MeshRenderer>(true);
+            for (int i = 0; i < meshRenderers.Length; i++)
+                meshRenderers[i].enabled = false;
+        }
+
+        private static void ApplyBeamLineColors(LineRenderer lineRenderer, Color color)
+        {
+            if (lineRenderer == null) return;
+            Color start = Color.Lerp(Color.white, color, 0.18f);
+            start.a = 1f;
+            Color end = Color.Lerp(Color.white, color, 0.52f);
+            end.a = 1f;
+            lineRenderer.startColor = start;
+            lineRenderer.endColor = end;
+        }
+
+        private static void PrepareBeamRenderers(GameObject instance, Color color)
+        {
+            if (instance == null) return;
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                Material source = renderer.sharedMaterial;
+                Material material = source != null ? new Material(source) : (shader != null ? new Material(shader) : null);
+                if (material != null)
+                {
+                    if (material.HasProperty("_Color"))
+                        material.color = Color.Lerp(Color.white, color, 0.5f);
+                    if (material.HasProperty("_EmissionColor"))
+                        material.SetColor("_EmissionColor", color * 1.25f);
+                    renderer.sharedMaterial = material;
+                }
+
+                if (renderer is LineRenderer lineRenderer)
+                    ApplyBeamLineColors(lineRenderer, color);
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+            }
+        }
+
+        private void UpdateActiveBeamVisuals(float deltaSeconds)
+        {
+            if (_activeBeamVisuals.Count == 0) return;
+            float safeDelta = Mathf.Max(0.016f, deltaSeconds);
+            for (int i = _activeBeamVisuals.Count - 1; i >= 0; i--)
+            {
+                ActiveBeamVisual visual = _activeBeamVisuals[i];
+                visual.ElapsedSeconds += safeDelta;
+                if (visual.Instance == null || visual.ElapsedSeconds >= visual.DurationSeconds)
+                {
+                    DestroyTemplateObject(visual.Instance);
+                    _activeBeamVisuals.RemoveAt(i);
+                    continue;
+                }
+
+                Vector3 impactPosition = visual.LastImpactPosition;
+                if (visual.TargetEnemyId > 0 && TryFindActiveEnemy(visual.TargetEnemyId, out AutoDefenseEnemySnapshot enemy))
+                    impactPosition = CreateEnemyAimPosition(enemy.Position);
+                if (!AlignBeamInstance(visual.Instance, visual.Prefab, ResolveTowerMuzzlePosition(visual.Attack), impactPosition))
+                {
+                    BeamVisualInvalidEndpointCount++;
+                    DestroyTemplateObject(visual.Instance);
+                    _activeBeamVisuals.RemoveAt(i);
+                    continue;
+                }
+
+                visual.LastImpactPosition = impactPosition;
+                _activeBeamVisuals[i] = visual;
+            }
         }
 
         private static bool IsFiniteVector(Vector3 value)
@@ -5322,6 +5485,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _cameraShakeSecondsRemaining = 0f;
             _cameraShakeDuration = 0f;
             _cameraShakeMagnitude = 0f;
+            ClearActiveBeamVisuals();
             ClearDamageNumbers();
         }
 
@@ -5390,6 +5554,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _weaponLegendaryUnlocks.Clear();
             _baseRewardRanks.Clear();
             _lastProjectileAgentPositions.Clear();
+            ClearActiveBeamVisuals();
             _rewardDraftChoices = Array.Empty<IdleAutoDefenseRewardDraftChoice>();
             _starterRewardDraftOffered = false;
             _overdriveSecondsRemaining = 0f;
@@ -5408,6 +5573,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < _damageNumbers.Count; i++)
                 _damageNumbers[i].Label?.RemoveFromHierarchy();
             _damageNumbers.Clear();
+        }
+
+        private void ClearActiveBeamVisuals()
+        {
+            for (int i = _activeBeamVisuals.Count - 1; i >= 0; i--)
+                DestroyTemplateObject(_activeBeamVisuals[i].Instance);
+            _activeBeamVisuals.Clear();
         }
 
         private sealed class TemplateJitteredPerimeterPoseResolver : IAutoDefensePoseResolver, ISpawnPoseResolver
@@ -5532,6 +5704,28 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             public Label Label;
             public Vector3 WorldPosition;
+            public float ElapsedSeconds;
+        }
+
+        private struct ActiveBeamVisual
+        {
+            public ActiveBeamVisual(GameObject instance, GameObject prefab, AttackDefinitionAsset attack, long targetEnemyId, Vector3 lastImpactPosition, float durationSeconds)
+            {
+                Instance = instance;
+                Prefab = prefab;
+                Attack = attack;
+                TargetEnemyId = targetEnemyId;
+                LastImpactPosition = lastImpactPosition;
+                DurationSeconds = Mathf.Max(0.05f, durationSeconds);
+                ElapsedSeconds = 0f;
+            }
+
+            public GameObject Instance;
+            public GameObject Prefab;
+            public AttackDefinitionAsset Attack;
+            public long TargetEnemyId;
+            public Vector3 LastImpactPosition;
+            public float DurationSeconds;
             public float ElapsedSeconds;
         }
 
