@@ -397,6 +397,58 @@ MonoBehaviour:
       _showDebugAimLines: 0
       _showDebugRanges: 0
       _showDebugSpawnRing: 0
+    _objectivePresentation:
+      _contentId: objective.template-core
+      _displayName: Kenney 3D Core Base
+      _models:
+      - _modelName: tower-round-base
+        _localPosition: {x: 0, y: 0, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 1.35, y: 1.35, z: 1.35}
+        _tint: {r: 0.78, g: 0.9, b: 1, a: 1}
+      - _modelName: tower-round-middle-a
+        _localPosition: {x: 0, y: 0.46, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 1.12, y: 1.12, z: 1.12}
+        _tint: {r: 0.78, g: 0.9, b: 1, a: 1}
+      - _modelName: tower-round-crystals
+        _localPosition: {x: 0, y: 0.92, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 0.92, y: 0.92, z: 0.92}
+        _tint: {r: 0.35, g: 0.9, b: 1, a: 1}
+    _moduleSlotPresentationBindings:
+    - _slotId: module-slot.shard-launcher
+      _weaponId: weapon.template.shard-launcher
+      _displayName: Shard Launcher Slot
+      _modelName: tile-spawn
+      _localPosition: {x: 0, y: -0.07, z: 0.9}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 1, g: 0.52, b: 0.16, a: 0.72}
+    - _slotId: module-slot.pulse-beam
+      _weaponId: weapon.template.pulse-cannon
+      _displayName: Pulse Beam Locked Pad
+      _modelName: tile-spawn
+      _localPosition: {x: -0.9, y: -0.07, z: 0.35}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.18, g: 0.84, b: 1, a: 0.58}
+    - _slotId: module-slot.arc-burst
+      _weaponId: weapon.template.arc-burst-tower
+      _displayName: Arc Burst Locked Pad
+      _modelName: tile-spawn
+      _localPosition: {x: 0, y: -0.07, z: -0.9}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 1, g: 0.58, b: 0.16, a: 0.58}
+    - _slotId: module-slot.homing-pulse
+      _weaponId: weapon.template.homing-spire
+      _displayName: Homing Pulse Locked Pad
+      _modelName: tile-spawn
+      _localPosition: {x: 0.9, y: -0.07, z: 0.35}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.72, g: 0.42, b: 1, a: 0.58}
     _weaponPresentationBindings:
     - _weaponId: weapon.template.shard-launcher
       _attackId: attack.template.shard-launcher

@@ -550,6 +550,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             DrawSummaryRows(
                 Row("Reward Cards", rewards.ChoiceCount.ToString(CultureInfo.InvariantCulture)),
                 Row("Reward Catalog", runtime.RewardDraftCatalog.WeaponUnlocks.Count.ToString(CultureInfo.InvariantCulture) + " unlocks, " + runtime.RewardDraftCatalog.BaseRewards.Count.ToString(CultureInfo.InvariantCulture) + " base rewards"),
+                Row("Objective Presentation", runtime.ObjectivePresentation.DisplayName + " / " + runtime.ObjectivePresentation.Models.Count.ToString(CultureInfo.InvariantCulture) + " model(s)"),
+                Row("Module Slots", runtime.ModuleSlotPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored slot(s)"),
                 Row("Presentation Bindings", runtime.WeaponPresentationBindings.Count.ToString(CultureInfo.InvariantCulture)),
                 Row("Debug Defaults", debug.AnyEnabled ? "Debug visuals enabled" : "Debug visuals off"));
         }
@@ -999,6 +1001,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 .Append(debug.ShowDebugAimLines ? "1" : "0").Append(':')
                 .Append(debug.ShowDebugRanges ? "1" : "0").Append(':')
                 .Append(debug.ShowDebugSpawnRing ? "1" : "0");
+            IdleAutoDefenseObjectivePresentationBinding objective = settings.ObjectivePresentation;
+            builder.Append("|objective:")
+                .Append(objective.ContentId).Append(':')
+                .Append(objective.DisplayName);
+            IReadOnlyList<IdleAutoDefenseKenneyModelBinding> objectiveModels = objective.Models;
+            for (int i = 0; i < objectiveModels.Count; i++)
+            {
+                IdleAutoDefenseKenneyModelBinding model = objectiveModels[i];
+                if (model == null) continue;
+                builder.Append(':')
+                    .Append(model.ModelName).Append('@')
+                    .Append(model.LocalPosition.ToString("F3")).Append('@')
+                    .Append(model.LocalScale.ToString("F3"));
+            }
+
+            IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> moduleSlots = settings.ModuleSlotPresentationBindings;
+            for (int i = 0; i < moduleSlots.Count; i++)
+            {
+                IdleAutoDefenseModuleSlotPresentationBinding slot = moduleSlots[i];
+                if (slot == null) continue;
+                builder.Append("|slot:")
+                    .Append(slot.SlotId).Append(':')
+                    .Append(slot.WeaponId).Append(':')
+                    .Append(slot.ModelName).Append(':')
+                    .Append(slot.LocalPosition.ToString("F3"));
+            }
+
             IReadOnlyList<IdleAutoDefenseWeaponPresentationBinding> bindings = settings.WeaponPresentationBindings;
             for (int i = 0; i < bindings.Count; i++)
             {
@@ -1414,7 +1443,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             builder.AppendLine().AppendLine("Reward Tracks:");
             AppendRewardTrackReport(builder, state.RuntimeSettings == null ? null : state.RuntimeSettings.RewardDraftCatalog, state.AvailableWeapons);
+            builder.AppendLine().AppendLine("Authored Runtime Presentation:");
+            AppendRuntimePresentationReport(builder, state.RuntimeSettings);
             return builder.ToString();
+        }
+
+        private static void AppendRuntimePresentationReport(StringBuilder builder, IdleAutoDefenseContentSetRuntimeSettings runtime)
+        {
+            if (runtime == null)
+            {
+                builder.AppendLine("- Missing runtime presentation settings");
+                return;
+            }
+
+            IdleAutoDefenseObjectivePresentationBinding objective = runtime.ObjectivePresentation;
+            builder
+                .Append("- Objective ")
+                .Append(objective.ContentId)
+                .Append(": ")
+                .Append(objective.DisplayName)
+                .Append(" / models=")
+                .Append(objective.Models.Count.ToString(CultureInfo.InvariantCulture))
+                .AppendLine();
+            IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> slots = runtime.ModuleSlotPresentationBindings;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                IdleAutoDefenseModuleSlotPresentationBinding slot = slots[i];
+                if (slot == null) continue;
+                builder
+                    .Append("- Slot ")
+                    .Append(slot.SlotId)
+                    .Append(": weapon=")
+                    .Append(slot.WeaponId)
+                    .Append(", model=")
+                    .Append(slot.ModelName)
+                    .Append(", position=")
+                    .Append(slot.LocalPosition.ToString("F2"))
+                    .AppendLine();
+            }
         }
 
         private static string GetAttackEventPrefabName(AttackDefinitionAsset attack, AttackPresentationEventKind eventKind)

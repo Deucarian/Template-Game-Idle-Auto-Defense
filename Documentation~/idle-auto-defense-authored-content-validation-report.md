@@ -20,6 +20,12 @@ Weapon / Attack Visual Matrix:
 | Arc Burst | `attack.template.arc-burst` | Area | None | None | `template-placement-vfx`, `template-impact-vfx` | `template-impact-vfx` | Pass |
 | Homing Pulse | `attack.template.homing-pulse` | Projectile | `template-seeker-projectile` | None | `template-placement-vfx`, `template-impact-vfx` | `template-impact-vfx` | Pass |
 
+Authored runtime presentation:
+
+- Objective/core presentation: `objective.template-core`, `Kenney 3D Core Base`, three authored Kenney model bindings.
+- Module slot pads: four authored slot bindings, one per weapon/module, using `tile-spawn` model references and authored positions/tints.
+- Runtime counters now distinguish authored objective/module-slot bindings from fallback bindings; the playable sample is expected to run with zero fallback counts.
+
 Reward authoring matrix:
 
 - Each of the four authored weapons has 3 normal rewards, 3 Epic rewards, and 1 Legendary reward.

@@ -132,6 +132,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             debug.ShowDebugAimLines = context.DrawToggle("Show Debug Aim Lines", debug.ShowDebugAimLines);
             debug.ShowDebugRanges = context.DrawToggle("Show Debug Ranges", debug.ShowDebugRanges);
             debug.ShowDebugSpawnRing = context.DrawToggle("Show Debug Spawn Ring", debug.ShowDebugSpawnRing);
+            EditorGUILayout.LabelField("Authored Runtime Presentation", context.SectionTitleStyle);
+            EditorGUILayout.LabelField("Objective", runtime.ObjectivePresentation.DisplayName + " / " + runtime.ObjectivePresentation.Models.Count.ToString(CultureInfo.InvariantCulture) + " model(s)");
+            EditorGUILayout.LabelField("Module Slots", runtime.ModuleSlotPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored slot(s)");
+            EditorGUILayout.LabelField("Weapon Bindings", runtime.WeaponPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored binding(s)");
         }
 
         private static void DrawAssetList<TAsset>(GameContentAuthoringContext context, string title, List<TAsset> assets, string addLabel) where TAsset : UnityEngine.Object

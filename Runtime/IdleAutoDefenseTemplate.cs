@@ -1567,6 +1567,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int FallbackWeaponPresentationSpawnCount { get; private set; }
         public int AuthoredWeaponPresentationBindingCount { get; private set; }
         public int FallbackWeaponPresentationBindingCount { get; private set; }
+        public int AuthoredObjectivePresentationBindingCount { get; private set; }
+        public int FallbackObjectivePresentationBindingCount { get; private set; }
+        public int AuthoredModuleSlotPresentationBindingCount { get; private set; }
+        public int FallbackModuleSlotPresentationBindingCount { get; private set; }
         public bool UsingContentSetRuntimeSettings { get; private set; }
         public int DebugAimTracerSpawnCount { get; private set; }
         public int EnemyDamageSurvivedCount { get; private set; }
@@ -1706,6 +1710,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " FallbackWeapons=" + FallbackWeaponPresentationSpawnCount +
             " AuthoredBindings=" + AuthoredWeaponPresentationBindingCount +
             " FallbackBindings=" + FallbackWeaponPresentationBindingCount +
+            " AuthoredObjective=" + AuthoredObjectivePresentationBindingCount +
+            " FallbackObjective=" + FallbackObjectivePresentationBindingCount +
+            " AuthoredSlots=" + AuthoredModuleSlotPresentationBindingCount +
+            " FallbackSlots=" + FallbackModuleSlotPresentationBindingCount +
             " DebugAimLines=" + DebugAimTracerSpawnCount +
             " EnemyFacing=" + EnemyFacingUpdateCount +
             " EnemyHitFlash=" + EnemyHitFlashCount +
@@ -4904,32 +4912,45 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return 0;
         }
 
-        private GameObject CreatePrefab(string name, PrimitiveType primitiveType, Color color, string kenneyArtPath = null, Vector3? spriteScale = null)
-        {
-            GameObject prefab = GameObject.CreatePrimitive(primitiveType);
-            prefab.name = name;
-            ApplyColor(prefab, color);
-            if (AttachKenneySprite(prefab, kenneyArtPath, false, new Vector3(0f, 0.55f, -0.06f), spriteScale ?? Vector3.one, tint: color))
-                HideMeshRenderers(prefab);
-            prefab.SetActive(false);
-            return prefab;
-        }
-
         private void CreateCorePresentation(Vector3 position)
         {
-            GameObject core = new GameObject("Kenney 3D Core Base");
+            IdleAutoDefenseObjectivePresentationBinding presentation = ResolveObjectivePresentationBinding();
+            GameObject core = new GameObject(presentation.DisplayName);
             core.transform.SetParent(_root.transform, false);
             core.transform.position = position;
-            StampAuthoredVisibleInstance(core, "ObjectivePresentation", "objective.template-core", core.name, string.Empty, string.Empty, "CoreBase");
-            InstantiateKenneyModel("tower-round-base", core.transform, Vector3.zero, Quaternion.identity, Vector3.one * 1.35f, new Color(0.78f, 0.9f, 1f));
-            InstantiateKenneyModel("tower-round-middle-a", core.transform, new Vector3(0f, 0.46f, 0f), Quaternion.identity, Vector3.one * 1.12f, new Color(0.78f, 0.9f, 1f));
-            InstantiateKenneyModel("tower-round-crystals", core.transform, new Vector3(0f, 0.92f, 0f), Quaternion.identity, Vector3.one * 0.92f, new Color(0.35f, 0.9f, 1f));
+            StampAuthoredVisibleInstance(core, "ObjectivePresentation", presentation.ContentId, core.name, string.Empty, string.Empty, "CoreBase");
+            IReadOnlyList<IdleAutoDefenseKenneyModelBinding> models = presentation.Models;
+            for (int i = 0; i < models.Count; i++)
+            {
+                IdleAutoDefenseKenneyModelBinding model = models[i];
+                if (model == null || string.IsNullOrWhiteSpace(model.ModelName)) continue;
+                InstantiateKenneyModel(
+                    model.ModelName,
+                    core.transform,
+                    model.LocalPosition,
+                    Quaternion.Euler(model.LocalEulerAngles),
+                    model.LocalScale,
+                    model.Tint);
+            }
             DisableColliders(core);
 
             CreateWeaponPresentation(
                 BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value,
                 BasicIdleAutoDefenseGame.ShardAttackId.Value,
                 true);
+        }
+
+        private IdleAutoDefenseObjectivePresentationBinding ResolveObjectivePresentationBinding()
+        {
+            IdleAutoDefenseContentSetRuntimeSettings settings = ContentSetRuntimeSettings;
+            if (settings != null && settings.ObjectivePresentation != null)
+            {
+                AuthoredObjectivePresentationBindingCount++;
+                return settings.ObjectivePresentation;
+            }
+
+            FallbackObjectivePresentationBindingCount++;
+            return IdleAutoDefenseObjectivePresentationBinding.CreateDefault();
         }
 
         private IdleAutoDefenseWeaponVisualBinding CreateWeaponPresentation(
@@ -5206,33 +5227,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return prefab;
         }
 
-        private GameObject CreatePrimitive(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color, string kenneyArtPath = null, bool groundSprite = false, Vector3? spriteLocalPosition = null, Vector3? spriteScale = null, int sortingOrder = 20, Color? spriteTint = null)
-        {
-            GameObject instance = GameObject.CreatePrimitive(primitiveType);
-            instance.name = name;
-            instance.transform.SetParent(_root.transform, false);
-            instance.transform.position = position;
-            instance.transform.localScale = scale;
-            ApplyColor(instance, color);
-            if (AttachKenneySprite(instance, kenneyArtPath, groundSprite, spriteLocalPosition ?? Vector3.zero, spriteScale ?? Vector3.one, sortingOrder, spriteTint ?? color))
-                HideMeshRenderers(instance);
-            Collider collider = instance.GetComponent<Collider>();
-            if (collider != null) collider.enabled = false;
-            return instance;
-        }
-
-        private void CreateModuleAttachment(string name, PrimitiveType primitiveType, Vector3 position, Vector3 scale, Color color, string kenneyArtPath = null)
-        {
-            if (_root == null) return;
-            CreatePrimitive(name, primitiveType, position, scale, color, kenneyArtPath, false, new Vector3(0f, 0.42f, -0.04f), new Vector3(0.86f, 0.86f, 1f), 26, color);
-        }
-
         private void CreatePlayAreaMarkers()
         {
-            CreateModuleSlot("Shard Launcher Slot", new Vector3(0f, 0.02f, 0.9f), new Color(1f, 0.52f, 0.16f, 0.72f));
-            CreateModuleSlot("Pulse Beam Locked Pad", new Vector3(-0.9f, 0.02f, 0.35f), new Color(0.18f, 0.84f, 1f, 0.58f));
-            CreateModuleSlot("Arc Burst Locked Pad", new Vector3(0f, 0.02f, -0.9f), new Color(1f, 0.58f, 0.16f, 0.58f));
-            CreateModuleSlot("Homing Pulse Locked Pad", new Vector3(0.9f, 0.02f, 0.35f), new Color(0.72f, 0.42f, 1f, 0.58f));
+            IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> slots = ResolveModuleSlotPresentationBindings();
+            for (int i = 0; i < slots.Count; i++)
+                CreateModuleSlot(slots[i]);
             if (!_showDebugSpawnRing) return;
             Color warningStrip = new Color(0.95f, 0.68f, 0.18f, 0.95f);
             CreateKenneyMarkerLine("Outer Spawn Zone North", new Vector3(0f, 0f, TemplateVisibleArenaRadius), Quaternion.identity, 6, warningStrip);
@@ -5241,11 +5240,35 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateKenneyMarkerLine("Outer Spawn Zone West", new Vector3(-TemplateVisibleArenaRadius, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), 6, warningStrip);
         }
 
-        private void CreateModuleSlot(string name, Vector3 position, Color tint)
+        private IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> ResolveModuleSlotPresentationBindings()
         {
-            GameObject slot = InstantiateKenneyModel("tile-spawn", _root.transform, position + new Vector3(0f, -0.09f, 0f), Quaternion.identity, Vector3.one * 0.52f, tint);
+            IdleAutoDefenseContentSetRuntimeSettings settings = ContentSetRuntimeSettings;
+            if (settings != null && settings.ModuleSlotPresentationBindings.Count > 0)
+            {
+                AuthoredModuleSlotPresentationBindingCount += settings.ModuleSlotPresentationBindings.Count;
+                return settings.ModuleSlotPresentationBindings;
+            }
+
+            IdleAutoDefenseModuleSlotPresentationBinding[] defaults = IdleAutoDefenseModuleSlotPresentationBinding.CreateDefaultBindings();
+            FallbackModuleSlotPresentationBindingCount += defaults.Length;
+            return defaults;
+        }
+
+        private void CreateModuleSlot(IdleAutoDefenseModuleSlotPresentationBinding binding)
+        {
+            if (binding == null || string.IsNullOrWhiteSpace(binding.ModelName)) return;
+            GameObject slot = InstantiateKenneyModel(
+                binding.ModelName,
+                _root.transform,
+                binding.LocalPosition,
+                Quaternion.Euler(binding.LocalEulerAngles),
+                binding.LocalScale,
+                binding.Tint);
             if (slot != null)
-                slot.name = name;
+            {
+                slot.name = binding.DisplayName;
+                StampAuthoredVisibleInstance(slot, "ModuleSlotPresentation", binding.SlotId, binding.ModelName, binding.WeaponId, string.Empty, "ModuleSlot");
+            }
         }
 
         private void CreateArenaBackdrop()
@@ -5506,6 +5529,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             FallbackWeaponPresentationSpawnCount = 0;
             AuthoredWeaponPresentationBindingCount = 0;
             FallbackWeaponPresentationBindingCount = 0;
+            AuthoredObjectivePresentationBindingCount = 0;
+            FallbackObjectivePresentationBindingCount = 0;
+            AuthoredModuleSlotPresentationBindingCount = 0;
+            FallbackModuleSlotPresentationBindingCount = 0;
             UsingContentSetRuntimeSettings = false;
             DebugAimTracerSpawnCount = 0;
             EnemyDamageSurvivedCount = 0;

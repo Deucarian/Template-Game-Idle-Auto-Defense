@@ -286,8 +286,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreSame(contentSet.StartingWeapon, resolution.Weapons[0]);
             Assert.NotNull(contentSet.RuntimeSettings);
             Assert.AreEqual(3, contentSet.RuntimeSettings.RewardDraftCatalog.WeaponUnlocks.Count);
+            Assert.NotNull(contentSet.RuntimeSettings.ObjectivePresentation);
+            Assert.AreEqual(3, contentSet.RuntimeSettings.ObjectivePresentation.Models.Count);
+            Assert.AreEqual(4, contentSet.RuntimeSettings.ModuleSlotPresentationBindings.Count);
             Assert.AreEqual(4, contentSet.RuntimeSettings.WeaponPresentationBindings.Count);
             Assert.IsFalse(contentSet.RuntimeSettings.PresentationDebug.AnyEnabled);
+        }
+
+        [Test]
+        public void GameContentSetValidationBlocksMissingAuthoredRuntimePresentation()
+        {
+            GameContentSetAsset contentSet = CreateValidContentSet();
+            FieldInfo objectiveField = typeof(IdleAutoDefenseContentSetRuntimeSettings).GetField("_objectivePresentation", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo slotsField = typeof(IdleAutoDefenseContentSetRuntimeSettings).GetField("_moduleSlotPresentationBindings", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(objectiveField);
+            Assert.NotNull(slotsField);
+            objectiveField.SetValue(contentSet.RuntimeSettings, null);
+            slotsField.SetValue(contentSet.RuntimeSettings, Array.Empty<IdleAutoDefenseModuleSlotPresentationBinding>());
+
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+
+            Assert.IsFalse(report.IsValid);
+            AssertHasIssue(report, "RuntimeSettings.ObjectivePresentation");
+            AssertHasIssue(report, "RuntimeSettings.ModuleSlotPresentationBindings");
         }
 
         [Test]
@@ -645,6 +666,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.IsTrue(controller.UsingContentSetRuntimeSettings);
                 Assert.That(controller.AuthoredWeaponPresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.AreEqual(0, controller.FallbackWeaponPresentationBindingCount, controller.StatusSummary);
+                Assert.That(controller.AuthoredObjectivePresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.AreEqual(0, controller.FallbackObjectivePresentationBindingCount, controller.StatusSummary);
+                Assert.That(controller.AuthoredModuleSlotPresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.AreEqual(0, controller.FallbackModuleSlotPresentationBindingCount, controller.StatusSummary);
             }
             finally
             {
@@ -672,6 +697,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.IsTrue(controller.UsingContentSetRuntimeSettings);
                 Assert.That(controller.AuthoredWeaponPresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
                 Assert.AreEqual(0, controller.FallbackWeaponPresentationBindingCount, controller.StatusSummary);
+                Assert.That(controller.AuthoredObjectivePresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.AreEqual(0, controller.FallbackObjectivePresentationBindingCount, controller.StatusSummary);
+                Assert.That(controller.AuthoredModuleSlotPresentationBindingCount, Is.GreaterThan(0), controller.StatusSummary);
+                Assert.AreEqual(0, controller.FallbackModuleSlotPresentationBindingCount, controller.StatusSummary);
             }
             finally
             {
@@ -1561,6 +1590,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(contentSetAsset, "Carrier Hive");
             AssertFileContains(contentSetAsset, "_presentationDebug:");
             AssertFileContains(contentSetAsset, "_showDebugAimLines: 0");
+            AssertFileContains(contentSetAsset, "_objectivePresentation:");
+            AssertFileContains(contentSetAsset, "_contentId: objective.template-core");
+            AssertFileContains(contentSetAsset, "_moduleSlotPresentationBindings:");
+            AssertFileContains(contentSetAsset, "module-slot.shard-launcher");
+            AssertFileContains(contentSetAsset, "module-slot.pulse-beam");
             AssertFileContains(contentSetAsset, "_weaponPresentationBindings:");
             AssertFileContains(contentSetAsset, "weapon-ballista");
         }
@@ -1678,6 +1712,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "AuthoredWeaponPresentationSpawnCount");
             AssertFileContains(runtimePath, "AuthoredVisibleInstanceStampCount");
             AssertFileContains(runtimePath, "FallbackVisibleGameplaySpawnCount");
+            AssertFileContains(runtimePath, "AuthoredObjectivePresentationBindingCount");
+            AssertFileContains(runtimePath, "FallbackObjectivePresentationBindingCount");
+            AssertFileContains(runtimePath, "AuthoredModuleSlotPresentationBindingCount");
+            AssertFileContains(runtimePath, "FallbackModuleSlotPresentationBindingCount");
             AssertFileContains(runtimePath, "FindWeaponDefinitionForPresentation");
             AssertFileContains(runtimePath, "ProjectileImpactCallbackCount");
             AssertFileContains(runtimePath, "ProjectileDamageResolvedFromImpactCount");
@@ -1694,9 +1732,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "CreateEnemyModelPrefab");
             AssertFileContains(runtimePath, "CreateProjectileModelPrefab");
             AssertFileContains(runtimePath, "AttachKenneySprite");
-            AssertFileContains(runtimePath, "Pulse Beam Locked Pad");
-            AssertFileContains(runtimePath, "Arc Burst Locked Pad");
-            AssertFileContains(runtimePath, "Homing Pulse Locked Pad");
+            string runtimeSettingsPath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseContentSetRuntimeSettings.cs");
+            AssertFileContains(runtimeSettingsPath, "Pulse Beam Locked Pad");
+            AssertFileContains(runtimeSettingsPath, "Arc Burst Locked Pad");
+            AssertFileContains(runtimeSettingsPath, "Homing Pulse Locked Pad");
             AssertFileContains(runtimePath, "TintSpriteRenderers");
             AssertFileContains(runtimePath, "HideMeshRenderers");
             AssertFileContains(runtimePath, "AddProjectileTrail");

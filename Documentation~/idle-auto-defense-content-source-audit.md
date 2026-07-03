@@ -8,6 +8,8 @@ Canonical flow:
 
 Runtime owns gameplay execution. It does not own the canonical weapon-to-VFX mapping, reward definitions, wave definitions, or final balance tables for the playable sample.
 
+The authored content set runtime settings also own the visible core/base model stack and module slot pad presentation. The controller instantiates those authored settings and records authored/fallback binding counters so the playable scene can prove it is not borrowing hardcoded visible core or module-pad art.
+
 | Weapon | Attack Mode | Expected VFX | Actual VFX Before | Actual VFX After | Source | Fixed? |
 | ------ | ----------- | ------------ | ----------------- | ---------------- | ------ | ------ |
 | Shard Launcher (`weapon.template.shard-launcher`) | Projectile (`attack.template.shard-launcher`) | Authored shard projectile, authored non-beam cast/fire burst, authored impact burst | `PulseBeamVfx` was referenced by `OnCast` and `OnFire` in `attack.template.fire-orb_Presentation.asset` | `template-placement-vfx` on cast, `template-impact-vfx` on fire/impact, `template-projectile` delivery prefab | Authored attack presentation and delivery under `TemplateSource~/BasicIdleAutoDefenseGame/Content/Attacks/attack.template.fire-orb` | Yes |
@@ -30,3 +32,4 @@ Validation guardrails added:
 - Any non-beam attack presentation event using `PulseBeamVfx` is a content validation error.
 - Attack `OnFire` and `OnImpact` events must have authored VFX so the playable sample does not fall back to runtime-generated combat art.
 - Runtime-visible spawned weapons, projectiles, enemies, beam VFX, and attack/enemy VFX are stamped with `AuthoredContentInstance` when they come from authored content.
+- Objective/core presentation and module slot pads must be serialized in the authored content set runtime settings; missing entries are validation errors.

@@ -402,6 +402,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             ValidateRewardDraftSettings(settings.RewardDraftSettings, issues);
             ValidateRewardDraftCatalog(settings.RewardDraftCatalog, weaponIds, contentSet.StartingWeapon == null ? string.Empty : contentSet.StartingWeapon.Id, issues);
             ValidatePresentationDebugSettings(settings.PresentationDebug, issues);
+            if (!settings.HasAuthoredObjectivePresentation)
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ObjectivePresentation", "The visible core/base presentation must be authored on the content set."));
+            else
+                ValidateObjectivePresentation(settings.ObjectivePresentation, issues);
+            if (!settings.HasAuthoredModuleSlotPresentationBindings)
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ModuleSlotPresentationBindings", "Add authored module-slot presentation bindings for every visible weapon pad."));
+            else
+                ValidateModuleSlotPresentationBindings(settings.ModuleSlotPresentationBindings, weaponIds, issues);
             ValidateWeaponPresentationBindings(settings.WeaponPresentationBindings, weaponIds, issues);
         }
 
@@ -528,6 +536,100 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             if (debug.AnyEnabled)
                 issues.Add(GameContentSetValidationIssue.Warning("RuntimeSettings.PresentationDebug", "Debug aim/range/spawn visuals should stay disabled for the playable sample."));
+        }
+
+        private static void ValidateObjectivePresentation(
+            IdleAutoDefenseObjectivePresentationBinding objective,
+            List<GameContentSetValidationIssue> issues)
+        {
+            if (objective == null)
+            {
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ObjectivePresentation", "The visible core/base presentation must be authored on the content set."));
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(objective.ContentId))
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ObjectivePresentation.ContentId", "Objective presentation needs a content ID."));
+            if (string.IsNullOrWhiteSpace(objective.DisplayName))
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ObjectivePresentation.DisplayName", "Objective presentation needs a display name."));
+            if (objective.Models == null || objective.Models.Count == 0)
+            {
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ObjectivePresentation.Models", "Objective presentation needs authored model bindings."));
+                return;
+            }
+
+            for (int i = 0; i < objective.Models.Count; i++)
+            {
+                IdleAutoDefenseKenneyModelBinding model = objective.Models[i];
+                string path = "RuntimeSettings.ObjectivePresentation.Models[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                if (model == null)
+                {
+                    issues.Add(GameContentSetValidationIssue.Error(path, "Objective model binding is empty."));
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(model.ModelName))
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".ModelName", "Objective model binding needs a Kenney model name."));
+                if (model.LocalScale.sqrMagnitude <= 0.0001f)
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".LocalScale", "Objective model scale must be visible."));
+            }
+        }
+
+        private static void ValidateModuleSlotPresentationBindings(
+            IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> bindings,
+            HashSet<string> weaponIds,
+            List<GameContentSetValidationIssue> issues)
+        {
+            if (bindings == null || bindings.Count == 0)
+            {
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ModuleSlotPresentationBindings", "Add authored module-slot presentation bindings for every visible weapon pad."));
+                return;
+            }
+
+            var boundWeapons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var slotIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                IdleAutoDefenseModuleSlotPresentationBinding binding = bindings[i];
+                string path = "RuntimeSettings.ModuleSlotPresentationBindings[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                if (binding == null)
+                {
+                    issues.Add(GameContentSetValidationIssue.Error(path, "Module slot presentation binding is empty."));
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(binding.SlotId))
+                {
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".SlotId", "Module slot presentation needs a stable slot ID."));
+                }
+                else if (!slotIds.Add(binding.SlotId.Trim()))
+                {
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".SlotId", "Duplicate module slot ID: " + binding.SlotId));
+                }
+
+                if (string.IsNullOrWhiteSpace(binding.WeaponId))
+                {
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".WeaponId", "Module slot presentation must target a weapon."));
+                }
+                else
+                {
+                    if (!weaponIds.Contains(binding.WeaponId.Trim()))
+                        issues.Add(GameContentSetValidationIssue.Error(path + ".WeaponId", "Module slot targets a weapon outside this content set: " + binding.WeaponId));
+                    if (!boundWeapons.Add(binding.WeaponId.Trim()))
+                        issues.Add(GameContentSetValidationIssue.Error(path + ".WeaponId", "Duplicate module slot for weapon: " + binding.WeaponId));
+                }
+
+                if (string.IsNullOrWhiteSpace(binding.ModelName))
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".ModelName", "Module slot presentation needs a Kenney model name."));
+                if (binding.LocalScale.sqrMagnitude <= 0.0001f)
+                    issues.Add(GameContentSetValidationIssue.Error(path + ".LocalScale", "Module slot scale must be visible."));
+            }
+
+            foreach (string weaponId in weaponIds)
+            {
+                if (!boundWeapons.Contains(weaponId))
+                    issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ModuleSlotPresentationBindings", "Missing module slot presentation for authored weapon: " + weaponId));
+            }
         }
 
         private static void ValidateWeaponPresentationBindings(

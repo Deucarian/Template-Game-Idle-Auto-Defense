@@ -10,6 +10,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] private IdleAutoDefenseRewardDraftSettings _rewardDraftSettings = IdleAutoDefenseRewardDraftSettings.CreateDefault();
         [SerializeField] private IdleAutoDefenseRewardDraftCatalog _rewardDraftCatalog = IdleAutoDefenseRewardDraftCatalog.CreateDefault();
         [SerializeField] private IdleAutoDefensePresentationDebugSettings _presentationDebug = IdleAutoDefensePresentationDebugSettings.CreateDefault();
+        [SerializeField] private IdleAutoDefenseObjectivePresentationBinding _objectivePresentation = IdleAutoDefenseObjectivePresentationBinding.CreateDefault();
+        [SerializeField] private IdleAutoDefenseModuleSlotPresentationBinding[] _moduleSlotPresentationBindings = IdleAutoDefenseModuleSlotPresentationBinding.CreateDefaultBindings();
         [SerializeField] private IdleAutoDefenseWeaponPresentationBinding[] _weaponPresentationBindings = IdleAutoDefenseWeaponPresentationBinding.CreateDefaultBindings();
 
         public static IdleAutoDefenseContentSetRuntimeSettings CreateDefault()
@@ -45,6 +47,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
+        public IdleAutoDefenseObjectivePresentationBinding ObjectivePresentation
+        {
+            get => _objectivePresentation ??= IdleAutoDefenseObjectivePresentationBinding.CreateDefault();
+            set => _objectivePresentation = value ?? IdleAutoDefenseObjectivePresentationBinding.CreateDefault();
+        }
+
+        public bool HasAuthoredObjectivePresentation => _objectivePresentation != null && _objectivePresentation.HasAuthoredModels;
+        public bool HasAuthoredModuleSlotPresentationBindings => _moduleSlotPresentationBindings != null && _moduleSlotPresentationBindings.Length > 0;
+
+        public IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> ModuleSlotPresentationBindings
+        {
+            get
+            {
+                if (_moduleSlotPresentationBindings == null || _moduleSlotPresentationBindings.Length == 0)
+                    _moduleSlotPresentationBindings = IdleAutoDefenseModuleSlotPresentationBinding.CreateDefaultBindings();
+                return _moduleSlotPresentationBindings;
+            }
+        }
+
         public IdleAutoDefenseContentSetRuntimeSettings Clone()
         {
             return new IdleAutoDefenseContentSetRuntimeSettings
@@ -52,6 +73,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _rewardDraftSettings = RewardDraftSettings.Clone(),
                 _rewardDraftCatalog = RewardDraftCatalog.Clone(),
                 _presentationDebug = PresentationDebug.Clone(),
+                _objectivePresentation = ObjectivePresentation.Clone(),
+                _moduleSlotPresentationBindings = CloneModuleSlots(ModuleSlotPresentationBindings),
                 _weaponPresentationBindings = CloneBindings(WeaponPresentationBindings)
             };
         }
@@ -79,6 +102,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 return Array.Empty<IdleAutoDefenseWeaponPresentationBinding>();
 
             var copy = new IdleAutoDefenseWeaponPresentationBinding[bindings.Count];
+            for (int i = 0; i < bindings.Count; i++)
+                copy[i] = bindings[i] == null ? null : bindings[i].Clone();
+            return copy;
+        }
+
+        private static IdleAutoDefenseModuleSlotPresentationBinding[] CloneModuleSlots(IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> bindings)
+        {
+            if (bindings == null || bindings.Count == 0)
+                return Array.Empty<IdleAutoDefenseModuleSlotPresentationBinding>();
+
+            var copy = new IdleAutoDefenseModuleSlotPresentationBinding[bindings.Count];
             for (int i = 0; i < bindings.Count; i++)
                 copy[i] = bindings[i] == null ? null : bindings[i].Clone();
             return copy;
@@ -124,6 +158,193 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _showDebugAimLines = _showDebugAimLines,
                 _showDebugRanges = _showDebugRanges,
                 _showDebugSpawnRing = _showDebugSpawnRing
+            };
+        }
+    }
+
+    [Serializable]
+    public sealed class IdleAutoDefenseKenneyModelBinding
+    {
+        [SerializeField] private string _modelName = string.Empty;
+        [SerializeField] private Vector3 _localPosition = Vector3.zero;
+        [SerializeField] private Vector3 _localEulerAngles = Vector3.zero;
+        [SerializeField] private Vector3 _localScale = Vector3.one;
+        [SerializeField] private Color _tint = Color.white;
+
+        public IdleAutoDefenseKenneyModelBinding()
+        {
+        }
+
+        public IdleAutoDefenseKenneyModelBinding(string modelName, Vector3 localPosition, Vector3 localEulerAngles, Vector3 localScale, Color tint)
+        {
+            _modelName = modelName ?? string.Empty;
+            _localPosition = localPosition;
+            _localEulerAngles = localEulerAngles;
+            _localScale = localScale == Vector3.zero ? Vector3.one : localScale;
+            _tint = tint;
+        }
+
+        public string ModelName => _modelName ?? string.Empty;
+        public Vector3 LocalPosition => _localPosition;
+        public Vector3 LocalEulerAngles => _localEulerAngles;
+        public Vector3 LocalScale => _localScale == Vector3.zero ? Vector3.one : _localScale;
+        public Color Tint => _tint.a <= 0f ? Color.white : _tint;
+
+        public IdleAutoDefenseKenneyModelBinding Clone()
+        {
+            return new IdleAutoDefenseKenneyModelBinding(ModelName, LocalPosition, LocalEulerAngles, LocalScale, Tint);
+        }
+    }
+
+    [Serializable]
+    public sealed class IdleAutoDefenseObjectivePresentationBinding
+    {
+        [SerializeField] private string _contentId = "objective.template-core";
+        [SerializeField] private string _displayName = "Kenney 3D Core Base";
+        [SerializeField] private IdleAutoDefenseKenneyModelBinding[] _models = CreateDefaultModels();
+
+        public static IdleAutoDefenseObjectivePresentationBinding CreateDefault()
+        {
+            return new IdleAutoDefenseObjectivePresentationBinding();
+        }
+
+        public string ContentId => string.IsNullOrWhiteSpace(_contentId) ? "objective.template-core" : _contentId;
+        public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? ContentId : _displayName;
+        public bool HasAuthoredModels => _models != null && _models.Length > 0;
+
+        public IReadOnlyList<IdleAutoDefenseKenneyModelBinding> Models
+        {
+            get
+            {
+                if (_models == null || _models.Length == 0)
+                    _models = CreateDefaultModels();
+                return _models;
+            }
+        }
+
+        public IdleAutoDefenseObjectivePresentationBinding Clone()
+        {
+            IReadOnlyList<IdleAutoDefenseKenneyModelBinding> models = Models;
+            var cloneModels = new IdleAutoDefenseKenneyModelBinding[models.Count];
+            for (int i = 0; i < models.Count; i++)
+                cloneModels[i] = models[i] == null ? null : models[i].Clone();
+            return new IdleAutoDefenseObjectivePresentationBinding
+            {
+                _contentId = ContentId,
+                _displayName = DisplayName,
+                _models = cloneModels
+            };
+        }
+
+        private static IdleAutoDefenseKenneyModelBinding[] CreateDefaultModels()
+        {
+            return new[]
+            {
+                new IdleAutoDefenseKenneyModelBinding("tower-round-base", Vector3.zero, Vector3.zero, Vector3.one * 1.35f, new Color(0.78f, 0.9f, 1f, 1f)),
+                new IdleAutoDefenseKenneyModelBinding("tower-round-middle-a", new Vector3(0f, 0.46f, 0f), Vector3.zero, Vector3.one * 1.12f, new Color(0.78f, 0.9f, 1f, 1f)),
+                new IdleAutoDefenseKenneyModelBinding("tower-round-crystals", new Vector3(0f, 0.92f, 0f), Vector3.zero, Vector3.one * 0.92f, new Color(0.35f, 0.9f, 1f, 1f))
+            };
+        }
+    }
+
+    [Serializable]
+    public sealed class IdleAutoDefenseModuleSlotPresentationBinding
+    {
+        [SerializeField] private string _slotId = string.Empty;
+        [SerializeField] private string _weaponId = string.Empty;
+        [SerializeField] private string _displayName = string.Empty;
+        [SerializeField] private string _modelName = "tile-spawn";
+        [SerializeField] private Vector3 _localPosition;
+        [SerializeField] private Vector3 _localEulerAngles = Vector3.zero;
+        [SerializeField] private Vector3 _localScale = Vector3.one * 0.52f;
+        [SerializeField] private Color _tint = Color.white;
+
+        public IdleAutoDefenseModuleSlotPresentationBinding()
+        {
+        }
+
+        public IdleAutoDefenseModuleSlotPresentationBinding(
+            string slotId,
+            string weaponId,
+            string displayName,
+            string modelName,
+            Vector3 localPosition,
+            Vector3 localEulerAngles,
+            Vector3 localScale,
+            Color tint)
+        {
+            _slotId = slotId ?? string.Empty;
+            _weaponId = weaponId ?? string.Empty;
+            _displayName = displayName ?? string.Empty;
+            _modelName = modelName ?? string.Empty;
+            _localPosition = localPosition;
+            _localEulerAngles = localEulerAngles;
+            _localScale = localScale == Vector3.zero ? Vector3.one : localScale;
+            _tint = tint;
+        }
+
+        public string SlotId => _slotId ?? string.Empty;
+        public string WeaponId => _weaponId ?? string.Empty;
+        public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? SlotId : _displayName;
+        public string ModelName => _modelName ?? string.Empty;
+        public Vector3 LocalPosition => _localPosition;
+        public Vector3 LocalEulerAngles => _localEulerAngles;
+        public Vector3 LocalScale => _localScale == Vector3.zero ? Vector3.one : _localScale;
+        public Color Tint => _tint.a <= 0f ? Color.white : _tint;
+
+        public IdleAutoDefenseModuleSlotPresentationBinding Clone()
+        {
+            return new IdleAutoDefenseModuleSlotPresentationBinding(
+                SlotId,
+                WeaponId,
+                DisplayName,
+                ModelName,
+                LocalPosition,
+                LocalEulerAngles,
+                LocalScale,
+                Tint);
+        }
+
+        public static IdleAutoDefenseModuleSlotPresentationBinding[] CreateDefaultBindings()
+        {
+            return new[]
+            {
+                new IdleAutoDefenseModuleSlotPresentationBinding(
+                    "module-slot.shard-launcher",
+                    BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value,
+                    "Shard Launcher Slot",
+                    "tile-spawn",
+                    new Vector3(0f, -0.07f, 0.9f),
+                    Vector3.zero,
+                    Vector3.one * 0.52f,
+                    new Color(1f, 0.52f, 0.16f, 0.72f)),
+                new IdleAutoDefenseModuleSlotPresentationBinding(
+                    "module-slot.pulse-beam",
+                    BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value,
+                    "Pulse Beam Locked Pad",
+                    "tile-spawn",
+                    new Vector3(-0.9f, -0.07f, 0.35f),
+                    Vector3.zero,
+                    Vector3.one * 0.52f,
+                    new Color(0.18f, 0.84f, 1f, 0.58f)),
+                new IdleAutoDefenseModuleSlotPresentationBinding(
+                    "module-slot.arc-burst",
+                    BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value,
+                    "Arc Burst Locked Pad",
+                    "tile-spawn",
+                    new Vector3(0f, -0.07f, -0.9f),
+                    Vector3.zero,
+                    Vector3.one * 0.52f,
+                    new Color(1f, 0.58f, 0.16f, 0.58f)),
+                new IdleAutoDefenseModuleSlotPresentationBinding(
+                    "module-slot.homing-pulse",
+                    BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value,
+                    "Homing Pulse Locked Pad",
+                    "tile-spawn",
+                    new Vector3(0.9f, -0.07f, 0.35f),
+                    Vector3.zero,
+                    Vector3.one * 0.52f,
+                    new Color(0.72f, 0.42f, 1f, 0.58f))
             };
         }
     }
