@@ -4439,6 +4439,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     false,
                     24)
                 : CreateEnemyModelPrefab("Kenney Enemy Runtime Prefab " + id, id, color);
+            EnsureEnemyModelPresentation(prefab, color);
             _runtimeEnemyPrefabs[id] = prefab;
             return prefab;
         }
@@ -4553,6 +4554,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DisableColliders(prefab);
             prefab.SetActive(false);
             return prefab;
+        }
+
+        private static IdleAutoDefenseEnemyModelPresentation EnsureEnemyModelPresentation(GameObject prefab, Color tint)
+        {
+            if (prefab == null) return null;
+            IdleAutoDefenseEnemyModelPresentation presentation = prefab.GetComponent<IdleAutoDefenseEnemyModelPresentation>();
+            if (presentation == null)
+                presentation = prefab.AddComponent<IdleAutoDefenseEnemyModelPresentation>();
+            presentation.Configure(tint, Vector3.one);
+            return presentation;
         }
 
         private GameObject CreateProjectileModelPrefab(string name, string modelName, Color tint)
