@@ -26,17 +26,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _normalWeaponRewards = CreateNormalWeaponRewards(),
                 _epicWeaponRewards = new[]
                 {
-                    WeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, "epic.0", "Split Payload", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+1 shard projectile per volley.", IdleAutoDefenseRewardEffectKind.ExtraProjectile, 1d),
-                    WeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, "epic.1", "Accelerated Shards", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+15% projectile travel speed.", IdleAutoDefenseRewardEffectKind.ProjectileSpeed, 0.15d),
-                    WeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, "epic.2", "Overloaded Payload", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+20% damage for visible attacks.", IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier, 0.20d),
+                    WeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, "epic.0", "Split Payload", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+2 shard projectiles per volley.", IdleAutoDefenseRewardEffectKind.ExtraProjectile, 2d),
+                    WeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, "epic.1", "Accelerated Shards", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+25% projectile travel speed.", IdleAutoDefenseRewardEffectKind.ProjectileSpeed, 0.25d),
+                    WeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, "epic.2", "Overloaded Payload", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+30% damage for visible attacks.", IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier, 0.30d),
                     WeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, "epic.0", "Wide Beam", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "Pulse Beam hits one extra target.", IdleAutoDefenseRewardEffectKind.PulsePower, 1d),
                     WeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, "epic.1", "Capacitor Loop", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+1 fire-rate rank.", IdleAutoDefenseRewardEffectKind.FireRateRank, 1d),
-                    WeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, "epic.2", "Focused Beam", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+20% damage for visible attacks.", IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier, 0.20d),
+                    WeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, "epic.2", "Focused Beam", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+30% damage for visible attacks.", IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier, 0.30d),
                     WeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, "epic.0", "Larger Burst", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "Arc Burst hits one extra target.", IdleAutoDefenseRewardEffectKind.ArcPower, 1d),
                     WeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, "epic.1", "Conductive Field", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+1 range rank.", IdleAutoDefenseRewardEffectKind.RangeRank, 1d),
-                    WeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, "epic.2", "Charged Detonation", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+20% damage for visible attacks.", IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier, 0.20d),
+                    WeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, "epic.2", "Charged Detonation", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+30% damage for visible attacks.", IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier, 0.30d),
                     WeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, "epic.0", "Extra Seeker", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "Homing Pulse fires one extra seeker.", IdleAutoDefenseRewardEffectKind.HomingPower, 1d),
-                    WeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, "epic.1", "Smarter Guidance", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+15% projectile travel speed.", IdleAutoDefenseRewardEffectKind.ProjectileSpeed, 0.15d),
+                    WeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, "epic.1", "Smarter Guidance", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+25% projectile travel speed.", IdleAutoDefenseRewardEffectKind.ProjectileSpeed, 0.25d),
                     WeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, "epic.2", "Looping Return", IdleAutoDefenseRewardRarity.Epic, "Epic Weapon", "+1 fire-rate rank.", IdleAutoDefenseRewardEffectKind.FireRateRank, 1d)
                 },
                 _legendaryWeaponRewards = new[]
@@ -48,12 +48,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 },
                 _baseRewards = new[]
                 {
-                    new IdleAutoDefenseBaseRewardDefinition("base.damage", "Targeting Drill", IdleAutoDefenseRewardRarity.Common, "Base Upgrade", "Tower", "+1 damage rank.", IdleAutoDefenseRewardEffectKind.DamageRank, 1d, 8),
-                    new IdleAutoDefenseBaseRewardDefinition("base.fire-rate", "Reload Practice", IdleAutoDefenseRewardRarity.Common, "Base Upgrade", "Tower", "+1 fire-rate rank.", IdleAutoDefenseRewardEffectKind.FireRateRank, 1d, 6),
+                    new IdleAutoDefenseBaseRewardDefinition("base.damage", "Targeting Drill", IdleAutoDefenseRewardRarity.Common, "Base Upgrade", "Tower", "+2 damage ranks.", IdleAutoDefenseRewardEffectKind.DamageRank, 2d, 8),
+                    new IdleAutoDefenseBaseRewardDefinition("base.fire-rate", "Reload Practice", IdleAutoDefenseRewardRarity.Common, "Base Upgrade", "Tower", "+2 fire-rate ranks.", IdleAutoDefenseRewardEffectKind.FireRateRank, 2d, 6),
                     new IdleAutoDefenseBaseRewardDefinition("base.range", "Sensor Sweep", IdleAutoDefenseRewardRarity.Uncommon, "Base Upgrade", "Tower", "+1 range rank.", IdleAutoDefenseRewardEffectKind.RangeRank, 1d, 6),
                     new IdleAutoDefenseBaseRewardDefinition("base.repair", "Field Repair", IdleAutoDefenseRewardRarity.Common, "Base Upgrade", "Tower", "Repair and increase maximum HP.", IdleAutoDefenseRewardEffectKind.Repair, 1d, 5),
-                    new IdleAutoDefenseBaseRewardDefinition("base.velocity", "Velocity Tuning", IdleAutoDefenseRewardRarity.Uncommon, "Base Upgrade", "Projectiles", "+15% projectile travel speed.", IdleAutoDefenseRewardEffectKind.ProjectileSpeed, 0.15d, 4),
-                    new IdleAutoDefenseBaseRewardDefinition("base.credits", "Credit Routing", IdleAutoDefenseRewardRarity.Rare, "Economy", "Tower", "+15% credits from kills.", IdleAutoDefenseRewardEffectKind.RewardMultiplier, 0.15d, 5)
+                    new IdleAutoDefenseBaseRewardDefinition("base.velocity", "Velocity Tuning", IdleAutoDefenseRewardRarity.Uncommon, "Base Upgrade", "Projectiles", "+25% projectile travel speed.", IdleAutoDefenseRewardEffectKind.ProjectileSpeed, 0.25d, 4),
+                    new IdleAutoDefenseBaseRewardDefinition("base.credits", "Credit Routing", IdleAutoDefenseRewardRarity.Rare, "Economy", "Tower", "+25% credits from kills.", IdleAutoDefenseRewardEffectKind.RewardMultiplier, 0.25d, 5)
                 }
             };
         }
@@ -111,8 +111,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             var rewards = new List<IdleAutoDefenseWeaponRewardDefinition>(weaponIds.Length * 3);
             for (int i = 0; i < weaponIds.Length; i++)
             {
-                rewards.Add(WeaponReward(weaponIds[i], "normal.0", "Damage Calibration", IdleAutoDefenseRewardRarity.Common, "Weapon Upgrade", "+1 damage rank for visible hits.", IdleAutoDefenseRewardEffectKind.DamageRank, 1d));
-                rewards.Add(WeaponReward(weaponIds[i], "normal.1", "Cycle Tuning", IdleAutoDefenseRewardRarity.Uncommon, "Weapon Upgrade", "+1 fire-rate rank for this run.", IdleAutoDefenseRewardEffectKind.FireRateRank, 1d));
+                rewards.Add(WeaponReward(weaponIds[i], "normal.0", "Damage Calibration", IdleAutoDefenseRewardRarity.Common, "Weapon Upgrade", "+2 damage ranks for visible hits.", IdleAutoDefenseRewardEffectKind.DamageRank, 2d));
+                rewards.Add(WeaponReward(weaponIds[i], "normal.1", "Cycle Tuning", IdleAutoDefenseRewardRarity.Uncommon, "Weapon Upgrade", "+2 fire-rate ranks for this run.", IdleAutoDefenseRewardEffectKind.FireRateRank, 2d));
                 rewards.Add(WeaponReward(weaponIds[i], "normal.2", "Range Pattern", IdleAutoDefenseRewardRarity.Rare, "Weapon Upgrade", "+1 range rank and a small damage bump.", IdleAutoDefenseRewardEffectKind.RangeRank, 1d));
             }
 

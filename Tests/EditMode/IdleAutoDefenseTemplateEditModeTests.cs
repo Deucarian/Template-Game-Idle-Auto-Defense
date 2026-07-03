@@ -136,6 +136,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(catalog.CountWeaponRewards(weaponIds[i], IdleAutoDefenseRewardRarity.Epic), Is.EqualTo(3), weaponIds[i]);
                 Assert.That(catalog.CountWeaponRewards(weaponIds[i], IdleAutoDefenseRewardRarity.Legendary), Is.EqualTo(1), weaponIds[i]);
                 Assert.That(catalog.GetNormalWeaponReward(weaponIds[i], 0).DisplayName, Is.Not.Empty);
+                Assert.That(catalog.GetNormalWeaponReward(weaponIds[i], 0).Amount, Is.GreaterThanOrEqualTo(2d), "First damage reward should be a visible power spike.");
+                Assert.That(catalog.GetNormalWeaponReward(weaponIds[i], 1).Amount, Is.GreaterThanOrEqualTo(2d), "First fire-rate reward should be a visible power spike.");
                 Assert.That(catalog.GetEpicWeaponReward(weaponIds[i], 2).EffectDescription, Is.Not.Empty);
                 Assert.That(catalog.GetLegendaryWeaponReward(weaponIds[i]).Rarity, Is.EqualTo(IdleAutoDefenseRewardRarity.Legendary));
             }
@@ -1535,7 +1537,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(bootstrapPath, "ApplyRuntimeUiFont");
             AssertFileContains(bootstrapPath, "protected override void Update()");
             AssertFileContains(bootstrapPath, "base.Update();");
-            AssertFileContains(bootstrapPath, "TryPurchaseOverdrive");
+            AssertFileDoesNotContain(bootstrapPath, "TryPurchaseDamageUpgrade");
+            AssertFileDoesNotContain(bootstrapPath, "TryPurchaseAttackSpeedUpgrade");
+            AssertFileDoesNotContain(bootstrapPath, "TryPurchaseRangeUpgrade");
+            AssertFileDoesNotContain(bootstrapPath, "TryPurchaseRepairUpgrade");
+            AssertFileDoesNotContain(bootstrapPath, "TryPurchaseOverdrive");
             AssertFileContains(bootstrapPath, "backgroundColor");
             AssertFileContains(bootstrapPath, "borderTopColor");
             AssertFileDoesNotContain(bootstrapPath, "Test Rewards");
@@ -1561,6 +1567,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "TemplateProjectileMuzzlePoseResolver");
             AssertFileContains(runtimePath, "ResolveTowerMuzzlePosition");
             AssertFileContains(runtimePath, "CreateWeaponPresentation");
+            AssertFileContains(runtimePath, "ShowDebugAimLines");
+            AssertFileContains(runtimePath, "DebugAimTracerSpawnCount");
+            AssertFileContains(runtimePath, "AuthoredWeaponPresentationSpawnCount");
+            AssertFileContains(runtimePath, "FindWeaponDefinitionForPresentation");
             AssertFileContains(runtimePath, "CreateEnemyModelPrefab");
             AssertFileContains(runtimePath, "CreateProjectileModelPrefab");
             AssertFileContains(runtimePath, "AttachKenneySprite");
@@ -1575,6 +1585,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(runtimePath, "Art/impact_flame");
             AssertFileContains(runtimePath, "Art/currency_coin_gold");
             AssertFileDoesNotContain(runtimePath, "ScriptableObject.CreateInstance<ThemeStyleSheet>()");
+            AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseKenneyModelPrefab.cs"));
+            AssertFileContains(Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseKenneyModelPrefab.cs"), "Resources.Load<GameObject>(DefaultResourceRoot + modelName)");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"));
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"), "unity-theme://default");
 
@@ -1584,6 +1596,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Textures", "template-starter-pack-icon.png.meta"), "TextureImporter");
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Textures", "template-starter-pack-banner.png"));
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-projectile.prefab"));
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-projectile.prefab"), "weapon-ballista");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-beam.prefab"), "weapon-turret");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-area.prefab"), "weapon-catapult");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-weapon-homing.prefab"), "weapon-cannon");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-enemy-basic.prefab"), "enemy-ufo-a");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-enemy-fast.prefab"), "enemy-ufo-b");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-enemy-tank.prefab"), "enemy-ufo-d");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-projectile.prefab"), "weapon-ammo-arrow");
+            AssertFileContains(Path.Combine(templateSourceRoot, "Visuals", "Prefabs", "template-seeker-projectile.prefab"), "weapon-ammo-bullet");
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Audio", "template-fire.wav"));
             AssertFileExistsAtFullPath(Path.Combine(templateSourceRoot, "Audio", "template-impact.wav"));
             string kenney3dRoot = Path.Combine(templateSourceRoot, "Resources", "Kenney", "IdleAutoDefense", "Models", "TowerDefenseKit");

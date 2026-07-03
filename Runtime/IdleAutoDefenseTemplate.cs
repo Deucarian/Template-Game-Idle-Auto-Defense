@@ -336,6 +336,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     ShardProjectileId.Value,
                     buildCost: 35,
                     upgradeGroupId: "upgrade.group.template.shard",
+                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Shard Launcher Presentation", "weapon-ballista", new Color(1f, 0.45f, 0.1f)),
                     tags: new[] { "template", "projectile", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
                     PulseCannonWeaponId.Value,
@@ -346,6 +347,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     5.0f,
                     buildCost: 25,
                     upgradeGroupId: "upgrade.group.template.pulse",
+                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Pulse Beam Presentation", "weapon-turret", new Color(0.35f, 0.82f, 1f)),
                     tags: new[] { "template", "hitscan", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
                     ArcBurstTowerWeaponId.Value,
@@ -356,6 +358,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     4.1f,
                     buildCost: 65,
                     upgradeGroupId: "upgrade.group.template.arc",
+                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Arc Burst Presentation", "weapon-catapult", new Color(1f, 0.72f, 0.18f)),
                     tags: new[] { "template", "area", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
                     HomingSpireWeaponId.Value,
@@ -367,8 +370,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     HomingPulseProjectileId.Value,
                     buildCost: 55,
                     upgradeGroupId: "upgrade.group.template.homing",
+                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Homing Pulse Presentation", "weapon-cannon", new Color(0.8f, 0.42f, 1f)),
                     tags: new[] { "template", "homing", "tower" })
             };
+        }
+
+        private static GameObject CreateTransientWeaponPresentationPrefab(string name, string modelName, Color tint)
+        {
+            var prefab = new GameObject(name);
+            prefab.hideFlags = HideFlags.HideAndDontSave;
+            IdleAutoDefenseKenneyModelPrefab model = prefab.AddComponent<IdleAutoDefenseKenneyModelPrefab>();
+            model.ConfigureForTests(modelName, tint, Vector3.zero, Vector3.zero, Vector3.one * 0.74f);
+            prefab.SetActive(false);
+            return prefab;
         }
 
         public static WeaponDefinitionAsset[] ResolveWeaponDefinitionsForTemplate(IReadOnlyList<WeaponDefinitionAsset> assignedDefinitions, IReadOnlyList<AttackDefinitionAsset> attackRecipes, out int rejectedDefinitionCount)
@@ -1445,6 +1459,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] protected RunUpgradeDefinitionAsset[] _upgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
         [SerializeField] private IdleAutoDefenseRewardDraftSettings _rewardDraftSettings = IdleAutoDefenseRewardDraftSettings.CreateDefault();
         [SerializeField] private IdleAutoDefenseRewardDraftCatalog _rewardDraftCatalog = IdleAutoDefenseRewardDraftCatalog.CreateDefault();
+        [SerializeField] private bool _showDebugAimLines;
+        [SerializeField] private bool _showDebugRanges;
+        [SerializeField] private bool _showDebugSpawnRing;
         private AttackDefinitionAsset[] _resolvedAttackRecipes = Array.Empty<AttackDefinitionAsset>();
         private EnemyDefinitionAsset[] _resolvedEnemyDefinitions = Array.Empty<EnemyDefinitionAsset>();
         private WaveDefinitionAsset[] _resolvedWaveDefinitions = Array.Empty<WaveDefinitionAsset>();
@@ -1538,6 +1555,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int EnemyHitFlashCount { get; private set; }
         public int EnemyDeathPopCount { get; private set; }
         public int DamageNumberSpawnCount { get; private set; }
+        public int AuthoredWeaponPresentationSpawnCount { get; private set; }
+        public int FallbackWeaponPresentationSpawnCount { get; private set; }
+        public int DebugAimTracerSpawnCount { get; private set; }
         public int EnemyDamageSurvivedCount { get; private set; }
         public int RangeRejectedTargetCount { get; private set; }
         public int EnemiesSpawnedBeyondStartingRangeCount { get; private set; }
@@ -1550,6 +1570,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int RuntimeDamageNumberVisibleCount => _damageNumbers.Count;
         public float RuntimeUiRootResolvedWidth => ResolveRuntimePanelSize().x;
         public float RuntimeUiRootResolvedHeight => ResolveRuntimePanelSize().y;
+        public bool ShowDebugAimLines
+        {
+            get => _showDebugAimLines;
+            set => _showDebugAimLines = value;
+        }
+
+        public bool ShowDebugRanges
+        {
+            get => _showDebugRanges;
+            set => _showDebugRanges = value;
+        }
+
+        public bool ShowDebugSpawnRing
+        {
+            get => _showDebugSpawnRing;
+            set => _showDebugSpawnRing = value;
+        }
         public int InvalidAssignedRecipeCount { get; private set; }
         public int InvalidAssignedEnemyCount { get; private set; }
         public int InvalidAssignedWaveCount { get; private set; }
@@ -1647,6 +1684,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             " ObjectiveHits=" + ObjectiveDamageEvents +
             " RangeRejects=" + RangeRejectedTargetCount +
             " ClosestEnemy=" + ClosestEnemyDistanceToObjective.ToString("0.0", CultureInfo.InvariantCulture) +
+            " Kenney3D=" + Kenney3DModelSpawnCount +
+            " Aim=" + TurretAimUpdateCount +
+            " MuzzleProjectiles=" + MuzzleProjectileLaunchCount +
+            " MuzzleFlash=" + MuzzleFlashSpawnCount +
+            " Recoil=" + RecoilEventCount +
+            " AuthoredWeapons=" + AuthoredWeaponPresentationSpawnCount +
+            " FallbackWeapons=" + FallbackWeaponPresentationSpawnCount +
+            " DebugAimLines=" + DebugAimTracerSpawnCount +
+            " EnemyFacing=" + EnemyFacingUpdateCount +
+            " EnemyHitFlash=" + EnemyHitFlashCount +
+            " EnemyDeathPop=" + EnemyDeathPopCount +
             " Currency=" + RuntimeCurrency +
             " Level=" + CommanderLevel +
             " Overdrive=" + (OverdriveActive ? "on" : "off") +
@@ -2689,6 +2737,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (PulseBeamUnlocked) return false;
             PulseBeamUnlocked = true;
             CreateWeaponPresentation(
+                BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value,
                 BasicIdleAutoDefenseGame.PulseAttackId.Value,
                 "Pulse Beam",
                 new Vector3(-1.02f, 0.06f, 0.36f),
@@ -2706,6 +2755,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (ArcBurstUnlocked) return false;
             ArcBurstUnlocked = true;
             CreateWeaponPresentation(
+                BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value,
                 BasicIdleAutoDefenseGame.ArcBurstAttackId.Value,
                 "Arc Burst",
                 new Vector3(0f, 0.06f, -1.05f),
@@ -2723,6 +2773,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (HomingPulseUnlocked) return false;
             HomingPulseUnlocked = true;
             CreateWeaponPresentation(
+                BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value,
                 BasicIdleAutoDefenseGame.HomingPulseAttackId.Value,
                 "Homing Pulse",
                 new Vector3(1.02f, 0.06f, 0.36f),
@@ -3336,6 +3387,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private void EmitAttackTracer(Vector3 origin, Vector3 destination, Color color)
         {
+            if (!_showDebugAimLines) return;
             if (_root == null) return;
             GameObject tracer = new GameObject("Template Attack Tracer");
             tracer.transform.SetParent(_root.transform, false);
@@ -3351,6 +3403,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             line.startColor = color;
             line.endColor = new Color(color.r, color.g, color.b, 0.2f);
             AttackVfxSpawnCount++;
+            DebugAimTracerSpawnCount++;
             DestroyPresentationObject(tracer, 0.32f);
         }
 
@@ -3843,7 +3896,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             GameObject authoredPrefab = attack != null && attack.Delivery != null ? attack.Delivery.ProjectilePrefab : null;
             Color color = ResolveAttackColor(attack);
-            GameObject prefab = authoredPrefab != null && authoredPrefab.GetComponentInChildren<MeshRenderer>(true) != null
+            GameObject prefab = authoredPrefab != null
                 ? CreateRuntimeVisualPrefab(
                     "Kenney Projectile Runtime Prefab " + key,
                     authoredPrefab,
@@ -4427,7 +4480,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             Color color = ResolveEnemyFallbackColor(id);
             GameObject authoredPrefab = enemy != null && enemy.Presentation != null ? enemy.Presentation.Prefab : null;
-            GameObject prefab = authoredPrefab != null && authoredPrefab.GetComponentInChildren<MeshRenderer>(true) != null
+            GameObject prefab = authoredPrefab != null
                 ? CreateRuntimeVisualPrefab(
                     "Kenney Enemy Runtime Prefab " + id,
                     authoredPrefab,
@@ -4479,6 +4532,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DisableColliders(core);
 
             CreateWeaponPresentation(
+                BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value,
                 BasicIdleAutoDefenseGame.ShardAttackId.Value,
                 "Shard Launcher",
                 new Vector3(0f, 0.06f, 1.05f),
@@ -4491,6 +4545,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         }
 
         private IdleAutoDefenseWeaponVisualBinding CreateWeaponPresentation(
+            string weaponId,
             string attackId,
             string displayName,
             Vector3 position,
@@ -4521,7 +4576,30 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             recoilPivot.localRotation = Quaternion.identity;
             recoilPivot.localScale = Vector3.one;
 
-            InstantiateKenneyModel(weaponModelName, recoilPivot, Vector3.zero, Quaternion.identity, Vector3.one * 0.74f, tint);
+            WeaponDefinitionAsset authoredWeapon = FindWeaponDefinitionForPresentation(weaponId, attackId);
+            GameObject authoredPrefab = authoredWeapon != null && authoredWeapon.Presentation != null
+                ? authoredWeapon.Presentation.Prefab
+                : null;
+            if (authoredPrefab != null)
+            {
+                GameObject authoredInstance = Instantiate(authoredPrefab, recoilPivot, false);
+                authoredInstance.name = displayName + " Authored Weapon Visual";
+                authoredInstance.transform.localPosition = Vector3.zero;
+                authoredInstance.transform.localRotation = Quaternion.identity;
+                authoredInstance.transform.localScale = Vector3.one;
+                IdleAutoDefenseKenneyModelPrefab[] authoredModels = authoredInstance.GetComponentsInChildren<IdleAutoDefenseKenneyModelPrefab>(true);
+                for (int i = 0; i < authoredModels.Length; i++)
+                    authoredModels[i].EnsureModel();
+                TintRenderers(authoredInstance, tint);
+                DisableColliders(authoredInstance);
+                AuthoredWeaponPresentationSpawnCount++;
+            }
+            else
+            {
+                InstantiateKenneyModel(weaponModelName, recoilPivot, Vector3.zero, Quaternion.identity, Vector3.one * 0.74f, tint);
+                FallbackWeaponPresentationSpawnCount++;
+            }
+
             Transform muzzle = new GameObject(displayName + " Muzzle").transform;
             muzzle.SetParent(recoilPivot, false);
             muzzle.localPosition = muzzleLocalPosition;
@@ -4534,6 +4612,35 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             DisableColliders(root);
             _weaponVisualBindings[attackId] = binding;
             return binding;
+        }
+
+        private WeaponDefinitionAsset FindWeaponDefinitionForPresentation(string weaponId, string attackId)
+        {
+            if (_resolvedWeaponDefinitions == null || _resolvedWeaponDefinitions.Length == 0)
+                return null;
+
+            if (!string.IsNullOrWhiteSpace(weaponId))
+            {
+                for (int i = 0; i < _resolvedWeaponDefinitions.Length; i++)
+                {
+                    WeaponDefinitionAsset weapon = _resolvedWeaponDefinitions[i];
+                    if (weapon != null && string.Equals(weapon.Id, weaponId, StringComparison.OrdinalIgnoreCase))
+                        return weapon;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(attackId))
+                return null;
+
+            for (int i = 0; i < _resolvedWeaponDefinitions.Length; i++)
+            {
+                WeaponDefinitionAsset weapon = _resolvedWeaponDefinitions[i];
+                AttackDefinitionAsset attack = weapon != null && weapon.Stats != null ? weapon.Stats.Attack : null;
+                if (attack != null && string.Equals(attack.Id, attackId, StringComparison.OrdinalIgnoreCase))
+                    return weapon;
+            }
+
+            return null;
         }
 
         private GameObject CreateEnemyModelPrefab(string name, string enemyId, Color tint)
@@ -4632,17 +4739,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             prefab.transform.localPosition = Vector3.zero;
             prefab.transform.localRotation = Quaternion.identity;
             prefab.transform.localScale = Vector3.one;
-            if (sourcePrefab == null)
-                ApplyColor(prefab, color);
-
             DisableColliders(prefab);
-            bool attachedSprite = prefab.GetComponentInChildren<SpriteRenderer>(true) != null ||
-                AttachKenneySprite(prefab, kenneyArtPath, false, spriteLocalPosition, spriteScale, sortingOrder, color);
-            if (attachedSprite)
+            if (sourcePrefab != null)
             {
-                TintSpriteRenderers(prefab, color);
-                HideMeshRenderers(prefab);
+                IdleAutoDefenseKenneyModelPrefab[] authoredModels = prefab.GetComponentsInChildren<IdleAutoDefenseKenneyModelPrefab>(true);
+                for (int i = 0; i < authoredModels.Length; i++)
+                    authoredModels[i].EnsureModel();
+                TintRenderers(prefab, color);
             }
+            else
+            {
+                ApplyColor(prefab, color);
+                bool attachedSprite = prefab.GetComponentInChildren<SpriteRenderer>(true) != null ||
+                    AttachKenneySprite(prefab, kenneyArtPath, false, spriteLocalPosition, spriteScale, sortingOrder, color);
+                if (attachedSprite)
+                {
+                    TintSpriteRenderers(prefab, color);
+                    HideMeshRenderers(prefab);
+                }
+            }
+
             if (projectile)
                 AddProjectileTrail(prefab, color);
             prefab.SetActive(false);
@@ -4937,6 +5053,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EnemyHitFlashCount = 0;
             EnemyDeathPopCount = 0;
             DamageNumberSpawnCount = 0;
+            AuthoredWeaponPresentationSpawnCount = 0;
+            FallbackWeaponPresentationSpawnCount = 0;
+            DebugAimTracerSpawnCount = 0;
             EnemyDamageSurvivedCount = 0;
             RangeRejectedTargetCount = 0;
             EnemiesSpawnedBeyondStartingRangeCount = 0;

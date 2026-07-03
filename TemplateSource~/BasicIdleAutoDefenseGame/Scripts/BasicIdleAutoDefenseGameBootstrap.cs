@@ -9,8 +9,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
 {
     public sealed class BasicIdleAutoDefenseGameBootstrap : IdleAutoDefenseTemplateController
     {
-        private const float HudWidth = 390f;
-        private const float HudMinimumHeight = 500f;
+        private const float HudWidth = 320f;
+        private const float HudMinimumHeight = 260f;
         [SerializeField] private GameContentPackAsset _templateContentPack;
         [SerializeField] private GameContentSetAsset _templateContentSet;
         private string _saveStatus = "No snapshot saved";
@@ -35,17 +35,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
         private readonly Button[] _draftButtons = new Button[3];
         private Label _saveLabel;
         private Label _resultLabel;
-        private Button _damageButton;
-        private Button _attackSpeedButton;
-        private Button _rangeButton;
-        private Button _repairButton;
-        private Button _pulseButton;
-        private Button _arcButton;
-        private Button _homingButton;
-        private Button _overdriveButton;
-        private Button _saveButton;
-        private Button _resetButton;
-        private Button _restartButton;
         private string _choiceFeedback = string.Empty;
         private float _choiceFeedbackUntil;
 
@@ -57,7 +46,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             ResolveHudHeight() > 100f;
         public bool UiToolkitHudPaintReady => UiToolkitHudVisible &&
             UiToolkitHudLabelCount >= 9 &&
-            UiToolkitHudButtonCount >= 9 &&
             _hudRoot.resolvedStyle.backgroundColor.a > 0.5f;
         public int UiToolkitHudLabelCount => CountHudElements<Label>();
         public int UiToolkitHudButtonCount => CountHudElements<Button>();
@@ -155,37 +143,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _purchaseLabel = AddLabel(_hudRoot);
             _buildLabel = AddLabel(_hudRoot);
 
-            AddSectionTitle(_hudRoot, "Rewards");
+            AddSectionTitle(_hudRoot, "Run");
             _draftLabel = AddLabel(_hudRoot);
             _choiceFeedbackLabel = AddLabel(_hudRoot, string.Empty, 14, FontStyle.Bold);
 
-            AddSectionTitle(_hudRoot, "Upgrades");
-            _damageButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseDamageUpgrade));
-            _attackSpeedButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseAttackSpeedUpgrade));
-            _rangeButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseRangeUpgrade));
-            _repairButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseRepairUpgrade));
-
-            AddSectionTitle(_hudRoot, "Modules");
-            _pulseButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchasePulseBeamModule));
-            _arcButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseArcBurstModule));
-            _homingButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseHomingPulseModule));
-
-            AddSectionTitle(_hudRoot, "Active");
-            _overdriveButton = AddButton(_hudRoot, () => TryPurchaseAndRefresh(TryPurchaseOverdrive));
-
             AddSectionTitle(_hudRoot, "Save");
             _saveLabel = AddLabel(_hudRoot);
-            VisualElement saveRow = AddRow(_hudRoot);
-            _saveButton = AddButton(saveRow, () => SaveSnapshot("manual"), "Save Snapshot");
-            _resetButton = AddButton(saveRow, ResetSave, "Reset Save");
 
             _resultLabel = AddLabel(_hudRoot, string.Empty, 16, FontStyle.Bold);
             _resultLabel.style.marginTop = 8;
-            _restartButton = AddButton(_hudRoot, () =>
-            {
-                RestartRun();
-                RefreshUiToolkitHud();
-            }, "Restart Run");
 
             UiToolkitHudReady = true;
             BuildRewardDraftOverlay(root);
@@ -304,30 +270,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             _choiceFeedbackLabel.style.color = new Color(1f, 0.88f, 0.35f, 1f);
             RefreshRewardDraftPanel();
 
-            SetUpgradeButton(_damageButton, "Damage", DamageUpgradeRank, DamageUpgradeCost, CanPurchaseDamageUpgrade);
-            SetUpgradeButton(_attackSpeedButton, "Fire Rate", AttackSpeedUpgradeRank, AttackSpeedUpgradeCost, CanPurchaseAttackSpeedUpgrade);
-            SetUpgradeButton(_rangeButton, "Range", RangeUpgradeRank, RangeUpgradeCost, CanPurchaseRangeUpgrade);
-            SetUpgradeButton(_repairButton, "Repair / Max HP", RepairUpgradeRank, RepairUpgradeCost, CanPurchaseRepairUpgrade);
-
-            SetModuleButton(_pulseButton, "Pulse Beam", PulseBeamUnlocked, PulseBeamUnlockCost, CanPurchasePulseBeamModule);
-            SetModuleButton(_arcButton, "Arc Burst", ArcBurstUnlocked, ArcBurstUnlockCost, CanPurchaseArcBurstModule);
-            SetModuleButton(_homingButton, "Homing Pulse", HomingPulseUnlocked, HomingPulseUnlockCost, CanPurchaseHomingPulseModule);
-            SetOverdriveButton(_overdriveButton, OverdriveActive, OverdriveSecondsRemaining, OverdriveCooldownSecondsRemaining, OverdriveCost, CanPurchaseOverdrive);
-
-            _saveLabel.text = "Save: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty);
-            _saveButton.SetEnabled(true);
-            _resetButton.SetEnabled(true);
+            _saveLabel.text = "Snapshot: " + _saveStatus + (BasicIdleAutoDefenseSampleSave.HasSave ? " (file present)" : string.Empty);
 
             bool terminal = EncounterCompleted || EncounterFailed;
             _resultLabel.text = EncounterCompleted ? "Run complete" : EncounterFailed ? "Tower destroyed" : string.Empty;
             _resultLabel.style.display = terminal ? DisplayStyle.Flex : DisplayStyle.None;
-            _restartButton.style.display = terminal ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        private void TryPurchaseAndRefresh(Func<bool> purchase)
-        {
-            purchase?.Invoke();
-            RefreshUiToolkitHud();
         }
 
         private void TryChooseRewardAndRefresh(int choiceIndex)
@@ -387,17 +334,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
                 button.style.color = Color.white;
                 button.style.opacity = 1f;
             }
-        }
-
-        private static VisualElement AddRow(VisualElement parent)
-        {
-            var row = new VisualElement();
-            row.style.width = Length.Percent(100);
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.marginTop = 1;
-            row.style.marginBottom = 1;
-            parent.Add(row);
-            return row;
         }
 
         private static Label AddLabel(VisualElement parent, string text = "", int fontSize = 13, FontStyle fontStyle = FontStyle.Normal)
@@ -473,53 +409,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
             float resolved = _hudRoot.resolvedStyle.height;
             if (!float.IsNaN(resolved) && resolved > 1f) return resolved;
             return HudMinimumHeight;
-        }
-
-        private static void SetUpgradeButton(Button button, string label, int rank, int cost, bool enabled)
-        {
-            button.text = label + "  Lv " + rank.ToString(CultureInfo.InvariantCulture) + "  " + cost.ToString(CultureInfo.InvariantCulture);
-            button.SetEnabled(enabled);
-            ApplyButtonState(button, enabled, false);
-        }
-
-        private static void SetModuleButton(Button button, string label, bool unlocked, int cost, bool enabled)
-        {
-            button.text = label + "  " + (unlocked ? "Unlocked" : cost.ToString(CultureInfo.InvariantCulture));
-            button.SetEnabled(enabled);
-            ApplyButtonState(button, enabled, unlocked);
-        }
-
-        private static void SetOverdriveButton(Button button, bool active, float activeSeconds, float cooldownSeconds, int cost, bool enabled)
-        {
-            if (button == null) return;
-            if (active)
-                button.text = "Overdrive  " + activeSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
-            else if (cooldownSeconds > 0.1f)
-                button.text = "Overdrive  " + cooldownSeconds.ToString("0", CultureInfo.InvariantCulture) + "s";
-            else
-                button.text = "Overdrive  " + cost.ToString(CultureInfo.InvariantCulture);
-            button.SetEnabled(enabled);
-            ApplyButtonState(button, enabled, active);
-            if (active)
-            {
-                button.style.backgroundColor = new Color(0.34f, 0.22f, 0.05f, 0.98f);
-                button.style.borderTopColor = new Color(1f, 0.84f, 0.22f, 1f);
-            }
-        }
-
-        private static void ApplyButtonState(Button button, bool enabled, bool complete)
-        {
-            if (button == null) return;
-            button.style.opacity = enabled || complete ? 1f : 0.68f;
-            button.style.color = enabled || complete ? Color.white : new Color(0.76f, 0.82f, 0.86f, 1f);
-            button.style.backgroundColor = complete
-                ? new Color(0.12f, 0.34f, 0.22f, 0.98f)
-                : enabled
-                    ? new Color(0.12f, 0.23f, 0.30f, 0.98f)
-                    : new Color(0.08f, 0.11f, 0.13f, 0.95f);
-            button.style.borderTopColor = complete
-                ? new Color(0.45f, 1f, 0.72f, 1f)
-                : new Color(0.38f, 0.78f, 0.9f, 1f);
         }
 
         private static Color ResolveRarityColor(IdleAutoDefenseRewardRarity rarity)
