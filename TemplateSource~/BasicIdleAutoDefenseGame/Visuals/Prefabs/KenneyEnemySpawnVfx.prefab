@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1075844960627849686}
   - component: {fileID: 1439686364087806490}
   m_Layer: 0
-  m_Name: template-enemy-spawn-vfx
+  m_Name: KenneyEnemySpawnVfx
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

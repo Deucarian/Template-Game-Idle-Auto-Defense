@@ -3322,7 +3322,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     definition.Id,
                     string.Empty,
                     string.Empty,
-                    eventKind.ToString());
+                    eventKind.ToString(),
+                    recipe.VfxPrefab,
+                    string.Empty,
+                    eventKind == EnemyPresentationEventKind.OnSpawn ? string.Empty : "enemy.center");
                 emittedAudio = PlayPresentationAudio(recipe.AudioClip);
             }
 
@@ -3399,7 +3402,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         attack.Id,
                         ResolveWeaponIdForAttack(attack),
                         attack.Id,
-                        eventKind.ToString()) || emittedVfx;
+                        eventKind.ToString(),
+                        recipe.VfxPrefab,
+                        ResolveMuzzleSocketId(attack),
+                        ResolveTargetSocketId(recipe)) || emittedVfx;
                 }
                 emittedAudio = PlayPresentationAudio(recipe.AudioClip);
             }
@@ -3442,7 +3448,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 prefab.name,
                 ResolveWeaponIdForAttack(attack),
                 attack == null ? string.Empty : attack.Id,
-                "Beam");
+                "Beam",
+                prefab,
+                ResolveMuzzleSocketId(attack),
+                "target.center");
             ConfigureBeamLineRenderer(instance, prefab, attack);
             HideBeamMeshRenderers(instance);
             AlignBeamInstance(instance, prefab, origin, impactPosition);
@@ -3681,13 +3690,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             string contentId,
             string ownerWeaponId,
             string ownerAttackId,
-            string effectRole)
+            string effectRole,
+            UnityEngine.Object sourceAsset = null,
+            string originSocketId = "",
+            string targetSocketId = "")
         {
             if (prefab == null) return false;
             GameObject instance = Instantiate(prefab, position, Quaternion.identity);
             instance.name = prefab.name + " Runtime";
             if (_root != null) instance.transform.SetParent(_root.transform, true);
-            StampAuthoredVisibleInstance(instance, definitionType, contentId, prefab.name, ownerWeaponId, ownerAttackId, effectRole);
+            StampAuthoredVisibleInstance(instance, definitionType, contentId, prefab.name, ownerWeaponId, ownerAttackId, effectRole, sourceAsset ?? prefab, originSocketId, targetSocketId);
             instance.SetActive(true);
             DisableColliders(instance);
             ParticleSystem[] particles = instance.GetComponentsInChildren<ParticleSystem>(true);
@@ -4315,21 +4327,67 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             string prefabName,
             string ownerWeaponId,
             string ownerAttackId,
-            string effectRole)
+            string effectRole,
+            UnityEngine.Object sourceAsset = null,
+            string originSocketId = "",
+            string targetSocketId = "",
+            bool fallbackUsed = false,
+            bool allowed = true)
         {
             if (AuthoredContentInstance.Stamp(
                     instance,
                     definitionType,
                     contentId,
-                    string.Empty,
-                    string.Empty,
+                    ResolveAssetGuid(sourceAsset),
+                    ResolveAssetPath(sourceAsset),
                     prefabName,
                     ownerWeaponId,
                     ownerAttackId,
-                    effectRole) != null)
+                    effectRole,
+                    definitionType,
+                    ownerWeaponId,
+                    ownerAttackId,
+                    effectRole,
+                    originSocketId,
+                    targetSocketId,
+                    "IdleAutoDefenseTemplateController",
+                    fallbackUsed,
+                    allowed) != null)
             {
                 AuthoredVisibleInstanceStampCount++;
             }
+        }
+
+        private static string ResolveAssetPath(UnityEngine.Object asset)
+        {
+#if UNITY_EDITOR
+            return asset == null ? string.Empty : UnityEditor.AssetDatabase.GetAssetPath(asset);
+#else
+            return string.Empty;
+#endif
+        }
+
+        private static string ResolveAssetGuid(UnityEngine.Object asset)
+        {
+#if UNITY_EDITOR
+            string path = ResolveAssetPath(asset);
+            return string.IsNullOrWhiteSpace(path) ? string.Empty : UnityEditor.AssetDatabase.AssetPathToGUID(path);
+#else
+            return string.Empty;
+#endif
+        }
+
+        private static string ResolveMuzzleSocketId(AttackDefinitionAsset attack)
+        {
+            return attack == null || string.IsNullOrWhiteSpace(attack.Id) ? string.Empty : attack.Id + ":muzzle.primary";
+        }
+
+        private static string ResolveTargetSocketId(AttackPresentationEventRecipe recipe)
+        {
+            if (recipe == null) return string.Empty;
+            if (recipe.SpawnPointRole == AttackPresentationSpawnPointRole.Target) return "target.center";
+            if (recipe.SpawnPointRole == AttackPresentationSpawnPointRole.ImpactPoint) return "target.impact";
+            return string.Empty;
         }
 
         private void PlayWeaponFirePresentation(AttackDefinitionAsset attack, Vector3 targetPosition)
@@ -4918,7 +4976,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             GameObject core = new GameObject(presentation.DisplayName);
             core.transform.SetParent(_root.transform, false);
             core.transform.position = position;
-            StampAuthoredVisibleInstance(core, "ObjectivePresentation", presentation.ContentId, core.name, string.Empty, string.Empty, "CoreBase");
+            StampAuthoredVisibleInstance(core, "ObjectivePresentation", presentation.ContentId, core.name, string.Empty, string.Empty, "CoreBase", _resolvedContentSet == null ? null : _resolvedContentSet.ContentSet);
             IReadOnlyList<IdleAutoDefenseKenneyModelBinding> models = presentation.Models;
             for (int i = 0; i < models.Count; i++)
             {
@@ -4972,7 +5030,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             root.transform.localPosition = position;
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
-            StampAuthoredVisibleInstance(root, "WeaponPresentation", weaponId, displayName, weaponId, attackId, "WeaponMount");
+            StampAuthoredVisibleInstance(root, "WeaponPresentation", weaponId, displayName, weaponId, attackId, "WeaponMount", _resolvedContentSet == null ? null : _resolvedContentSet.ContentSet, weaponId + ":mount", string.Empty);
 
             InstantiateKenneyModel(baseModelName, root.transform, Vector3.zero, Quaternion.identity, Vector3.one * 0.72f, tint);
             Transform yawPivot = new GameObject(displayName + " Yaw Pivot").transform;
@@ -4995,7 +5053,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 GameObject authoredInstance = Instantiate(authoredPrefab, recoilPivot, false);
                 authoredInstance.name = displayName + " Authored Weapon Visual";
-                StampAuthoredVisibleInstance(authoredInstance, "WeaponPrefab", weaponId, authoredPrefab.name, weaponId, attackId, "WeaponVisual");
+                StampAuthoredVisibleInstance(authoredInstance, "WeaponPrefab", weaponId, authoredPrefab.name, weaponId, attackId, "WeaponVisual", authoredPrefab, weaponId + ":muzzle.primary", string.Empty);
                 authoredInstance.transform.localPosition = Vector3.zero;
                 authoredInstance.transform.localRotation = Quaternion.identity;
                 authoredInstance.transform.localScale = Vector3.one;
@@ -5206,7 +5264,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 for (int i = 0; i < authoredModels.Length; i++)
                     authoredModels[i].EnsureModel();
                 TintRenderers(prefab, color);
-                StampAuthoredVisibleInstance(prefab, definitionType, contentId, sourcePrefab.name, ownerWeaponId, ownerAttackId, effectRole);
+                StampAuthoredVisibleInstance(prefab, definitionType, contentId, sourcePrefab.name, ownerWeaponId, ownerAttackId, effectRole, sourcePrefab);
             }
             else
             {
@@ -5267,13 +5325,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (slot != null)
             {
                 slot.name = binding.DisplayName;
-                StampAuthoredVisibleInstance(slot, "ModuleSlotPresentation", binding.SlotId, binding.ModelName, binding.WeaponId, string.Empty, "ModuleSlot");
+                StampAuthoredVisibleInstance(slot, "ModuleSlotPresentation", binding.SlotId, binding.ModelName, binding.WeaponId, string.Empty, "ModuleSlot", _resolvedContentSet == null ? null : _resolvedContentSet.ContentSet);
             }
         }
 
         private void CreateArenaBackdrop()
         {
             if (_root == null) return;
+            GameObject arenaRoot = new GameObject("Kenney Arena Backdrop");
+            arenaRoot.transform.SetParent(_root.transform, false);
+            StampAuthoredVisibleInstance(
+                arenaRoot,
+                "EnvironmentPresentation",
+                "environment.idle-auto-defense.arena",
+                arenaRoot.name,
+                string.Empty,
+                string.Empty,
+                "ArenaBackdrop",
+                _resolvedContentSet == null ? null : _resolvedContentSet.ContentSet);
             Color grass = new Color(0.52f, 0.86f, 0.46f);
             Color dirt = new Color(0.92f, 0.66f, 0.36f);
             const int half = 5;
@@ -5284,13 +5353,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     bool path = Math.Abs(x) <= 1 || Math.Abs(z) <= 1;
                     string model = path ? "tile-dirt" : "tile";
                     Color tint = path ? dirt : grass;
-                    InstantiateKenneyModel(model, _root.transform, new Vector3(x * 3f, -0.22f, z * 3f), Quaternion.identity, Vector3.one * 1.5f, tint);
+                    InstantiateKenneyModel(model, arenaRoot.transform, new Vector3(x * 3f, -0.22f, z * 3f), Quaternion.identity, Vector3.one * 1.5f, tint);
                 }
             }
 
-            InstantiateKenneyModel("detail-rocks", _root.transform, new Vector3(-7.8f, 0f, 6.9f), Quaternion.Euler(0f, 20f, 0f), Vector3.one * 1.15f, Color.white);
-            InstantiateKenneyModel("detail-tree", _root.transform, new Vector3(7.9f, 0f, -6.7f), Quaternion.Euler(0f, -25f, 0f), Vector3.one * 1.1f, Color.white);
-            InstantiateKenneyModel("tile-crystal", _root.transform, new Vector3(8.7f, -0.12f, 7.9f), Quaternion.identity, Vector3.one * 0.82f, new Color(0.55f, 0.85f, 1f));
+            InstantiateKenneyModel("detail-rocks", arenaRoot.transform, new Vector3(-7.8f, 0f, 6.9f), Quaternion.Euler(0f, 20f, 0f), Vector3.one * 1.15f, Color.white);
+            InstantiateKenneyModel("detail-tree", arenaRoot.transform, new Vector3(7.9f, 0f, -6.7f), Quaternion.Euler(0f, -25f, 0f), Vector3.one * 1.1f, Color.white);
+            InstantiateKenneyModel("tile-crystal", arenaRoot.transform, new Vector3(8.7f, -0.12f, 7.9f), Quaternion.identity, Vector3.one * 0.82f, new Color(0.55f, 0.85f, 1f));
         }
 
         private void CreateKenneyMarkerLine(string name, Vector3 center, Quaternion rotation, int count, Color tint)

@@ -9,16 +9,16 @@ Primary playable content set:
 - `contentset.template.basic-idle-auto-defense`
 - Source path: `TemplateSource~/BasicIdleAutoDefenseGame/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset`
 - Consumer import root: `Assets/GameContent/IdleAutoDefense`
-- Playable scene after generation/import: `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`
+- Playable scene after generation/import: `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`
 
 Weapon / Attack Visual Matrix:
 
 | Weapon | Attack | Mode | Projectile Prefab | Beam Prefab | Cast/Fire VFX | Impact VFX | Result |
 | ------ | ------ | ---- | ----------------- | ----------- | ------------- | ---------- | ------ |
-| Shard Launcher | `attack.template.shard-launcher` | Projectile | `template-projectile` | None | `template-placement-vfx`, `template-impact-vfx` | `template-impact-vfx` | Pass |
-| Pulse Beam | `attack.template.pulse-cannon` | Hitscan | None | `PulseBeamVfx` | `PulseBeamVfx` | `template-impact-vfx` | Pass |
-| Arc Burst | `attack.template.arc-burst` | Area | None | None | `template-placement-vfx`, `template-impact-vfx` | `template-impact-vfx` | Pass |
-| Homing Pulse | `attack.template.homing-pulse` | Projectile | `template-seeker-projectile` | None | `template-placement-vfx`, `template-impact-vfx` | `template-impact-vfx` | Pass |
+| Shard Launcher | `attack.template.shard-launcher` | Projectile | `KenneyShardProjectile` | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
+| Pulse Beam | `attack.template.pulse-cannon` | Hitscan | None | `PulseBeamVfx` | `PulseBeamVfx` | `KenneyImpactBurstVfx` | Pass |
+| Arc Burst | `attack.template.arc-burst` | Area | None | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
+| Homing Pulse | `attack.template.homing-pulse` | Projectile | `KenneyHomingProjectile` | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
 
 Authored runtime presentation:
 
