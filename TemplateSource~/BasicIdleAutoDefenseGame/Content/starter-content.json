@@ -1,8 +1,8 @@
 {
-  "contentPack": "contentpack.template.basic-idle-auto-defense",
-  "contentSet": "contentset.template.basic-idle-auto-defense",
+  "contentPack": "contentpack.idle-auto-defense.playable",
+  "contentSet": "contentset.idle-auto-defense.playable",
   "objective": {
-    "id": "template-core",
+    "id": "objective.idle-auto-defense.core",
     "maximumHealth": 240,
     "lives": 60,
     "contactRadius": 0.45
@@ -21,24 +21,24 @@
     ]
   },
   "enemies": [
-    "enemy.template.swarm",
-    "enemy.template.runner",
-    "enemy.template.tank",
-    "enemy.template.shielded",
-    "enemy.template.elite",
-    "enemy.template.boss"
+    "enemy.idle-auto-defense.swarm",
+    "enemy.idle-auto-defense.runner",
+    "enemy.idle-auto-defense.tank",
+    "enemy.idle-auto-defense.shielded",
+    "enemy.idle-auto-defense.elite",
+    "enemy.idle-auto-defense.boss"
   ],
   "attacks": [
-    "attack.template.pulse-cannon",
-    "attack.template.shard-launcher",
-    "attack.template.arc-burst",
-    "attack.template.homing-pulse"
+    "attack.idle-auto-defense.pulse-beam",
+    "attack.idle-auto-defense.shard-projectile",
+    "attack.idle-auto-defense.arc-burst",
+    "attack.idle-auto-defense.homing-pulse"
   ],
   "weapons": [
-    "weapon.template.pulse-cannon",
-    "weapon.template.shard-launcher",
-    "weapon.template.arc-burst-tower",
-    "weapon.template.homing-spire"
+    "weapon.idle-auto-defense.pulse-beam",
+    "weapon.idle-auto-defense.shard-launcher",
+    "weapon.idle-auto-defense.arc-burst",
+    "weapon.idle-auto-defense.homing-pulse"
   ],
   "economy": {
     "startingCredits": 10,
@@ -47,21 +47,21 @@
     "sessionLengthTicks": 5600
   },
   "spawnProfiles": [
-    "wave.template.authored.opening",
-    "wave.template.authored.runner-pressure",
-    "wave.template.authored.pressure",
-    "wave.template.authored.surge",
-    "wave.template.authored.elite",
-    "wave.template.authored.final",
-    "wave.template.authored.boss"
+    "wave.idle-auto-defense.opening",
+    "wave.idle-auto-defense.runner-pressure",
+    "wave.idle-auto-defense.pressure",
+    "wave.idle-auto-defense.surge",
+    "wave.idle-auto-defense.elite",
+    "wave.idle-auto-defense.final",
+    "wave.idle-auto-defense.boss"
   ],
   "upgrades": [
-    "upgrade.template.authored.damage-up",
-    "upgrade.template.authored.fire-rate-up",
-    "upgrade.template.authored.range-up",
-    "upgrade.template.authored.projectile-speed-up",
-    "upgrade.template.authored.core-reinforcement",
-    "upgrade.template.authored.credit-reward"
+    "upgrade.idle-auto-defense.damage-up",
+    "upgrade.idle-auto-defense.fire-rate-up",
+    "upgrade.idle-auto-defense.range-up",
+    "upgrade.idle-auto-defense.projectile-speed-up",
+    "upgrade.idle-auto-defense.core-reinforcement",
+    "upgrade.idle-auto-defense.credit-reward"
   ],
   "notes": "The runtime uses authored Game Content assets in this folder. The setup wizard copies them into product-owned Assets/GameContent folders and remaps their GUIDs."
 }

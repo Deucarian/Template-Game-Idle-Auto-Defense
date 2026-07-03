@@ -98,7 +98,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
         [UnityTest]
         public IEnumerator ProjectileDamageWaitsForImpactCallback()
         {
-            GameObject host = new GameObject("idle-auto-defense-template-projectile-impact-probe");
+            GameObject host = new GameObject("idle-auto-defense-projectile-impact-probe");
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
             controller.RewardDraftPausesCombat = false;

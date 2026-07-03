@@ -18,7 +18,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         public string RequiredPackagesCsv = "com.deucarian.template.game.idle-auto-defense, com.deucarian.attacks, com.deucarian.weapon-systems, com.deucarian.run-upgrades, com.deucarian.game-content-authoring";
         public string MinimumVersionsCsv = string.Empty;
         public string CompatibilityNotes = "Validated with the Idle Auto Defense template package set.";
-        public string TagsCsv = "template, content-pack, idle-auto-defense";
+        public string TagsCsv = "idle-auto-defense, content-pack, playable";
         public string OutputRoot = "Assets/GameContent/ContentPacks";
     }
 

@@ -199,7 +199,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     [Serializable]
     public sealed class IdleAutoDefenseObjectivePresentationBinding
     {
-        [SerializeField] private string _contentId = "objective.template-core";
+        [SerializeField] private string _contentId = "objective.idle-auto-defense.core";
         [SerializeField] private string _displayName = "Kenney 3D Core Base";
         [SerializeField] private IdleAutoDefenseKenneyModelBinding[] _models = CreateDefaultModels();
 
@@ -208,7 +208,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new IdleAutoDefenseObjectivePresentationBinding();
         }
 
-        public string ContentId => string.IsNullOrWhiteSpace(_contentId) ? "objective.template-core" : _contentId;
+        public string ContentId => string.IsNullOrWhiteSpace(_contentId) ? "objective.idle-auto-defense.core" : _contentId;
         public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? ContentId : _displayName;
         public bool HasAuthoredModels => _models != null && _models.Length > 0;
 

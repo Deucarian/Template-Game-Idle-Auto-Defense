@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93de16d0cab74525af394d506739d60d, type: 3}
+  m_Name: upgrade.idle-auto-defense.credit-reward_RunUpgradeDefinition
+  m_EditorClassIdentifier: Deucarian.RunUpgrades.Authoring::Deucarian.RunUpgrades.Authoring.RunUpgradeDefinitionAsset
+  _id: upgrade.idle-auto-defense.credit-reward
+  _displayName: Credit Reward
+  _icon: {fileID: 21300000, guid: 2cdc5437e5d7e244d9342e4219984251, type: 3}
+  _description: Increases currency rewards for the current run.
+  _tags:
+  - idle-auto-defense
+  - starter
+  _economy: {fileID: 11400000, guid: 0a59f8d7f75243c3abb0dc79da2c537f, type: 2}
+  _effects: {fileID: 11400000, guid: 50537e219a8040c5931ec3a4e6b61b7b, type: 2}

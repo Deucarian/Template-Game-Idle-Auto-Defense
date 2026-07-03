@@ -64,33 +64,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new[]
             {
                 new IdleAutoDefenseTemplateStageContent(
-                    "stage.template.first-orbit",
+                    "stage.idle-auto-defense.first-orbit",
                     "First Orbit",
-                    "encounter.template.first-orbit",
-                    new[] { "enemy.template.swarm", "enemy.template.runner", "enemy.template.tank" },
-                    new[] { "weapon.template.pulse-cannon", "weapon.template.shard-launcher" },
-                    new[] { "upgrade.template.damage-up", "upgrade.template.projectile-speed-up", "upgrade.template.objective-repair", "upgrade.template.offline-gain-up" }),
+                    "encounter.idle-auto-defense.first-orbit",
+                    new[] { "enemy.idle-auto-defense.swarm", "enemy.idle-auto-defense.runner", "enemy.idle-auto-defense.tank" },
+                    new[] { "weapon.idle-auto-defense.pulse-beam", "weapon.idle-auto-defense.shard-launcher" },
+                    new[] { "upgrade.idle-auto-defense.damage-up", "upgrade.idle-auto-defense.projectile-speed-up", "upgrade.idle-auto-defense.objective-repair", "upgrade.idle-auto-defense.offline-gain-up" }),
                 new IdleAutoDefenseTemplateStageContent(
-                    "stage.template.pressure-ring",
+                    "stage.idle-auto-defense.pressure-ring",
                     "Pressure Ring",
-                    "encounter.template.pressure-ring",
-                    new[] { "enemy.template.runner", "enemy.template.tank", "enemy.template.shielded", "enemy.template.elite", "enemy.template.swarm" },
-                    new[] { "weapon.template.pulse-cannon", "weapon.template.shard-launcher" },
-                    new[] { "upgrade.template.fire-rate-up", "upgrade.template.projectile-count-up", "upgrade.template.objective-max-health-up", "upgrade.template.enemy-reward-up" }),
+                    "encounter.idle-auto-defense.pressure-ring",
+                    new[] { "enemy.idle-auto-defense.runner", "enemy.idle-auto-defense.tank", "enemy.idle-auto-defense.shielded", "enemy.idle-auto-defense.elite", "enemy.idle-auto-defense.swarm" },
+                    new[] { "weapon.idle-auto-defense.pulse-beam", "weapon.idle-auto-defense.shard-launcher" },
+                    new[] { "upgrade.idle-auto-defense.fire-rate-up", "upgrade.idle-auto-defense.projectile-count-up", "upgrade.idle-auto-defense.objective-max-health-up", "upgrade.idle-auto-defense.enemy-reward-up" }),
                 new IdleAutoDefenseTemplateStageContent(
-                    "stage.template.boss-pulse",
+                    "stage.idle-auto-defense.boss-pulse",
                     "Boss Pulse",
-                    "encounter.template.boss-pulse",
-                    new[] { "enemy.template.runner", "enemy.template.shielded", "enemy.template.tank", "enemy.template.elite", "enemy.template.boss" },
-                    new[] { "weapon.template.pulse-cannon", "weapon.template.shard-launcher" },
-                    new[] { "upgrade.template.direct-specialization", "upgrade.template.projectile-specialization", "upgrade.template.crit-chance-intent", "upgrade.template.crit-damage-intent" }),
+                    "encounter.idle-auto-defense.boss-pulse",
+                    new[] { "enemy.idle-auto-defense.runner", "enemy.idle-auto-defense.shielded", "enemy.idle-auto-defense.tank", "enemy.idle-auto-defense.elite", "enemy.idle-auto-defense.boss" },
+                    new[] { "weapon.idle-auto-defense.pulse-beam", "weapon.idle-auto-defense.shard-launcher" },
+                    new[] { "upgrade.idle-auto-defense.direct-specialization", "upgrade.idle-auto-defense.projectile-specialization", "upgrade.idle-auto-defense.crit-chance-intent", "upgrade.idle-auto-defense.crit-damage-intent" }),
                 new IdleAutoDefenseTemplateStageContent(
-                    "stage.template.endless-placeholder",
+                    "stage.idle-auto-defense.endless-placeholder",
                     "Endless Mode Placeholder",
-                    "encounter.template.endless-placeholder",
-                    new[] { "enemy.template.swarm", "enemy.template.runner" },
-                    new[] { "weapon.template.pulse-cannon", "weapon.template.shard-launcher" },
-                    new[] { "upgrade.template.reroll-bonus", "upgrade.template.enemy-reward-up", "upgrade.template.offline-gain-up" },
+                    "encounter.idle-auto-defense.endless-placeholder",
+                    new[] { "enemy.idle-auto-defense.swarm", "enemy.idle-auto-defense.runner" },
+                    new[] { "weapon.idle-auto-defense.pulse-beam", "weapon.idle-auto-defense.shard-launcher" },
+                    new[] { "upgrade.idle-auto-defense.reroll-bonus", "upgrade.idle-auto-defense.enemy-reward-up", "upgrade.idle-auto-defense.offline-gain-up" },
                     endlessPlaceholder: true)
             };
         }
@@ -99,10 +99,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.pulse-cannon", "Pulse Beam", "direct-single-target", true, "Supported by WeaponFireMode.DirectAttack."),
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.shard-launcher", "Shard Launcher", "projectile", true, "Supported by WeaponFireMode.Projectile."),
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.arc-burst-tower", "Arc Burst Module", "area", true, "Sample controller unlocks this as live module damage."),
-                new IdleAutoDefenseTemplateModuleContent("weapon.template.homing-spire", "Homing Pulse Module", "homing-projectile", true, "Sample controller unlocks this as live module damage.")
+                new IdleAutoDefenseTemplateModuleContent("weapon.idle-auto-defense.pulse-beam", "Pulse Beam", "direct-single-target", true, "Supported by WeaponFireMode.DirectAttack."),
+                new IdleAutoDefenseTemplateModuleContent("weapon.idle-auto-defense.shard-launcher", "Shard Launcher", "projectile", true, "Supported by WeaponFireMode.Projectile."),
+                new IdleAutoDefenseTemplateModuleContent("weapon.idle-auto-defense.arc-burst", "Arc Burst Module", "area", true, "Sample controller unlocks this as live module damage."),
+                new IdleAutoDefenseTemplateModuleContent("weapon.idle-auto-defense.homing-pulse", "Homing Pulse Module", "homing-projectile", true, "Sample controller unlocks this as live module damage.")
             };
         }
     }

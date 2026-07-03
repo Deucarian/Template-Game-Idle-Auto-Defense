@@ -198,7 +198,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         public float DifficultyMultiplier = 1f;
         public int SessionLengthTicks = 180;
         public bool Endless;
-        public string TagsCsv = "template, run";
+        public string TagsCsv = "idle-auto-defense, run";
         public string OutputRoot = "Assets/GameContent/ContentSets";
         public IdleAutoDefenseContentSetRuntimeSettings RuntimeSettings = IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
     }

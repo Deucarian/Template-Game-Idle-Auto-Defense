@@ -26,27 +26,27 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 {
     public static class BasicIdleAutoDefenseGame
     {
-        public static readonly DamageTypeId DamageType = new DamageTypeId("damage.template.basic");
-        public static readonly AttackDefinitionId PulseAttackId = new AttackDefinitionId("attack.template.pulse-cannon");
-        public static readonly AttackDefinitionId ShardAttackId = new AttackDefinitionId("attack.template.shard-launcher");
-        public static readonly AttackDefinitionId ArcBurstAttackId = new AttackDefinitionId("attack.template.arc-burst");
-        public static readonly AttackDefinitionId HomingPulseAttackId = new AttackDefinitionId("attack.template.homing-pulse");
+        public static readonly DamageTypeId DamageType = new DamageTypeId("damage.idle-auto-defense.basic");
+        public static readonly AttackDefinitionId PulseAttackId = new AttackDefinitionId("attack.idle-auto-defense.pulse-beam");
+        public static readonly AttackDefinitionId ShardAttackId = new AttackDefinitionId("attack.idle-auto-defense.shard-projectile");
+        public static readonly AttackDefinitionId ArcBurstAttackId = new AttackDefinitionId("attack.idle-auto-defense.arc-burst");
+        public static readonly AttackDefinitionId HomingPulseAttackId = new AttackDefinitionId("attack.idle-auto-defense.homing-pulse");
         public static readonly AttackDefinitionId AttackId = PulseAttackId;
-        public static readonly ProjectileDefinitionId ShardProjectileId = new ProjectileDefinitionId("projectile.template.shard");
-        public static readonly ProjectileDefinitionId HomingPulseProjectileId = new ProjectileDefinitionId("projectile.template.homing-pulse");
+        public static readonly ProjectileDefinitionId ShardProjectileId = new ProjectileDefinitionId("projectile.idle-auto-defense.shard");
+        public static readonly ProjectileDefinitionId HomingPulseProjectileId = new ProjectileDefinitionId("projectile.idle-auto-defense.homing-pulse");
         public static readonly ProjectileDefinitionId ProjectileId = ShardProjectileId;
-        public static readonly WorldSpawnableId SwarmEnemySpawnableId = new WorldSpawnableId("enemy.template.swarm");
-        public static readonly WorldSpawnableId RunnerEnemySpawnableId = new WorldSpawnableId("enemy.template.runner");
-        public static readonly WorldSpawnableId TankEnemySpawnableId = new WorldSpawnableId("enemy.template.tank");
-        public static readonly WorldSpawnableId ShieldedEnemySpawnableId = new WorldSpawnableId("enemy.template.shielded");
-        public static readonly WorldSpawnableId EliteEnemySpawnableId = new WorldSpawnableId("enemy.template.elite");
-        public static readonly WorldSpawnableId BossEnemySpawnableId = new WorldSpawnableId("enemy.template.boss");
+        public static readonly WorldSpawnableId SwarmEnemySpawnableId = new WorldSpawnableId("enemy.idle-auto-defense.swarm");
+        public static readonly WorldSpawnableId RunnerEnemySpawnableId = new WorldSpawnableId("enemy.idle-auto-defense.runner");
+        public static readonly WorldSpawnableId TankEnemySpawnableId = new WorldSpawnableId("enemy.idle-auto-defense.tank");
+        public static readonly WorldSpawnableId ShieldedEnemySpawnableId = new WorldSpawnableId("enemy.idle-auto-defense.shielded");
+        public static readonly WorldSpawnableId EliteEnemySpawnableId = new WorldSpawnableId("enemy.idle-auto-defense.elite");
+        public static readonly WorldSpawnableId BossEnemySpawnableId = new WorldSpawnableId("enemy.idle-auto-defense.boss");
         public static readonly WorldSpawnableId EnemySpawnableId = SwarmEnemySpawnableId;
-        public static readonly WorldSpawnableId ProjectileSpawnableId = new WorldSpawnableId("projectile.template.shard");
-        public static readonly WeaponDefinitionId PulseCannonWeaponId = new WeaponDefinitionId("weapon.template.pulse-cannon");
-        public static readonly WeaponDefinitionId ShardLauncherWeaponId = new WeaponDefinitionId("weapon.template.shard-launcher");
-        public static readonly WeaponDefinitionId ArcBurstTowerWeaponId = new WeaponDefinitionId("weapon.template.arc-burst-tower");
-        public static readonly WeaponDefinitionId HomingSpireWeaponId = new WeaponDefinitionId("weapon.template.homing-spire");
+        public static readonly WorldSpawnableId ProjectileSpawnableId = new WorldSpawnableId("projectile.idle-auto-defense.shard");
+        public static readonly WeaponDefinitionId PulseCannonWeaponId = new WeaponDefinitionId("weapon.idle-auto-defense.pulse-beam");
+        public static readonly WeaponDefinitionId ShardLauncherWeaponId = new WeaponDefinitionId("weapon.idle-auto-defense.shard-launcher");
+        public static readonly WeaponDefinitionId ArcBurstTowerWeaponId = new WeaponDefinitionId("weapon.idle-auto-defense.arc-burst");
+        public static readonly WeaponDefinitionId HomingSpireWeaponId = new WeaponDefinitionId("weapon.idle-auto-defense.homing-pulse");
         public static readonly WeaponDefinitionId ArcEmitterWeaponId = ArcBurstTowerWeaponId;
         public static readonly WeaponDefinitionId OrbitalShotWeaponId = HomingSpireWeaponId;
         private static readonly string[] RequiredTemplateAttackIds =
@@ -72,18 +72,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EliteEnemySpawnableId.Value,
             BossEnemySpawnableId.Value
         };
-        public static readonly CurrencyId Credits = new CurrencyId("currency.template.credits");
-        public static readonly CurrencyId Parts = new CurrencyId("currency.template.parts");
-        public static readonly TrackId AccountXp = new TrackId("track.template.account");
-        public static readonly UnlockId StarterUnlock = new UnlockId("unlock.template.starter");
-        public static readonly UnlockId Stage2Unlock = new UnlockId("unlock.template.stage.pressure-ring");
-        public static readonly UnlockId Stage3Unlock = new UnlockId("unlock.template.stage.boss-pulse");
-        public static readonly UnlockId PulseCannonUnlock = new UnlockId("unlock.template.module.pulse-cannon");
-        public static readonly UnlockId ShardLauncherUnlock = new UnlockId("unlock.template.module.shard-launcher");
-        public static readonly ResearchNodeId CorePlatingResearch = new ResearchNodeId("research.template.core-plating");
-        public static readonly ResearchNodeId PulseCapacitorResearch = new ResearchNodeId("research.template.pulse-capacitor");
-        public static readonly ResearchNodeId ShardLoaderResearch = new ResearchNodeId("research.template.shard-loader");
-        public static readonly ResearchNodeId OfflineRoutingResearch = new ResearchNodeId("research.template.offline-routing");
+        public static readonly CurrencyId Credits = new CurrencyId("currency.idle-auto-defense.credits");
+        public static readonly CurrencyId Parts = new CurrencyId("currency.idle-auto-defense.parts");
+        public static readonly TrackId AccountXp = new TrackId("track.idle-auto-defense.account");
+        public static readonly UnlockId StarterUnlock = new UnlockId("unlock.idle-auto-defense.starter");
+        public static readonly UnlockId Stage2Unlock = new UnlockId("unlock.idle-auto-defense.stage.pressure-ring");
+        public static readonly UnlockId Stage3Unlock = new UnlockId("unlock.idle-auto-defense.stage.boss-pulse");
+        public static readonly UnlockId PulseCannonUnlock = new UnlockId("unlock.idle-auto-defense.module.pulse-cannon");
+        public static readonly UnlockId ShardLauncherUnlock = new UnlockId("unlock.idle-auto-defense.module.shard-launcher");
+        public static readonly ResearchNodeId CorePlatingResearch = new ResearchNodeId("research.idle-auto-defense.core-plating");
+        public static readonly ResearchNodeId PulseCapacitorResearch = new ResearchNodeId("research.idle-auto-defense.pulse-capacitor");
+        public static readonly ResearchNodeId ShardLoaderResearch = new ResearchNodeId("research.idle-auto-defense.shard-loader");
+        public static readonly ResearchNodeId OfflineRoutingResearch = new ResearchNodeId("research.idle-auto-defense.offline-routing");
 
         public static AutoDefenseDefinition CreateDefinition(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null, IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null)
         {
@@ -95,7 +95,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
             AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("template-core"), Vector3.zero, 240, DamageType, 0.45f, 60, 2),
+                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("objective.idle-auto-defense.core"), Vector3.zero, 240, DamageType, 0.45f, 60, 2),
                 CreateSampleSpawnRing(),
                 enemies,
                 mounts,
@@ -123,7 +123,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (waveDefinitions == null || waveDefinitions.Count == 0)
                 waveDefinitions = CreateWaveDefinitions();
             return new EncounterDefinition(
-                new EncounterId("encounter.template.first-orbit"),
+                new EncounterId("encounter.idle-auto-defense.first-orbit"),
                 null,
                 CreateEncounterWaves(waveDefinitions),
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
@@ -139,10 +139,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                new StageDefinition(new StageId("stage.template.first-orbit"), new EncounterId("encounter.template.first-orbit"), new[] { new RewardReferenceId("reward.template.first-orbit") }),
-                new StageDefinition(new StageId("stage.template.pressure-ring"), new EncounterId("encounter.template.pressure-ring"), new[] { new RewardReferenceId("reward.template.pressure-ring") }),
-                new StageDefinition(new StageId("stage.template.boss-pulse"), new EncounterId("encounter.template.boss-pulse"), new[] { new RewardReferenceId("reward.template.boss-pulse") }),
-                new StageDefinition(new StageId("stage.template.endless-placeholder"), new EncounterId("encounter.template.endless-placeholder"), new[] { new RewardReferenceId("reward.template.endless-placeholder") })
+                new StageDefinition(new StageId("stage.idle-auto-defense.first-orbit"), new EncounterId("encounter.idle-auto-defense.first-orbit"), new[] { new RewardReferenceId("reward.idle-auto-defense.first-orbit") }),
+                new StageDefinition(new StageId("stage.idle-auto-defense.pressure-ring"), new EncounterId("encounter.idle-auto-defense.pressure-ring"), new[] { new RewardReferenceId("reward.idle-auto-defense.pressure-ring") }),
+                new StageDefinition(new StageId("stage.idle-auto-defense.boss-pulse"), new EncounterId("encounter.idle-auto-defense.boss-pulse"), new[] { new RewardReferenceId("reward.idle-auto-defense.boss-pulse") }),
+                new StageDefinition(new StageId("stage.idle-auto-defense.endless-placeholder"), new EncounterId("encounter.idle-auto-defense.endless-placeholder"), new[] { new RewardReferenceId("reward.idle-auto-defense.endless-placeholder") })
             };
         }
 
@@ -170,7 +170,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < channels.Length; i++)
             {
                 groups.Add(SpawnGroupDefinition.Fixed(
-                    new SpawnGroupId("group.template.first-orbit.swarm." + channels[i]),
+                    new SpawnGroupId("group.idle-auto-defense.first-orbit.swarm." + channels[i]),
                     new SpawnableId(SwarmEnemySpawnableId.Value),
                     3,
                     1,
@@ -179,16 +179,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     new SpawnChannelId(channels[i])));
             }
 
-            groups.Add(SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.first-orbit.runner-east"), new SpawnableId(RunnerEnemySpawnableId.Value), 2, 1, 42, 18, new SpawnChannelId("perimeter-east")));
-            groups.Add(SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.first-orbit.tank-west"), new SpawnableId(TankEnemySpawnableId.Value), 1, 1, 78, 0, new SpawnChannelId("perimeter-west")));
+            groups.Add(SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.first-orbit.runner-east"), new SpawnableId(RunnerEnemySpawnableId.Value), 2, 1, 42, 18, new SpawnChannelId("perimeter-east")));
+            groups.Add(SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.first-orbit.tank-west"), new SpawnableId(TankEnemySpawnableId.Value), 1, 1, 78, 0, new SpawnChannelId("perimeter-west")));
 
             return new EncounterDefinition(
-                new EncounterId("encounter.template.first-orbit"),
+                new EncounterId("encounter.idle-auto-defense.first-orbit"),
                 null,
                 new[]
                 {
-                    new WaveDefinition(new WaveId("wave.template.first-orbit.opening"), 0, groups.GetRange(0, 4)),
-                    new WaveDefinition(new WaveId("wave.template.first-orbit.pressure"), 36, groups.GetRange(4, 2))
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.first-orbit.opening"), 0, groups.GetRange(0, 4)),
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.first-orbit.pressure"), 36, groups.GetRange(4, 2))
                 },
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
                 seed: 20260623);
@@ -197,24 +197,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static EncounterDefinition CreatePressureRingEncounterDefinition()
         {
             return new EncounterDefinition(
-                new EncounterId("encounter.template.pressure-ring"),
+                new EncounterId("encounter.idle-auto-defense.pressure-ring"),
                 null,
                 new[]
                 {
-                    new WaveDefinition(new WaveId("wave.template.pressure-ring.runners"), 0, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.pressure-ring.runners"), 0, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.runner-north"), new SpawnableId(RunnerEnemySpawnableId.Value), 4, 1, 0, 12, new SpawnChannelId("perimeter-north")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.runner-south"), new SpawnableId(RunnerEnemySpawnableId.Value), 4, 1, 8, 12, new SpawnChannelId("perimeter-south"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.pressure-ring.runner-north"), new SpawnableId(RunnerEnemySpawnableId.Value), 4, 1, 0, 12, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.pressure-ring.runner-south"), new SpawnableId(RunnerEnemySpawnableId.Value), 4, 1, 8, 12, new SpawnChannelId("perimeter-south"))
                     }),
-                    new WaveDefinition(new WaveId("wave.template.pressure-ring.armor"), 48, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.pressure-ring.armor"), 48, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.shielded-east"), new SpawnableId(ShieldedEnemySpawnableId.Value), 3, 1, 0, 20, new SpawnChannelId("perimeter-east")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.tank-west"), new SpawnableId(TankEnemySpawnableId.Value), 2, 1, 18, 28, new SpawnChannelId("perimeter-west"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.pressure-ring.shielded-east"), new SpawnableId(ShieldedEnemySpawnableId.Value), 3, 1, 0, 20, new SpawnChannelId("perimeter-east")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.pressure-ring.tank-west"), new SpawnableId(TankEnemySpawnableId.Value), 2, 1, 18, 28, new SpawnChannelId("perimeter-west"))
                     }),
-                    new WaveDefinition(new WaveId("wave.template.pressure-ring.elite"), 108, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.pressure-ring.elite"), 108, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.elite-north"), new SpawnableId(EliteEnemySpawnableId.Value), 1, 1, 0, 0, new SpawnChannelId("perimeter-north")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.pressure-ring.swarm-all"), new SpawnableId(SwarmEnemySpawnableId.Value), 8, 2, 8, 18, new SpawnChannelId("perimeter-south"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.pressure-ring.elite-north"), new SpawnableId(EliteEnemySpawnableId.Value), 1, 1, 0, 0, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.pressure-ring.swarm-all"), new SpawnableId(SwarmEnemySpawnableId.Value), 8, 2, 8, 18, new SpawnChannelId("perimeter-south"))
                     })
                 },
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
@@ -224,24 +224,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static EncounterDefinition CreateBossPulseEncounterDefinition()
         {
             return new EncounterDefinition(
-                new EncounterId("encounter.template.boss-pulse"),
+                new EncounterId("encounter.idle-auto-defense.boss-pulse"),
                 null,
                 new[]
                 {
-                    new WaveDefinition(new WaveId("wave.template.boss-pulse.breakers"), 0, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.boss-pulse.breakers"), 0, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.runner-burst-north"), new SpawnableId(RunnerEnemySpawnableId.Value), 8, 4, 0, 8, new SpawnChannelId("perimeter-north")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.runner-burst-east"), new SpawnableId(RunnerEnemySpawnableId.Value), 8, 4, 0, 8, new SpawnChannelId("perimeter-east"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.boss-pulse.runner-burst-north"), new SpawnableId(RunnerEnemySpawnableId.Value), 8, 4, 0, 8, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.boss-pulse.runner-burst-east"), new SpawnableId(RunnerEnemySpawnableId.Value), 8, 4, 0, 8, new SpawnChannelId("perimeter-east"))
                     }),
-                    new WaveDefinition(new WaveId("wave.template.boss-pulse.guard"), 28, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.boss-pulse.guard"), 28, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.shielded-ring"), new SpawnableId(ShieldedEnemySpawnableId.Value), 4, 2, 0, 18, new SpawnChannelId("perimeter-west")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.tank-ring"), new SpawnableId(TankEnemySpawnableId.Value), 3, 1, 12, 24, new SpawnChannelId("perimeter-south"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.boss-pulse.shielded-ring"), new SpawnableId(ShieldedEnemySpawnableId.Value), 4, 2, 0, 18, new SpawnChannelId("perimeter-west")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.boss-pulse.tank-ring"), new SpawnableId(TankEnemySpawnableId.Value), 3, 1, 12, 24, new SpawnChannelId("perimeter-south"))
                     }),
-                    new WaveDefinition(new WaveId("wave.template.boss-pulse.boss"), 80, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.boss-pulse.boss"), 80, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.elite"), new SpawnableId(EliteEnemySpawnableId.Value), 2, 1, 0, 18, new SpawnChannelId("perimeter-east")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.boss-pulse.boss"), new SpawnableId(BossEnemySpawnableId.Value), 1, 1, 18, 0, new SpawnChannelId("perimeter-north"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.boss-pulse.elite"), new SpawnableId(EliteEnemySpawnableId.Value), 2, 1, 0, 18, new SpawnChannelId("perimeter-east")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.boss-pulse.boss"), new SpawnableId(BossEnemySpawnableId.Value), 1, 1, 18, 0, new SpawnChannelId("perimeter-north"))
                     })
                 },
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
@@ -251,14 +251,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static EncounterDefinition CreateEndlessPlaceholderEncounterDefinition()
         {
             return new EncounterDefinition(
-                new EncounterId("encounter.template.endless-placeholder"),
+                new EncounterId("encounter.idle-auto-defense.endless-placeholder"),
                 null,
                 new[]
                 {
-                    new WaveDefinition(new WaveId("wave.template.endless-placeholder.loop-seed"), 0, new[]
+                    new WaveDefinition(new WaveId("wave.idle-auto-defense.endless-placeholder.loop-seed"), 0, new[]
                     {
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.endless-placeholder.swarm"), new SpawnableId(SwarmEnemySpawnableId.Value), 4, 1, 0, 16, new SpawnChannelId("perimeter-north")),
-                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.template.endless-placeholder.runner"), new SpawnableId(RunnerEnemySpawnableId.Value), 2, 1, 24, 20, new SpawnChannelId("perimeter-east"))
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.endless-placeholder.swarm"), new SpawnableId(SwarmEnemySpawnableId.Value), 4, 1, 0, 16, new SpawnChannelId("perimeter-north")),
+                        SpawnGroupDefinition.Fixed(new SpawnGroupId("group.idle-auto-defense.endless-placeholder.runner"), new SpawnableId(RunnerEnemySpawnableId.Value), 2, 1, 24, 20, new SpawnChannelId("perimeter-east"))
                     })
                 },
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
@@ -335,9 +335,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     4.7f,
                     ShardProjectileId.Value,
                     buildCost: 35,
-                    upgradeGroupId: "upgrade.group.template.shard",
-                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Shard Launcher Presentation", "weapon-ballista", new Color(1f, 0.45f, 0.1f)),
-                    tags: new[] { "template", "projectile", "tower" }),
+                    upgradeGroupId: "upgrade.group.idle-auto-defense.shard",
+                    prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Shard Launcher Presentation", "weapon-ballista", new Color(1f, 0.45f, 0.1f)),
+                    tags: new[] { "idle-auto-defense", "projectile", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
                     PulseCannonWeaponId.Value,
                     "Pulse Beam",
@@ -346,9 +346,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     72,
                     5.0f,
                     buildCost: 25,
-                    upgradeGroupId: "upgrade.group.template.pulse",
-                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Pulse Beam Presentation", "weapon-turret", new Color(0.35f, 0.82f, 1f)),
-                    tags: new[] { "template", "hitscan", "tower" }),
+                    upgradeGroupId: "upgrade.group.idle-auto-defense.pulse",
+                    prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Pulse Beam Presentation", "weapon-turret", new Color(0.35f, 0.82f, 1f)),
+                    tags: new[] { "idle-auto-defense", "hitscan", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
                     ArcBurstTowerWeaponId.Value,
                     "Arc Burst Module",
@@ -357,9 +357,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     108,
                     4.1f,
                     buildCost: 65,
-                    upgradeGroupId: "upgrade.group.template.arc",
-                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Arc Burst Presentation", "weapon-catapult", new Color(1f, 0.72f, 0.18f)),
-                    tags: new[] { "template", "area", "tower" }),
+                    upgradeGroupId: "upgrade.group.idle-auto-defense.arc",
+                    prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Arc Burst Presentation", "weapon-catapult", new Color(1f, 0.72f, 0.18f)),
+                    tags: new[] { "idle-auto-defense", "area", "tower" }),
                 WeaponDefinitionAsset.CreateTransient(
                     HomingSpireWeaponId.Value,
                     "Homing Pulse Module",
@@ -369,9 +369,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     6.3f,
                     HomingPulseProjectileId.Value,
                     buildCost: 55,
-                    upgradeGroupId: "upgrade.group.template.homing",
-                    prefab: CreateTransientWeaponPresentationPrefab("Template Transient Homing Pulse Presentation", "weapon-cannon", new Color(0.8f, 0.42f, 1f)),
-                    tags: new[] { "template", "homing", "tower" })
+                    upgradeGroupId: "upgrade.group.idle-auto-defense.homing",
+                    prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Homing Pulse Presentation", "weapon-cannon", new Color(0.8f, 0.42f, 1f)),
+                    tags: new[] { "idle-auto-defense", "homing", "tower" })
             };
         }
 
@@ -480,12 +480,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 18f, 0.68f, 1, 4f, DamageType.Value, 0.28f, tags: new[] { "template", "swarm" }),
-                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 24f, 1.08f, 2, 5f, DamageType.Value, 0.27f, tags: new[] { "template", "runner" }),
-                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 68f, 0.46f, 4, 10f, DamageType.Value, 0.48f, tags: new[] { "template", "tank" }),
-                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 42f, 0.62f, 3, 7f, DamageType.Value, 0.38f, tags: new[] { "template", "shielded" }),
-                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 155f, 0.52f, 8, 26f, DamageType.Value, 0.54f, tags: new[] { "template", "elite" }),
-                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 360f, 0.34f, 18, 60f, DamageType.Value, 0.82f, tags: new[] { "template", "boss" })
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 18f, 0.68f, 1, 4f, DamageType.Value, 0.28f, tags: new[] { "idle-auto-defense", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 24f, 1.08f, 2, 5f, DamageType.Value, 0.27f, tags: new[] { "idle-auto-defense", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 68f, 0.46f, 4, 10f, DamageType.Value, 0.48f, tags: new[] { "idle-auto-defense", "tank" }),
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 42f, 0.62f, 3, 7f, DamageType.Value, 0.38f, tags: new[] { "idle-auto-defense", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 155f, 0.52f, 8, 26f, DamageType.Value, 0.54f, tags: new[] { "idle-auto-defense", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 360f, 0.34f, 18, 60f, DamageType.Value, 0.82f, tags: new[] { "idle-auto-defense", "boss" })
             };
         }
 
@@ -566,7 +566,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return new[]
             {
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.opening",
+                    "wave.idle-auto-defense.opening",
                     "Opening Wave",
                     0,
                     new[]
@@ -575,9 +575,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[1], 2, 1, 240, 96, "perimeter-east"),
                         new WaveEntryRecipe(enemies[2], 1, 1, 420, 0, "perimeter-northwest")
                     },
-                    new[] { "template", "opening" }),
+                    new[] { "idle-auto-defense", "opening" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.runner-pressure",
+                    "wave.idle-auto-defense.runner-pressure",
                     "Runner Pressure",
                     620,
                     new[]
@@ -585,9 +585,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[1], 5, 1, 0, 64, "perimeter-southeast", 1),
                         new WaveEntryRecipe(enemies[0], 6, 1, 90, 58, "perimeter-northeast", 1)
                     },
-                    new[] { "template", "runner-pressure" }),
+                    new[] { "idle-auto-defense", "runner-pressure" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.pressure",
+                    "wave.idle-auto-defense.pressure",
                     "Mixed Pressure",
                     1180,
                     new[]
@@ -596,9 +596,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[2], 2, 1, 110, 96, "perimeter-west", 2),
                         new WaveEntryRecipe(enemies[1], 5, 1, 190, 54, "perimeter-northeast", 2)
                     },
-                    new[] { "template", "pressure" }),
+                    new[] { "idle-auto-defense", "pressure" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.surge",
+                    "wave.idle-auto-defense.surge",
                     "Tank Break",
                     1780,
                     new[]
@@ -607,9 +607,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[1], 5, 1, 120, 58, "perimeter-southeast", 1),
                         new WaveEntryRecipe(enemies[3], 3, 1, 250, 84, "perimeter-west", 2)
                     },
-                    new[] { "template", "tank-break" }),
+                    new[] { "idle-auto-defense", "tank-break" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.elite",
+                    "wave.idle-auto-defense.elite",
                     "Elite Pressure",
                     2480,
                     new[]
@@ -618,9 +618,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[1], 6, 1, 140, 56, "perimeter-east", 2),
                         new WaveEntryRecipe(enemies[3], 3, 1, 300, 82, "perimeter-south", 2)
                     },
-                    new[] { "template", "elite" }),
+                    new[] { "idle-auto-defense", "elite" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.final",
+                    "wave.idle-auto-defense.final",
                     "Final Surge",
                     3200,
                     new[]
@@ -629,9 +629,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[3], 4, 1, 150, 78, "perimeter-east", 2),
                         new WaveEntryRecipe(enemies[1], 7, 1, 310, 48, "perimeter-southwest", 3)
                     },
-                    new[] { "template", "final" }),
+                    new[] { "idle-auto-defense", "final" }),
                 WaveDefinitionAsset.CreateTransient(
-                    "wave.template.authored.boss",
+                    "wave.idle-auto-defense.boss",
                     "Boss Push",
                     4100,
                     new[]
@@ -640,7 +640,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                         new WaveEntryRecipe(enemies[4], 1, 1, 320, 0, "perimeter-northeast", 3),
                         new WaveEntryRecipe(enemies[1], 12, 1, 420, 70, "perimeter-northwest", 3)
                     },
-                    new[] { "template", "boss" })
+                    new[] { "idle-auto-defense", "boss" })
             };
         }
 
@@ -860,12 +860,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             WeaponDefinitionAsset shard = FindWeaponDefinition(weaponDefinitions, ShardLauncherWeaponId.Value);
             return new[]
             {
-                UpgradeAsset("upgrade.template.damage-up", "Damage Boost", RunUpgradeAuthoringTargetKind.AttackDamage, RunUpgradeModifierType.Additive, 1.5, shard, "10,20,35", RunUpgradeRarity.Common, 6, 3),
-                UpgradeAsset("upgrade.template.fire-rate-up", "Fire Rate Boost", RunUpgradeAuthoringTargetKind.AttackRate, RunUpgradeModifierType.Additive, 1, shard, "8,16,28", RunUpgradeRarity.Common, 5, 3),
-                UpgradeAsset("upgrade.template.range-up", "Range Boost", RunUpgradeAuthoringTargetKind.Range, RunUpgradeModifierType.Additive, 1.25, shard, "12,24,36", RunUpgradeRarity.Common, 4, 3),
-                UpgradeAsset("upgrade.template.projectile-speed-up", "Projectile Speed", RunUpgradeAuthoringTargetKind.ProjectileSpeed, RunUpgradeModifierType.Multiplicative, 0.35, shard, "10,20,40", RunUpgradeRarity.Common, 5, 3),
-                UpgradeAsset("upgrade.template.objective-max-health-up", "Core Reinforcement", RunUpgradeAuthoringTargetKind.WeaponStat, RunUpgradeModifierType.Additive, 8, null, "14,28,42", RunUpgradeRarity.Uncommon, 3, 3, "objective.template-core", "template.objective.max_health"),
-                UpgradeAsset("upgrade.template.enemy-reward-up", "Credit Reward", RunUpgradeAuthoringTargetKind.EnemyReward, RunUpgradeModifierType.Multiplicative, 0.15, null, "16,32,48", RunUpgradeRarity.Uncommon, 3, 3, "reward.template.run")
+                UpgradeAsset("upgrade.idle-auto-defense.damage-up", "Damage Boost", RunUpgradeAuthoringTargetKind.AttackDamage, RunUpgradeModifierType.Additive, 1.5, shard, "10,20,35", RunUpgradeRarity.Common, 6, 3),
+                UpgradeAsset("upgrade.idle-auto-defense.fire-rate-up", "Fire Rate Boost", RunUpgradeAuthoringTargetKind.AttackRate, RunUpgradeModifierType.Additive, 1, shard, "8,16,28", RunUpgradeRarity.Common, 5, 3),
+                UpgradeAsset("upgrade.idle-auto-defense.range-up", "Range Boost", RunUpgradeAuthoringTargetKind.Range, RunUpgradeModifierType.Additive, 1.25, shard, "12,24,36", RunUpgradeRarity.Common, 4, 3),
+                UpgradeAsset("upgrade.idle-auto-defense.projectile-speed-up", "Projectile Speed", RunUpgradeAuthoringTargetKind.ProjectileSpeed, RunUpgradeModifierType.Multiplicative, 0.35, shard, "10,20,40", RunUpgradeRarity.Common, 5, 3),
+                UpgradeAsset("upgrade.idle-auto-defense.objective-max-health-up", "Core Reinforcement", RunUpgradeAuthoringTargetKind.WeaponStat, RunUpgradeModifierType.Additive, 8, null, "14,28,42", RunUpgradeRarity.Uncommon, 3, 3, "objective.idle-auto-defense.core", "idle-auto-defense.objective.max_health"),
+                UpgradeAsset("upgrade.idle-auto-defense.enemy-reward-up", "Credit Reward", RunUpgradeAuthoringTargetKind.EnemyReward, RunUpgradeModifierType.Multiplicative, 0.15, null, "16,32,48", RunUpgradeRarity.Uncommon, 3, 3, "reward.idle-auto-defense.run")
             };
         }
 
@@ -932,20 +932,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new RunUpgradeCatalog(new[]
             {
-                Upgrade("upgrade.template.damage-up", "template.direct.damage_bonus", PulseCannonWeaponId.Value, 1.5, RunUpgradeRarity.Common, 6, 5),
-                Upgrade("upgrade.template.fire-rate-up", "template.weapon.fire_rate_intent", PulseCannonWeaponId.Value, 1, RunUpgradeRarity.Common, 5, 3),
-                Upgrade("upgrade.template.projectile-count-up", "template.projectile.volley_intent", ShardLauncherWeaponId.Value, 1, RunUpgradeRarity.Uncommon, 3, 2),
-                Upgrade("upgrade.template.projectile-speed-up", "template.projectile.speed_multiplier", ShardProjectileId.Value, 0.35, RunUpgradeRarity.Common, 5, 4),
-                Upgrade("upgrade.template.objective-max-health-up", "template.objective.max_health", "objective.template-core", 6, RunUpgradeRarity.Uncommon, 3, 3),
-                Upgrade("upgrade.template.objective-repair", "template.objective.heal", "objective.template-core", 5, RunUpgradeRarity.Common, 5, 4),
-                Upgrade("upgrade.template.shield-restore-intent", "template.objective.shield_restore_intent", "objective.template-core", 4, RunUpgradeRarity.Uncommon, 2, 2),
-                Upgrade("upgrade.template.enemy-reward-up", "template.reward.credits_multiplier", "reward.template.run", 0.15, RunUpgradeRarity.Uncommon, 3, 3),
-                Upgrade("upgrade.template.offline-gain-up", "template.offline.credits_multiplier", "offline.template.credits", 0.10, RunUpgradeRarity.Common, 4, 3),
-                Upgrade("upgrade.template.reroll-bonus", "template.reroll.bonus_intent", "monetization.template.reroll", 1, RunUpgradeRarity.Rare, 2, 1),
-                Upgrade("upgrade.template.crit-chance-intent", "template.attack.crit_chance_intent", PulseCannonWeaponId.Value, 0.05, RunUpgradeRarity.Rare, 2, 2),
-                Upgrade("upgrade.template.crit-damage-intent", "template.attack.crit_damage_intent", PulseCannonWeaponId.Value, 0.20, RunUpgradeRarity.Rare, 2, 2),
-                Upgrade("upgrade.template.direct-specialization", "template.direct.damage_bonus", PulseCannonWeaponId.Value, 3, RunUpgradeRarity.Epic, 1, 1, new[] { new RunUpgradeId("upgrade.template.damage-up") }),
-                Upgrade("upgrade.template.projectile-specialization", "template.projectile.speed_multiplier", ShardProjectileId.Value, 0.75, RunUpgradeRarity.Epic, 1, 1, new[] { new RunUpgradeId("upgrade.template.projectile-speed-up") })
+                Upgrade("upgrade.idle-auto-defense.damage-up", "idle-auto-defense.direct.damage_bonus", PulseCannonWeaponId.Value, 1.5, RunUpgradeRarity.Common, 6, 5),
+                Upgrade("upgrade.idle-auto-defense.fire-rate-up", "idle-auto-defense.weapon.fire_rate_intent", PulseCannonWeaponId.Value, 1, RunUpgradeRarity.Common, 5, 3),
+                Upgrade("upgrade.idle-auto-defense.projectile-count-up", "idle-auto-defense.projectile.volley_intent", ShardLauncherWeaponId.Value, 1, RunUpgradeRarity.Uncommon, 3, 2),
+                Upgrade("upgrade.idle-auto-defense.projectile-speed-up", "idle-auto-defense.projectile.speed_multiplier", ShardProjectileId.Value, 0.35, RunUpgradeRarity.Common, 5, 4),
+                Upgrade("upgrade.idle-auto-defense.objective-max-health-up", "idle-auto-defense.objective.max_health", "objective.idle-auto-defense.core", 6, RunUpgradeRarity.Uncommon, 3, 3),
+                Upgrade("upgrade.idle-auto-defense.objective-repair", "idle-auto-defense.objective.heal", "objective.idle-auto-defense.core", 5, RunUpgradeRarity.Common, 5, 4),
+                Upgrade("upgrade.idle-auto-defense.shield-restore-intent", "idle-auto-defense.objective.shield_restore_intent", "objective.idle-auto-defense.core", 4, RunUpgradeRarity.Uncommon, 2, 2),
+                Upgrade("upgrade.idle-auto-defense.enemy-reward-up", "idle-auto-defense.reward.credits_multiplier", "reward.idle-auto-defense.run", 0.15, RunUpgradeRarity.Uncommon, 3, 3),
+                Upgrade("upgrade.idle-auto-defense.offline-gain-up", "idle-auto-defense.offline.credits_multiplier", "offline.idle-auto-defense.credits", 0.10, RunUpgradeRarity.Common, 4, 3),
+                Upgrade("upgrade.idle-auto-defense.reroll-bonus", "idle-auto-defense.reroll.bonus_intent", "monetization.idle-auto-defense.reroll", 1, RunUpgradeRarity.Rare, 2, 1),
+                Upgrade("upgrade.idle-auto-defense.crit-chance-intent", "idle-auto-defense.attack.crit_chance_intent", PulseCannonWeaponId.Value, 0.05, RunUpgradeRarity.Rare, 2, 2),
+                Upgrade("upgrade.idle-auto-defense.crit-damage-intent", "idle-auto-defense.attack.crit_damage_intent", PulseCannonWeaponId.Value, 0.20, RunUpgradeRarity.Rare, 2, 2),
+                Upgrade("upgrade.idle-auto-defense.direct-specialization", "idle-auto-defense.direct.damage_bonus", PulseCannonWeaponId.Value, 3, RunUpgradeRarity.Epic, 1, 1, new[] { new RunUpgradeId("upgrade.idle-auto-defense.damage-up") }),
+                Upgrade("upgrade.idle-auto-defense.projectile-specialization", "idle-auto-defense.projectile.speed_multiplier", ShardProjectileId.Value, 0.75, RunUpgradeRarity.Epic, 1, 1, new[] { new RunUpgradeId("upgrade.idle-auto-defense.projectile-speed-up") })
             });
         }
 
@@ -1021,7 +1021,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private static AttackSourceSnapshot Source(string suffix)
         {
-            return new AttackSourceSnapshot(new AttackSourceId("source.template." + suffix), new CombatantId("template-core"));
+            return new AttackSourceSnapshot(new AttackSourceId("source.idle-auto-defense." + suffix), new CombatantId("objective.idle-auto-defense.core"));
         }
 
         private static AutoDefenseMountDefinition[] CreateAutoDefenseMountDefinitions(IReadOnlyList<WeaponDefinitionAsset> weapons)
@@ -1033,11 +1033,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 WeaponDefinitionAsset weapon = weapons[i];
                 string id = weapon == null || string.IsNullOrWhiteSpace(weapon.Id)
-                    ? "weapon.template.missing." + i.ToString(CultureInfo.InvariantCulture)
+                    ? "weapon.idle-auto-defense.missing." + i.ToString(CultureInfo.InvariantCulture)
                     : weapon.Id.Trim();
                 var weaponId = new WeaponDefinitionId(id);
-                var mountId = new AutoDefenseMountId("mount.template." + SanitizeRuntimeSegment(id));
-                var slotId = new WeaponSlotId("slot.template." + SanitizeRuntimeSegment(id));
+                var mountId = new AutoDefenseMountId("mount.idle-auto-defense." + SanitizeRuntimeSegment(id));
+                var slotId = new WeaponSlotId("slot.idle-auto-defense." + SanitizeRuntimeSegment(id));
                 mounts[i] = new AutoDefenseMountDefinition(mountId, new Vector3(start + spacing * i, 0f, 0f), slotId, weaponId, enabled: false);
             }
 
@@ -1121,7 +1121,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 },
                 ParseIntCsv(costsCsv),
                 displayName + " authored upgrade.",
-                new[] { "template", "upgrade" });
+                new[] { "idle-auto-defense", "upgrade" });
         }
 
         private static bool WeaponAttackExists(WeaponDefinitionAsset weapon, IReadOnlyList<AttackDefinitionAsset> attackRecipes)
@@ -1266,15 +1266,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
     public static class IdleAutoDefenseTemplateMonetization
     {
-        private const string InterstitialCooldownGroup = "template.interstitial.global";
+        private const string InterstitialCooldownGroup = "idle-auto-defense.interstitial.global";
 
-        public static readonly MonetizationPlacementId DoubleRunReward = new MonetizationPlacementId("template.rewarded.double-run-reward");
-        public static readonly MonetizationPlacementId ReviveAfterFailure = new MonetizationPlacementId("template.rewarded.revive-after-failure");
-        public static readonly MonetizationPlacementId RerollUpgradeDraft = new MonetizationPlacementId("template.rewarded.reroll-upgrade-draft");
-        public static readonly MonetizationPlacementId DoubleOfflineReward = new MonetizationPlacementId("template.rewarded.double-offline-reward");
-        public static readonly MonetizationPlacementId SmallCurrencyBonus = new MonetizationPlacementId("template.rewarded.small-currency-bonus");
-        public static readonly MonetizationPlacementId InterstitialAfterRunCompletion = new MonetizationPlacementId("template.interstitial.after-run-completion");
-        public static readonly MonetizationPlacementId InterstitialAfterRunFailure = new MonetizationPlacementId("template.interstitial.after-run-failure");
+        public static readonly MonetizationPlacementId DoubleRunReward = new MonetizationPlacementId("idle-auto-defense.rewarded.double-run-reward");
+        public static readonly MonetizationPlacementId ReviveAfterFailure = new MonetizationPlacementId("idle-auto-defense.rewarded.revive-after-failure");
+        public static readonly MonetizationPlacementId RerollUpgradeDraft = new MonetizationPlacementId("idle-auto-defense.rewarded.reroll-upgrade-draft");
+        public static readonly MonetizationPlacementId DoubleOfflineReward = new MonetizationPlacementId("idle-auto-defense.rewarded.double-offline-reward");
+        public static readonly MonetizationPlacementId SmallCurrencyBonus = new MonetizationPlacementId("idle-auto-defense.rewarded.small-currency-bonus");
+        public static readonly MonetizationPlacementId InterstitialAfterRunCompletion = new MonetizationPlacementId("idle-auto-defense.interstitial.after-run-completion");
+        public static readonly MonetizationPlacementId InterstitialAfterRunFailure = new MonetizationPlacementId("idle-auto-defense.interstitial.after-run-failure");
 
         public static MonetizationPlacementPolicy[] CreatePlacementPolicies()
         {
@@ -1995,7 +1995,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             LastOfflineRewardCode = result.Code;
             if (result.Reward.CurrencyLines.Count > 0)
             {
-                _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("template.offline." + nowUtc.UtcTicks), result.Reward);
+                _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("idle-auto-defense.offline." + nowUtc.UtcTicks), result.Reward);
             }
 
             long bonusCredits = CalculateOfflineBonusCredits(result);
@@ -2003,7 +2003,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             {
                 _progressionState.ApplyReward(
                     _progressionCatalog,
-                    new ProgressionOperationId("template.offline.bonus." + nowUtc.UtcTicks),
+                    new ProgressionOperationId("idle-auto-defense.offline.bonus." + nowUtc.UtcTicks),
                     new RewardBundle(new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(bonusCredits), true) }));
             }
 
@@ -2289,19 +2289,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < upgrade.Effects.Count; i++)
             {
                 RunUpgradeEffectDescriptor effect = upgrade.Effects[i];
-                if (effect.EffectId.Value == "template.direct.damage_bonus") DirectDamageBonus += effect.Amount;
-                else if (effect.EffectId.Value == "template.projectile.speed_multiplier") ProjectileSpeedMultiplier += effect.Amount;
-                else if (effect.EffectId.Value == "template.objective.heal") _runtime.Objective.Health.Heal(effect.Amount);
-                else if (effect.EffectId.Value == "template.objective.max_health") _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + effect.Amount, MaximumChangePolicy.FillToMaximum);
-                else if (effect.EffectId.Value == "template.weapon.fire_rate_intent") AttackSpeedUpgradeRank++;
-                else if (effect.EffectId.Value == "template.weapon.range_intent")
+                if (effect.EffectId.Value == "idle-auto-defense.direct.damage_bonus") DirectDamageBonus += effect.Amount;
+                else if (effect.EffectId.Value == "idle-auto-defense.projectile.speed_multiplier") ProjectileSpeedMultiplier += effect.Amount;
+                else if (effect.EffectId.Value == "idle-auto-defense.objective.heal") _runtime.Objective.Health.Heal(effect.Amount);
+                else if (effect.EffectId.Value == "idle-auto-defense.objective.max_health") _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + effect.Amount, MaximumChangePolicy.FillToMaximum);
+                else if (effect.EffectId.Value == "idle-auto-defense.weapon.fire_rate_intent") AttackSpeedUpgradeRank++;
+                else if (effect.EffectId.Value == "idle-auto-defense.weapon.range_intent")
                 {
                     RangeUpgradeRank++;
                     DirectDamageBonus += Math.Max(0.5d, effect.Amount * 0.5d);
                 }
-                else if (effect.EffectId.Value == "template.enemy.spawn_delay_ticks") EnemySpawnDelayTicks += (int)effect.Amount;
-                else if (effect.EffectId.Value == "template.reward.credits_multiplier") RewardCreditMultiplierBonus += effect.Amount;
-                else if (effect.EffectId.Value == "template.offline.credits_multiplier") OfflineRewardMultiplierBonus += effect.Amount;
+                else if (effect.EffectId.Value == "idle-auto-defense.enemy.spawn_delay_ticks") EnemySpawnDelayTicks += (int)effect.Amount;
+                else if (effect.EffectId.Value == "idle-auto-defense.reward.credits_multiplier") RewardCreditMultiplierBonus += effect.Amount;
+                else if (effect.EffectId.Value == "idle-auto-defense.offline.credits_multiplier") OfflineRewardMultiplierBonus += effect.Amount;
                 else UnsupportedUpgradeIntentCount++;
             }
         }
@@ -2643,9 +2643,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             int impactDelayTicks = CalculateProjectileImpactDelayTicks(origin, destination, projectile.Speed);
             var launchRequest = new ProjectileLaunchRequest(
                 projectile.Id,
-                new AttackSourceId("source.template.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)),
+                new AttackSourceId("source.idle-auto-defense.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)),
                 new AttackDefinitionId(attack.Id),
-                new AttackSourceSnapshot(new AttackSourceId("source.template.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)), new CombatantId("template-core")),
+                new AttackSourceSnapshot(new AttackSourceId("source.idle-auto-defense.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)), new CombatantId("objective.idle-auto-defense.core")),
                 origin,
                 destination);
 
@@ -4608,14 +4608,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void ApplyEncounterRewardIfTerminal()
         {
             if (_completionRewardApplied || _progressionState == null || _runtime.State == AutoDefenseRuntimeState.Running) return;
-            ProgressionResult result = _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("template.encounter.terminal.1"), BasicIdleAutoDefenseGame.CreateEncounterCompletionReward());
+            ProgressionResult result = _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("idle-auto-defense.encounter.terminal.1"), BasicIdleAutoDefenseGame.CreateEncounterCompletionReward());
             if (!result.Succeeded) return;
             long bonusCredits = (long)Math.Ceiling(60d * RewardCreditMultiplierBonus);
             if (bonusCredits > 0)
             {
                 _progressionState.ApplyReward(
                     _progressionCatalog,
-                    new ProgressionOperationId("template.encounter.terminal.1.reward-bonus"),
+                    new ProgressionOperationId("idle-auto-defense.encounter.terminal.1.reward-bonus"),
                     new RewardBundle(new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(bonusCredits), true) }));
             }
 
@@ -4759,7 +4759,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             _progressionState.ApplyReward(
                 _progressionCatalog,
-                new ProgressionOperationId("template.content-set.starting-resources." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(resolution.ContentSet.Id)),
+                new ProgressionOperationId("idle-auto-defense.content-set.starting-resources." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(resolution.ContentSet.Id)),
                 new RewardBundle(currencies));
         }
 
@@ -5944,8 +5944,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
     public static class IdleAutoDefenseTemplateSaveProgressionComposition
     {
-        private static readonly TrackId AccountXp = new TrackId("track.template.account");
-        private static readonly UnlockId StarterUnlock = new UnlockId("unlock.template.starter");
+        private static readonly TrackId AccountXp = new TrackId("track.idle-auto-defense.account");
+        private static readonly UnlockId StarterUnlock = new UnlockId("unlock.idle-auto-defense.starter");
         private static readonly DocumentId ProfileDocumentId = new DocumentId("idle-auto-defense-template-profile");
         private static readonly DocumentId RunDocumentId = new DocumentId("idle-auto-defense-template-run");
         private static readonly DocumentId SettingsDocumentId = new DocumentId("idle-auto-defense-template-settings");
@@ -5981,7 +5981,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             LoadResult<ProfileDto> profileLoad = await service.LoadAsync(profileDefinition, slot, CancellationToken.None);
 
             var upgradeState = new RunUpgradeState();
-            upgradeState.Select(upgradeCatalog, new RunUpgradeId("upgrade.template.damage-up"));
+            upgradeState.Select(upgradeCatalog, new RunUpgradeId("upgrade.idle-auto-defense.damage-up"));
             RunUpgradeSnapshot upgradeSnapshot = upgradeState.CreateSnapshot();
             var run = RunResumeDto.FromSnapshot("run.template.1", 42, upgradeSnapshot, lastSeen.UtcTicks);
             WriteResult runSave = await service.SaveAsync(runDefinition, run, slot, CancellationToken.None);
@@ -5993,13 +5993,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             LoadResult<SettingsDto> settingsLoad = await service.LoadAsync(settingsDefinition, slot, CancellationToken.None);
 
             RewardBundle runReward = BasicIdleAutoDefenseGame.CreateEncounterCompletionReward();
-            ProgressionResult runRewardResult = progressionState.ApplyReward(progressionCatalog, new ProgressionOperationId("template.run.complete.1"), runReward);
+            ProgressionResult runRewardResult = progressionState.ApplyReward(progressionCatalog, new ProgressionOperationId("idle-auto-defense.run.complete.1"), runReward);
 
             IdleProgressionResult offline = IdleProgressionCalculator.Calculate(
                 new DateTimeOffset(profileLoad.Document.LastSeenUtcTicks, TimeSpan.Zero),
                 lastSeen.AddHours(1),
                 BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition());
-            ProgressionResult offlineRewardResult = progressionState.ApplyReward(progressionCatalog, new ProgressionOperationId("template.offline.1"), offline.Reward);
+            ProgressionResult offlineRewardResult = progressionState.ApplyReward(progressionCatalog, new ProgressionOperationId("idle-auto-defense.offline.1"), offline.Reward);
 
             LoadResult<ProfileDto> missingDefaults = await service.LoadAsync(profileDefinition, new SaveSlotId("empty"), CancellationToken.None);
 
@@ -6020,7 +6020,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     progressionState.GetTrackTotal(AccountXp).Value == 35 &&
                     progressionState.IsUnlocked(StarterUnlock) &&
                     progressionState.IsUnlocked(BasicIdleAutoDefenseGame.Stage2Unlock),
-                RunUpgradeSnapshotRestored = restoredUpgradeState.GetRank(new RunUpgradeId("upgrade.template.damage-up")) == 1,
+                RunUpgradeSnapshotRestored = restoredUpgradeState.GetRank(new RunUpgradeId("upgrade.idle-auto-defense.damage-up")) == 1,
                 OfflineRewardCalculated = offline.Code == IdleProgressionResultCode.Success && offlineRewardResult.Succeeded,
                 MissingSaveDefaulted = missingDefaults.Succeeded && missingDefaults.Outcome == LoadOutcome.CreatedDefault,
                 CorruptedPrimaryRecovered = recovered.Succeeded && recovered.Outcome == LoadOutcome.RecoveredFromBackup && recovered.Document.Credits == 2,

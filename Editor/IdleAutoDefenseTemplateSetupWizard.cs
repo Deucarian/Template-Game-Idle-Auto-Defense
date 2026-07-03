@@ -651,8 +651,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private const string PendingBootstrapTypeKey = "Deucarian.IdleAutoDefenseTemplate.PendingBootstrapType";
         private const string PendingAttemptCountKey = "Deucarian.IdleAutoDefenseTemplate.PendingAttemptCount";
         private const int MaximumOpenAttempts = 300;
-        private const string ContentPackAssetRelativePath = "/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset";
-        private const string ContentSetAssetRelativePath = "/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset";
+        private const string ContentPackAssetRelativePath = "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset";
+        private const string ContentSetAssetRelativePath = "/ContentSets/contentset.idle-auto-defense.playable/contentset.idle-auto-defense.playable_GameContentSet.asset";
         private static bool _queued;
 
         static IdleAutoDefenseGeneratedSceneOpenQueue()

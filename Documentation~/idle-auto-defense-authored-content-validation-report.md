@@ -6,8 +6,8 @@ Menu command: `Deucarian > Idle Auto Defense > Validate Authored Content`
 
 Primary playable content set:
 
-- `contentset.template.basic-idle-auto-defense`
-- Source path: `TemplateSource~/BasicIdleAutoDefenseGame/Content/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset`
+- `contentset.idle-auto-defense.playable`
+- Source path: `TemplateSource~/BasicIdleAutoDefenseGame/Content/ContentSets/contentset.idle-auto-defense.playable/contentset.idle-auto-defense.playable_GameContentSet.asset`
 - Consumer import root: `Assets/GameContent/IdleAutoDefense`
 - Playable scene after generation/import: `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`
 
@@ -15,14 +15,14 @@ Weapon / Attack Visual Matrix:
 
 | Weapon | Attack | Mode | Projectile Prefab | Beam Prefab | Cast/Fire VFX | Impact VFX | Result |
 | ------ | ------ | ---- | ----------------- | ----------- | ------------- | ---------- | ------ |
-| Shard Launcher | `attack.template.shard-launcher` | Projectile | `KenneyShardProjectile` | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
-| Pulse Beam | `attack.template.pulse-cannon` | Hitscan | None | `PulseBeamVfx` | `PulseBeamVfx` | `KenneyImpactBurstVfx` | Pass |
-| Arc Burst | `attack.template.arc-burst` | Area | None | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
-| Homing Pulse | `attack.template.homing-pulse` | Projectile | `KenneyHomingProjectile` | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
+| Shard Launcher | `attack.idle-auto-defense.shard-projectile` | Projectile | `KenneyShardProjectile` | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
+| Pulse Beam | `attack.idle-auto-defense.pulse-beam` | Hitscan | None | `PulseBeamVfx` | `PulseBeamVfx` | `KenneyImpactBurstVfx` | Pass |
+| Arc Burst | `attack.idle-auto-defense.arc-burst` | Area | None | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
+| Homing Pulse | `attack.idle-auto-defense.homing-pulse` | Projectile | `KenneyHomingProjectile` | None | `KenneyPlacementRingVfx`, `KenneyImpactBurstVfx` | `KenneyImpactBurstVfx` | Pass |
 
 Authored runtime presentation:
 
-- Objective/core presentation: `objective.template-core`, `Kenney 3D Core Base`, three authored Kenney model bindings.
+- Objective/core presentation: `objective.idle-auto-defense.core`, `Kenney 3D Core Base`, three authored Kenney model bindings.
 - Module slot pads: four authored slot bindings, one per weapon/module, using `tile-spawn` model references and authored positions/tints.
 - Runtime counters now distinguish authored objective/module-slot bindings from fallback bindings; the playable sample is expected to run with zero fallback counts.
 

@@ -607,9 +607,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private static GameObject CreateRuntimeAuditProbe(string contentRoot)
         {
             GameContentPackAsset contentPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(
-                contentRoot + "/ContentPacks/contentpack.template.basic-idle-auto-defense/contentpack.template.basic-idle-auto-defense_ContentPack.asset");
+                contentRoot + "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset");
             GameContentSetAsset contentSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(
-                contentRoot + "/ContentSets/contentset.template.basic-idle-auto-defense/contentset.template.basic-idle-auto-defense_GameContentSet.asset");
+                contentRoot + "/ContentSets/contentset.idle-auto-defense.playable/contentset.idle-auto-defense.playable_GameContentSet.asset");
             if (contentPack == null || contentSet == null)
                 throw new InvalidOperationException("Fresh generated content pack/set could not be loaded from " + contentRoot + ".");
 

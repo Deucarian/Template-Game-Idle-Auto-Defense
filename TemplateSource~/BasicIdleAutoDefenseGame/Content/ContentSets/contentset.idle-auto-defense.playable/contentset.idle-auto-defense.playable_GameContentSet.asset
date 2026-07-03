@@ -1,0 +1,492 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4271c0a9f9d4f2d9a7288adf9e82965, type: 3}
+  m_Name: contentset.idle-auto-defense.playable_GameContentSet
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.GameContentSetAsset
+  _id: contentset.idle-auto-defense.playable
+  _displayName: Basic Idle Auto Defense Content Set
+  _description: Playable generated-game vertical slice with four generic attacks,
+    six enemies, seven spawn profiles paced for pressure, six upgrades, authored rewards,
+    debug defaults, Kenney 3D presentation bindings, VFX, icons, and audio.
+  _icon: {fileID: 21300000, guid: 030ed80cce432184ea60781e960c5cb5, type: 3}
+  _banner: {fileID: 2800000, guid: 251693a7ff26afe44ae62250f856b7a1, type: 3}
+  _startingWeapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+  _availableWeapons:
+  - {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+  - {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+  - {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+  - {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+  _enemyPool:
+  - {fileID: 11400000, guid: a4faad016e5ca2f4080cbecc93bb55cb, type: 2}
+  - {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
+  - {fileID: 11400000, guid: e22bfeeb5c23be44c8e41a8e66cd779b, type: 2}
+  - {fileID: 11400000, guid: 4602ef84828b8e24cafb0c6f599eef6b, type: 2}
+  - {fileID: 11400000, guid: d26d6941ca7242cb908816ba9502bf24, type: 2}
+  - {fileID: 11400000, guid: ef25c56e691d497fb84075ca427989b8, type: 2}
+  _waveSet:
+  - {fileID: 11400000, guid: 139ea81c2ca6259408bcf0527b568e74, type: 2}
+  - {fileID: 11400000, guid: 9bfe6c935b0d4599b65986b90fca9e3a, type: 2}
+  - {fileID: 11400000, guid: 5d70da8f6532ba943864e8ceae03d767, type: 2}
+  - {fileID: 11400000, guid: df211f7653b74b708cb8648b4c0d0c21, type: 2}
+  - {fileID: 11400000, guid: d0b884e8b4a74e4eac54796e5003f919, type: 2}
+  - {fileID: 11400000, guid: 03d0c000098e49699eb86ed1176892d4, type: 2}
+  - {fileID: 11400000, guid: 7df0e750dfab40b28145ffcbd4951cdb, type: 2}
+  _upgradePool:
+  - {fileID: 11400000, guid: 08b80f10347264245903e41ac6b98210, type: 2}
+  - {fileID: 11400000, guid: e390eddb27da0c84c8224c67756aeac5, type: 2}
+  - {fileID: 11400000, guid: 99862862109c2be4dbfa83f8391a1d63, type: 2}
+  - {fileID: 11400000, guid: 78c536521542f764abc76cb6ebd30a63, type: 2}
+  - {fileID: 11400000, guid: 02b74debbe2246c4b09d6d043c80536b, type: 2}
+  - {fileID: 11400000, guid: 9832cf788c584c0a9c8cd160b57f84a2, type: 2}
+  _startingCredits: 10
+  _startingParts: 0
+  _rewardMultiplier: 1
+  _difficultyMultiplier: 1
+  _sessionLengthTicks: 5600
+  _endless: 0
+  _tags:
+  - idle-auto-defense
+  - starter
+  - playable-vertical-slice
+  - kenney-readable
+  _runtimeSettings:
+    _rewardDraftSettings:
+      _choiceCount: 3
+      _normalEnemyExperience: 9
+      _eliteEnemyExperience: 42
+      _bossEnemyExperience: 120
+      _waveCompletionExperience: 18
+      _baseExperienceToNextLevel: 38
+      _experienceToNextLevelGrowth: 18
+      _normalInvestmentsForEpic: 3
+      _epicInvestmentsForLegendary: 3
+      _projectileRetargetRadius: 3.25
+      _levelUpUnlockWeightMultiplier: 1.35
+      _eliteUnlockWeightMultiplier: 1.1
+      _bossUnlockWeightMultiplier: 1.1
+      _levelUpRarityWeights:
+        _common: 100
+        _uncommon: 70
+        _rare: 36
+        _epic: 12
+        _legendary: 2
+      _eliteRarityWeights:
+        _common: 22
+        _uncommon: 56
+        _rare: 78
+        _epic: 44
+        _legendary: 10
+      _bossRarityWeights:
+        _common: 8
+        _uncommon: 24
+        _rare: 58
+        _epic: 86
+        _legendary: 42
+    _rewardDraftCatalog:
+      _weaponUnlocks:
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _displayName: Pulse Beam Module
+        _effectDescription: Unlocks a precise beam module that burns down the leading enemy.
+        _levelUpRarity: 1
+        _eliteRarity: 2
+        _bossRarity: 3
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _displayName: Arc Cannon Module
+        _effectDescription: Unlocks a splash module that detonates around clustered enemies.
+        _levelUpRarity: 1
+        _eliteRarity: 2
+        _bossRarity: 3
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _displayName: Homing Spire Module
+        _effectDescription: Unlocks a seeker module for cleanup shots and pressure relief.
+        _levelUpRarity: 1
+        _eliteRarity: 2
+        _bossRarity: 3
+      _normalWeaponRewards:
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: normal.0
+        _displayName: Sharper Shards
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for shard impacts.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: normal.1
+        _displayName: Quick Chisel
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for faster shard volleys.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: normal.2
+        _displayName: Split Tip
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: Adds one extra shard to each visible volley.
+        _effectKind: 8
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: normal.0
+        _displayName: Focused Lens
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for beam impacts.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: normal.1
+        _displayName: Faster Capacitors
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for more beam pulses.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: normal.2
+        _displayName: Extended Aperture
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank for the beam module.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: normal.0
+        _displayName: Packed Powder
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for area detonations.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: normal.1
+        _displayName: Fast Loader
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for more splash bursts.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: normal.2
+        _displayName: Bigger Shells
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank to catch clustered enemies sooner.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: normal.0
+        _displayName: Sharper Signal
+        _rarity: 0
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 damage ranks for seeker impacts.
+        _effectKind: 2
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: normal.1
+        _displayName: Efficient Engines
+        _rarity: 1
+        _typeName: Weapon Upgrade
+        _effectDescription: +2 fire-rate ranks for more seeker launches.
+        _effectKind: 3
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: normal.2
+        _displayName: Longer Lock
+        _rarity: 2
+        _typeName: Weapon Upgrade
+        _effectDescription: +1 range rank for the homing spire.
+        _effectKind: 4
+        _amount: 1
+      _epicWeaponRewards:
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: epic.0
+        _displayName: Fracture Burst
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Shard Launcher fires two extra visible shards per volley.
+        _effectKind: 8
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: epic.1
+        _displayName: Ricochet Shards
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Shard volleys travel faster and retarget more cleanly after impact.
+        _effectKind: 7
+        _amount: 0.25
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: epic.2
+        _displayName: Shard Storm
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Visible shard hits punch much harder across all weapons.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: epic.0
+        _displayName: Refracting Beam
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Pulse Beam hits one extra target with authored beam VFX.
+        _effectKind: 9
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: epic.1
+        _displayName: Overcharged Pulse
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Pulse Beam cycles faster for more visible beam shots.
+        _effectKind: 3
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: epic.2
+        _displayName: Ion Burn
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Beam impacts deal a large visible damage spike.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: epic.0
+        _displayName: Cluster Shells
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Arc Cannon blasts one extra enemy in the detonation.
+        _effectKind: 10
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: epic.1
+        _displayName: Burning Ground
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Arc Cannon holds pressure farther from the core.
+        _effectKind: 4
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: epic.2
+        _displayName: Shockwave Impact
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Area impacts hit harder and produce larger damage-number spikes.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: epic.0
+        _displayName: Extra Seeker
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Homing Pulse fires one extra authored seeker projectile.
+        _effectKind: 11
+        _amount: 1
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: epic.1
+        _displayName: Target Painter
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: Marked targets take a large visible damage spike.
+        _effectKind: 12
+        _amount: 0.3
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: epic.2
+        _displayName: Overclocked Guidance
+        _rarity: 3
+        _typeName: Epic Weapon
+        _effectDescription: The seeker module fires more often during pressure waves.
+        _effectKind: 3
+        _amount: 1
+      _legendaryWeaponRewards:
+      - _weaponId: weapon.idle-auto-defense.shard-launcher
+        _tierKey: legendary
+        _displayName: Crystal Tempest
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Shard Launcher becomes a storm of three extra visible shards per volley.
+        _effectKind: 8
+        _amount: 3
+      - _weaponId: weapon.idle-auto-defense.pulse-beam
+        _tierKey: legendary
+        _displayName: Orbital Lance
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Pulse Beam becomes a build-defining beam that hits two extra targets.
+        _effectKind: 9
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.arc-burst
+        _tierKey: legendary
+        _displayName: Siege Barrage
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Arc Cannon detonations hit two extra enemies during pressure spikes.
+        _effectKind: 10
+        _amount: 2
+      - _weaponId: weapon.idle-auto-defense.homing-pulse
+        _tierKey: legendary
+        _displayName: Carrier Hive
+        _rarity: 4
+        _typeName: Legendary Weapon
+        _effectDescription: Homing Spire launches two extra authored seeker projectiles.
+        _effectKind: 11
+        _amount: 2
+      _baseRewards:
+      - _key: base.damage
+        _displayName: Targeting Drill
+        _rarity: 0
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: +2 damage ranks for immediate relief.
+        _effectKind: 2
+        _amount: 2
+        _maxRank: 8
+      - _key: base.fire-rate
+        _displayName: Tactical Overclock
+        _rarity: 0
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: +2 fire-rate ranks so weapons visibly fire faster.
+        _effectKind: 3
+        _amount: 2
+        _maxRank: 6
+      - _key: base.range
+        _displayName: Sensor Array
+        _rarity: 1
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: +1 range rank to catch enemies before they leak.
+        _effectKind: 4
+        _amount: 1
+        _maxRank: 6
+      - _key: base.repair
+        _displayName: Emergency Repairs
+        _rarity: 0
+        _typeName: Base Upgrade
+        _targetName: Tower
+        _effectDescription: Repair and increase maximum HP.
+        _effectKind: 5
+        _amount: 1
+        _maxRank: 5
+      - _key: base.velocity
+        _displayName: Velocity Matrix
+        _rarity: 1
+        _typeName: Base Upgrade
+        _targetName: Projectiles
+        _effectDescription: +25% projectile travel speed for snappier impacts.
+        _effectKind: 7
+        _amount: 0.25
+        _maxRank: 4
+      - _key: base.credits
+        _displayName: Scrap Collector
+        _rarity: 2
+        _typeName: Economy
+        _targetName: Tower
+        _effectDescription: +25% credits from kills for more live purchases.
+        _effectKind: 6
+        _amount: 0.25
+        _maxRank: 5
+    _presentationDebug:
+      _showDebugAimLines: 0
+      _showDebugRanges: 0
+      _showDebugSpawnRing: 0
+    _objectivePresentation:
+      _contentId: objective.idle-auto-defense.core
+      _displayName: Kenney 3D Core Base
+      _models:
+      - _modelName: tower-round-base
+        _localPosition: {x: 0, y: 0, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 1.35, y: 1.35, z: 1.35}
+        _tint: {r: 0.78, g: 0.9, b: 1, a: 1}
+      - _modelName: tower-round-middle-a
+        _localPosition: {x: 0, y: 0.46, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 1.12, y: 1.12, z: 1.12}
+        _tint: {r: 0.78, g: 0.9, b: 1, a: 1}
+      - _modelName: tower-round-crystals
+        _localPosition: {x: 0, y: 0.92, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 0.92, y: 0.92, z: 0.92}
+        _tint: {r: 0.35, g: 0.9, b: 1, a: 1}
+    _moduleSlotPresentationBindings:
+    - _slotId: module-slot.shard-launcher
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _displayName: Shard Launcher Slot
+      _modelName: tile-spawn
+      _localPosition: {x: 0, y: -0.07, z: 0.9}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 1, g: 0.52, b: 0.16, a: 0.72}
+    - _slotId: module-slot.pulse-beam
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _displayName: Pulse Beam Locked Pad
+      _modelName: tile-spawn
+      _localPosition: {x: -0.9, y: -0.07, z: 0.35}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.18, g: 0.84, b: 1, a: 0.58}
+    - _slotId: module-slot.arc-burst
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _displayName: Arc Burst Locked Pad
+      _modelName: tile-spawn
+      _localPosition: {x: 0, y: -0.07, z: -0.9}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 1, g: 0.58, b: 0.16, a: 0.58}
+    - _slotId: module-slot.homing-pulse
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _displayName: Homing Pulse Locked Pad
+      _modelName: tile-spawn
+      _localPosition: {x: 0.9, y: -0.07, z: 0.35}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.72, g: 0.42, b: 1, a: 0.58}
+    _weaponPresentationBindings:
+    - _weaponId: weapon.idle-auto-defense.shard-launcher
+      _attackId: attack.idle-auto-defense.shard-projectile
+      _displayName: Shard Launcher
+      _mountLocalPosition: {x: 0, y: 0.06, z: 1.05}
+      _baseModelName: tower-round-bottom-a
+      _weaponModelName: weapon-ballista
+      _tint: {r: 1, g: 0.45, b: 0.1, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.64, z: 0.66}
+      _turnSpeedDegrees: 340
+      _startsUnlocked: 1
+    - _weaponId: weapon.idle-auto-defense.pulse-beam
+      _attackId: attack.idle-auto-defense.pulse-beam
+      _displayName: Pulse Beam
+      _mountLocalPosition: {x: -1.02, y: 0.06, z: 0.36}
+      _baseModelName: tower-square-bottom-a
+      _weaponModelName: weapon-turret
+      _tint: {r: 0.15, g: 0.75, b: 1, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.44, z: 0.72}
+      _turnSpeedDegrees: 420
+      _startsUnlocked: 0
+    - _weaponId: weapon.idle-auto-defense.arc-burst
+      _attackId: attack.idle-auto-defense.arc-burst
+      _displayName: Arc Burst
+      _mountLocalPosition: {x: 0, y: 0.06, z: -1.05}
+      _baseModelName: tower-round-bottom-a
+      _weaponModelName: weapon-catapult
+      _tint: {r: 0.95, g: 0.55, b: 0.15, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.5, z: 0.82}
+      _turnSpeedDegrees: 240
+      _startsUnlocked: 0
+    - _weaponId: weapon.idle-auto-defense.homing-pulse
+      _attackId: attack.idle-auto-defense.homing-pulse
+      _displayName: Homing Pulse
+      _mountLocalPosition: {x: 1.02, y: 0.06, z: 0.36}
+      _baseModelName: tower-square-bottom-a
+      _weaponModelName: weapon-cannon
+      _tint: {r: 0.65, g: 0.35, b: 1, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.42, z: 0.8}
+      _turnSpeedDegrees: 320
+      _startsUnlocked: 0
