@@ -480,12 +480,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 18f, 0.68f, 1, 4f, DamageType.Value, 0.28f, tags: new[] { "idle-auto-defense", "swarm" }),
-                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 24f, 1.08f, 2, 5f, DamageType.Value, 0.27f, tags: new[] { "idle-auto-defense", "runner" }),
-                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 68f, 0.46f, 4, 10f, DamageType.Value, 0.48f, tags: new[] { "idle-auto-defense", "tank" }),
-                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 42f, 0.62f, 3, 7f, DamageType.Value, 0.38f, tags: new[] { "idle-auto-defense", "shielded" }),
-                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 155f, 0.52f, 8, 26f, DamageType.Value, 0.54f, tags: new[] { "idle-auto-defense", "elite" }),
-                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 360f, 0.34f, 18, 60f, DamageType.Value, 0.82f, tags: new[] { "idle-auto-defense", "boss" })
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 20f, 0.72f, 1, 4f, DamageType.Value, 0.28f, tags: new[] { "idle-auto-defense", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 26f, 1.1f, 2, 5f, DamageType.Value, 0.27f, tags: new[] { "idle-auto-defense", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 74f, 0.48f, 5, 10f, DamageType.Value, 0.48f, tags: new[] { "idle-auto-defense", "tank" }),
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 46f, 0.64f, 4, 7f, DamageType.Value, 0.38f, tags: new[] { "idle-auto-defense", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 170f, 0.54f, 10, 26f, DamageType.Value, 0.54f, tags: new[] { "idle-auto-defense", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 390f, 0.36f, 22, 60f, DamageType.Value, 0.82f, tags: new[] { "idle-auto-defense", "boss" })
             };
         }
 
@@ -571,8 +571,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     0,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 6, 1, 0, 72, "perimeter-north"),
-                        new WaveEntryRecipe(enemies[1], 2, 1, 240, 96, "perimeter-east"),
+                        new WaveEntryRecipe(enemies[0], 7, 1, 0, 66, "perimeter-north"),
+                        new WaveEntryRecipe(enemies[1], 3, 1, 220, 84, "perimeter-east"),
                         new WaveEntryRecipe(enemies[2], 1, 1, 420, 0, "perimeter-northwest")
                     },
                     new[] { "idle-auto-defense", "opening" }),
@@ -582,8 +582,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     620,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[1], 5, 1, 0, 64, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[0], 6, 1, 90, 58, "perimeter-northeast", 1)
+                        new WaveEntryRecipe(enemies[1], 6, 1, 0, 58, "perimeter-southeast", 1),
+                        new WaveEntryRecipe(enemies[0], 7, 1, 90, 55, "perimeter-northeast", 1)
                     },
                     new[] { "idle-auto-defense", "runner-pressure" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -592,53 +592,53 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     1180,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[3], 3, 1, 0, 78, "perimeter-south", 1),
-                        new WaveEntryRecipe(enemies[2], 2, 1, 110, 96, "perimeter-west", 2),
-                        new WaveEntryRecipe(enemies[1], 5, 1, 190, 54, "perimeter-northeast", 2)
+                        new WaveEntryRecipe(enemies[3], 3, 1, 0, 72, "perimeter-south", 1),
+                        new WaveEntryRecipe(enemies[2], 2, 1, 100, 92, "perimeter-west", 2),
+                        new WaveEntryRecipe(enemies[1], 6, 1, 180, 52, "perimeter-northeast", 2)
                     },
                     new[] { "idle-auto-defense", "pressure" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.idle-auto-defense.surge",
                     "Tank Break",
-                    1780,
+                    1760,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 8, 1, 0, 46, "perimeter-southwest", 1),
-                        new WaveEntryRecipe(enemies[1], 5, 1, 120, 58, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[3], 3, 1, 250, 84, "perimeter-west", 2)
+                        new WaveEntryRecipe(enemies[0], 9, 1, 0, 42, "perimeter-southwest", 1),
+                        new WaveEntryRecipe(enemies[1], 6, 1, 130, 54, "perimeter-southeast", 1),
+                        new WaveEntryRecipe(enemies[3], 3, 1, 260, 80, "perimeter-west", 2)
                     },
                     new[] { "idle-auto-defense", "tank-break" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.idle-auto-defense.elite",
                     "Elite Pressure",
-                    2480,
+                    2450,
                     new[]
                     {
                         new WaveEntryRecipe(enemies[4], 1, 1, 0, 0, "perimeter-northwest", 3),
-                        new WaveEntryRecipe(enemies[1], 6, 1, 140, 56, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[3], 3, 1, 300, 82, "perimeter-south", 2)
+                        new WaveEntryRecipe(enemies[1], 7, 1, 140, 52, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[3], 3, 1, 300, 80, "perimeter-south", 2)
                     },
                     new[] { "idle-auto-defense", "elite" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.idle-auto-defense.final",
                     "Final Surge",
-                    3200,
+                    3150,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[2], 3, 1, 0, 110, "perimeter-north", 2),
-                        new WaveEntryRecipe(enemies[3], 4, 1, 150, 78, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[1], 7, 1, 310, 48, "perimeter-southwest", 3)
+                        new WaveEntryRecipe(enemies[2], 3, 1, 0, 100, "perimeter-north", 2),
+                        new WaveEntryRecipe(enemies[3], 4, 1, 170, 74, "perimeter-east", 2),
+                        new WaveEntryRecipe(enemies[1], 8, 1, 300, 48, "perimeter-southwest", 3)
                     },
                     new[] { "idle-auto-defense", "final" }),
                 WaveDefinitionAsset.CreateTransient(
                     "wave.idle-auto-defense.boss",
                     "Boss Push",
-                    4100,
+                    3900,
                     new[]
                     {
                         new WaveEntryRecipe(enemies[5], 1, 1, 0, 0, "perimeter-south", 4),
-                        new WaveEntryRecipe(enemies[4], 1, 1, 320, 0, "perimeter-northeast", 3),
-                        new WaveEntryRecipe(enemies[1], 12, 1, 420, 70, "perimeter-northwest", 3)
+                        new WaveEntryRecipe(enemies[4], 1, 1, 300, 0, "perimeter-northeast", 3),
+                        new WaveEntryRecipe(enemies[1], 12, 1, 400, 64, "perimeter-northwest", 3)
                     },
                     new[] { "idle-auto-defense", "boss" })
             };
@@ -1177,12 +1177,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                Enemy(SwarmEnemySpawnableId, 18, 0.68f, 1, 0.28f),
-                Enemy(RunnerEnemySpawnableId, 24, 1.08f, 2, 0.27f),
-                Enemy(TankEnemySpawnableId, 68, 0.46f, 4, 0.48f),
-                Enemy(ShieldedEnemySpawnableId, 42, 0.62f, 3, 0.38f),
-                Enemy(EliteEnemySpawnableId, 155, 0.52f, 8, 0.54f),
-                Enemy(BossEnemySpawnableId, 360, 0.34f, 18, 0.82f)
+                Enemy(SwarmEnemySpawnableId, 20, 0.72f, 1, 0.28f),
+                Enemy(RunnerEnemySpawnableId, 26, 1.1f, 2, 0.27f),
+                Enemy(TankEnemySpawnableId, 74, 0.48f, 5, 0.48f),
+                Enemy(ShieldedEnemySpawnableId, 46, 0.64f, 4, 0.38f),
+                Enemy(EliteEnemySpawnableId, 170, 0.54f, 10, 0.54f),
+                Enemy(BossEnemySpawnableId, 390, 0.36f, 22, 0.82f)
             };
         }
 
@@ -1406,14 +1406,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const int PassiveIncomeIntervalTicks = 60;
         private const int ManualTowerBaseCooldownTicks = 34;
         private const int ManualTowerMinimumCooldownTicks = 18;
-        private const double ManualTowerBaseDamage = 3.0d;
+        private const double ManualTowerBaseDamage = 3.2d;
         private const double ManualTowerDamageRankBonus = 1.6d;
-        private const double ManualTowerBaseRange = 4.7d;
+        private const double ManualTowerBaseRange = 8.4d;
         private const double ManualTowerRangeRankBonus = 0.4d;
-        private const double ManualTowerMaximumRange = 7.2d;
-        private const double PulseBeamModuleBaseRange = 5.0d;
-        private const double ArcBurstModuleBaseRange = 4.1d;
-        private const double HomingPulseModuleBaseRange = 6.3d;
+        private const double ManualTowerMaximumRange = 10.6d;
+        private const double PulseBeamModuleBaseRange = 7.4d;
+        private const double ArcBurstModuleBaseRange = 6.2d;
+        private const double HomingPulseModuleBaseRange = 8.8d;
         private const double ModuleRangeRankBonus = 0.35d;
         private const double SampleProjectileFinishThreshold = 3d;
         private const float TemplateSpawnLaneRadius = 18.5f;
@@ -1426,7 +1426,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private const int HomingPulseModuleCooldownTicks = 92;
         private const int MinimumProjectileImpactDelayTicks = 12;
         private const int MaximumProjectileImpactDelayTicks = 52;
-        private const float FirstRewardDraftTargetSeconds = 32f;
+        private const float FirstRewardDraftTargetSeconds = 30f;
         private const int OverdriveCostCredits = 22;
         private const float OverdriveDurationSeconds = 7f;
         private const float OverdriveCooldownSeconds = 18f;
@@ -3150,6 +3150,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             var random = new System.Random(20260623 + CommanderLevel * 17 + (int)kind * 1009 + _rewardDraftSeed++ * 97);
             var remaining = new List<IdleAutoDefenseRewardDraftChoice>(candidates);
             TrySelectPreferredEarlyUnlock(remaining, selected, kind);
+            TrySelectExcitingReward(remaining, selected);
             while (selected.Count < choiceCount && remaining.Count > 0)
             {
                 double totalWeight = 0d;
@@ -3188,6 +3189,51 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             return false;
+        }
+
+        private static bool TrySelectExcitingReward(List<IdleAutoDefenseRewardDraftChoice> remaining, List<IdleAutoDefenseRewardDraftChoice> selected)
+        {
+            if (remaining == null || selected == null || selected.Count >= 3) return false;
+            for (int i = 0; i < selected.Count; i++)
+                if (IsExcitingRewardChoice(selected[i]))
+                    return false;
+
+            int bestIndex = -1;
+            IdleAutoDefenseRewardRarity bestRarity = IdleAutoDefenseRewardRarity.Common;
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                IdleAutoDefenseRewardDraftChoice choice = remaining[i];
+                if (!IsExcitingRewardChoice(choice)) continue;
+                if (bestIndex >= 0 && choice.Rarity < bestRarity) continue;
+                bestIndex = i;
+                bestRarity = choice.Rarity;
+            }
+
+            if (bestIndex < 0) return false;
+            IdleAutoDefenseRewardDraftChoice selectedChoice = remaining[bestIndex];
+            selected.Add(WithRewardHotkey(selectedChoice, selected.Count + 1));
+            RemoveRewardChoicesWithDedupeKey(remaining, selectedChoice.DedupeKey);
+            return true;
+        }
+
+        private static bool IsExcitingRewardChoice(IdleAutoDefenseRewardDraftChoice choice)
+        {
+            if (choice == null) return false;
+            if (choice.IsUnlock) return true;
+            if (choice.Rarity >= IdleAutoDefenseRewardRarity.Epic) return true;
+            switch (choice.EffectKind)
+            {
+                case IdleAutoDefenseRewardEffectKind.ExtraProjectile:
+                case IdleAutoDefenseRewardEffectKind.PulsePower:
+                case IdleAutoDefenseRewardEffectKind.ArcPower:
+                case IdleAutoDefenseRewardEffectKind.HomingPower:
+                    return true;
+                case IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier:
+                case IdleAutoDefenseRewardEffectKind.ProjectileSpeed:
+                    return choice.Rarity >= IdleAutoDefenseRewardRarity.Rare;
+                default:
+                    return false;
+            }
         }
 
         private static void RemoveRewardChoicesWithDedupeKey(List<IdleAutoDefenseRewardDraftChoice> choices, string dedupeKey)

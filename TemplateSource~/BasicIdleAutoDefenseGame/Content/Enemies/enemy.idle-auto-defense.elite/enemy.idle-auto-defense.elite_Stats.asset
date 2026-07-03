@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ec0d7eef89a4810ab6a49c7ab0374fb, type: 3}
   m_Name: enemy.idle-auto-defense.elite_Stats
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyStatsDefinitionAsset
-  _maximumHealth: 155
-  _moveSpeed: 0.52
+  _maximumHealth: 170
+  _moveSpeed: 0.54
   _rewardValue: 26
-  _contactDamage: 8
+  _contactDamage: 10
   _damageTypeId: damage.idle-auto-defense.basic
   _collisionRadius: 0.54

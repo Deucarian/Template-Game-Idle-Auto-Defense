@@ -143,6 +143,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             Assert.That(catalog.GetNormalWeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, 2).DisplayName, Is.EqualTo("Split Tip"));
+            Assert.That(catalog.GetNormalWeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, 2).EffectKind, Is.EqualTo(IdleAutoDefenseRewardEffectKind.PulsePower));
+            Assert.That(catalog.GetNormalWeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, 2).EffectKind, Is.EqualTo(IdleAutoDefenseRewardEffectKind.ArcPower));
+            Assert.That(catalog.GetNormalWeaponReward(BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, 2).EffectKind, Is.EqualTo(IdleAutoDefenseRewardEffectKind.HomingPower));
             Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, 0).DisplayName, Is.EqualTo("Fracture Burst"));
             Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, 0).DisplayName, Is.EqualTo("Refracting Beam"));
             Assert.That(catalog.GetEpicWeaponReward(BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, 0).DisplayName, Is.EqualTo("Cluster Shells"));
@@ -1447,6 +1450,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.AreEqual(3, controller.RewardDraftChoiceCount);
                 var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 bool offeredUnlock = false;
+                bool offeredExcitingChoice = false;
                 for (int i = 0; i < controller.RewardDraftChoices.Count; i++)
                 {
                     IdleAutoDefenseRewardDraftChoice choice = controller.RewardDraftChoices[i];
@@ -1458,9 +1462,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     Assert.IsFalse(string.IsNullOrWhiteSpace(choice.EffectDescription));
                     Assert.AreEqual((i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), choice.HotkeyLabel);
                     offeredUnlock |= choice.IsUnlock;
+                    offeredExcitingChoice |= IsExcitingRewardChoice(choice);
                 }
 
                 Assert.IsTrue(offeredUnlock, "The first level-up draft should offer at least one module unlock.");
+                Assert.IsTrue(offeredExcitingChoice, "Every draft should try to include a visible behavior-changing or high-rarity option.");
                 Assert.IsTrue(controller.TryChooseRewardDraftHotkey(1));
                 Assert.AreEqual(1, controller.RewardDraftSelectionCount);
             }
@@ -1597,6 +1603,34 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(contentSetAsset, "module-slot.pulse-beam");
             AssertFileContains(contentSetAsset, "_weaponPresentationBindings:");
             AssertFileContains(contentSetAsset, "weapon-ballista");
+        }
+
+        [Test]
+        public void ProductionEditorMenusUseToolsDeucarianRoot()
+        {
+            string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
+            string editorRoot = Path.Combine(packageRoot, "Editor");
+            string[] editorFiles = Directory.GetFiles(editorRoot, "*.cs", SearchOption.AllDirectories);
+            var offenders = new List<string>();
+            string attributeDoubleQuote = "[MenuItem(\"" + "Deucarian/";
+            string attributeSingleQuote = "[MenuItem('" + "Deucarian/";
+            string invocationDoubleQuote = "MenuItem(\"" + "Deucarian/";
+            for (int i = 0; i < editorFiles.Length; i++)
+            {
+                string text = File.ReadAllText(editorFiles[i]);
+                if (text.Contains(attributeDoubleQuote) ||
+                    text.Contains(attributeSingleQuote) ||
+                    text.Contains(invocationDoubleQuote))
+                {
+                    offenders.Add(editorFiles[i]);
+                }
+            }
+
+            Assert.That(offenders, Is.Empty, "Root-level Deucarian editor menus are forbidden. Use Tools/Deucarian/...");
+            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Validate Playable Content", IdleAutoDefensePlayableContentAuditMenu.ValidateMenuPath);
+            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Open Main Content Set", IdleAutoDefensePlayableContentAuditMenu.OpenContentSetMenuPath);
+            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Generate Runtime Content Audit", IdleAutoDefensePlayableContentAuditMenu.RuntimeAuditMenuPath);
+            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Validate Authored Content", IdleAutoDefenseAuthoredContentValidationMenu.MenuPath);
         }
 
         [Test]
@@ -2532,6 +2566,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 if (report.Issues[i].Path.Contains(path))
                     return;
             Assert.Fail("Expected validation issue containing path '" + path + "'. Issues: " + FormatIssues(report));
+        }
+
+        private static bool IsExcitingRewardChoice(IdleAutoDefenseRewardDraftChoice choice)
+        {
+            if (choice == null) return false;
+            if (choice.IsUnlock) return true;
+            if (choice.Rarity >= IdleAutoDefenseRewardRarity.Epic) return true;
+
+            string description = choice.EffectDescription ?? string.Empty;
+            return description.IndexOf("extra", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   description.IndexOf("becomes", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   description.IndexOf("projectile", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   description.IndexOf("visible", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string FormatIssues(GameContentSetValidationReport report)

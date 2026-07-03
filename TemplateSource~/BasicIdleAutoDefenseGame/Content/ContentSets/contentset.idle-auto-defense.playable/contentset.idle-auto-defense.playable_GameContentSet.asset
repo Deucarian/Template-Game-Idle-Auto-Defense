@@ -154,11 +154,11 @@ MonoBehaviour:
         _amount: 2
       - _weaponId: weapon.idle-auto-defense.pulse-beam
         _tierKey: normal.2
-        _displayName: Extended Aperture
+        _displayName: Piercing Beam
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank for the beam module.
-        _effectKind: 4
+        _effectDescription: Pulse Beam hits one extra enemy with authored beam VFX.
+        _effectKind: 9
         _amount: 1
       - _weaponId: weapon.idle-auto-defense.arc-burst
         _tierKey: normal.0
@@ -178,11 +178,11 @@ MonoBehaviour:
         _amount: 2
       - _weaponId: weapon.idle-auto-defense.arc-burst
         _tierKey: normal.2
-        _displayName: Bigger Shells
+        _displayName: Forked Burst
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank to catch clustered enemies sooner.
-        _effectKind: 4
+        _effectDescription: Arc Burst detonates into one extra nearby enemy.
+        _effectKind: 10
         _amount: 1
       - _weaponId: weapon.idle-auto-defense.homing-pulse
         _tierKey: normal.0
@@ -202,11 +202,11 @@ MonoBehaviour:
         _amount: 2
       - _weaponId: weapon.idle-auto-defense.homing-pulse
         _tierKey: normal.2
-        _displayName: Longer Lock
+        _displayName: Second Lock
         _rarity: 2
         _typeName: Weapon Upgrade
-        _effectDescription: +1 range rank for the homing spire.
-        _effectKind: 4
+        _effectDescription: Homing Pulse launches one extra authored seeker.
+        _effectKind: 11
         _amount: 1
       _epicWeaponRewards:
       - _weaponId: weapon.idle-auto-defense.shard-launcher
