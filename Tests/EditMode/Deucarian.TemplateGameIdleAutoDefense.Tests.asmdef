@@ -9,6 +9,7 @@
     "Deucarian.GameplayFoundation",
     "Deucarian.Attacks",
     "Deucarian.Attacks.Authoring",
+    "Deucarian.Attacks.Editor",
     "Deucarian.Combat",
     "Deucarian.Projectiles",
     "Deucarian.AutoDefense",
@@ -17,8 +18,10 @@
     "Deucarian.WorldSpawning",
     "Deucarian.WeaponSystems",
     "Deucarian.WeaponSystems.Authoring",
+    "Deucarian.WeaponSystems.Editor",
     "Deucarian.RunUpgrades",
     "Deucarian.RunUpgrades.Authoring",
+    "Deucarian.RunUpgrades.Editor",
     "Deucarian.IdleProgression",
     "Deucarian.Progression",
     "Deucarian.Monetization"

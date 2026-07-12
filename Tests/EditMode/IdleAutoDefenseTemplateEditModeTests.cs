@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Deucarian.Attacks.Authoring;
+using Deucarian.Attacks.Editor;
 using Deucarian.AutoDefense;
 using Deucarian.Editor;
 using Deucarian.Encounters;
@@ -12,9 +14,11 @@ using Deucarian.Monetization;
 using Deucarian.Progression;
 using Deucarian.RunUpgrades;
 using Deucarian.RunUpgrades.Authoring;
+using Deucarian.RunUpgrades.Editor;
 using Deucarian.TemplateGameIdleAutoDefense.Editor;
 using Deucarian.WeaponSystems;
 using Deucarian.WeaponSystems.Authoring;
+using Deucarian.WeaponSystems.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -1992,6 +1996,75 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void IdleNamedPackProviderRegistersOnceAndReportsMissingGeneratedContent()
+        {
+            string root = "Assets/GameContent/IdlePackMissing_" + Guid.NewGuid().ToString("N");
+            if (!AssetDatabase.IsValidFolder("Assets/GameContent")) AssetDatabase.CreateFolder("Assets", "GameContent");
+            AssetDatabase.CreateFolder("Assets/GameContent", Path.GetFileName(root));
+            try
+            {
+                IdleAutoDefenseContentPackIndex index = IdleAutoDefenseContentPackIndex.Discover(root);
+                var provider = new GameContentPackAuthoringProvider();
+                GameContentPackDescriptor descriptor = index.BuildDescriptor(provider.ProviderId);
+
+                Assert.That(GameContentAuthoringProviderRegistry.Providers.Count(value =>
+                    value is IGameContentPackProvider &&
+                    string.Equals(value.ProviderId, GameContentPackAuthoringProvider.ContentPackProviderId, StringComparison.OrdinalIgnoreCase)), Is.EqualTo(1));
+                Assert.That(descriptor.PackId, Is.EqualTo(IdleAutoDefenseContentPackIndex.PackId));
+                Assert.That(descriptor.SourceState, Is.EqualTo(GameContentPackSourceState.MissingSource));
+                Assert.That(descriptor.RecordCount, Is.Zero);
+                Assert.That(descriptor.Actions.Any(action => action.ActionId == IdleAutoDefenseContentPackIndex.OpenSetupActionId && action.Enabled), Is.True);
+                Assert.That(descriptor.Validation.ErrorCount, Is.GreaterThan(0));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(root);
+            }
+        }
+
+        [Test]
+        public void IdleNamedPackDiscoveryReportsAmbiguousGeneratedRoots()
+        {
+            string root = "Assets/GameContent/IdlePackAmbiguous_" + Guid.NewGuid().ToString("N");
+            if (!AssetDatabase.IsValidFolder("Assets/GameContent")) AssetDatabase.CreateFolder("Assets", "GameContent");
+            AssetDatabase.CreateFolder("Assets/GameContent", Path.GetFileName(root));
+            try
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    var pack = ScriptableObject.CreateInstance<GameContentPackAsset>();
+                    pack.Configure(
+                        IdleAutoDefenseContentPackIndex.PackId,
+                        "Candidate " + i,
+                        string.Empty,
+                        "1",
+                        "Tests",
+                        null,
+                        null,
+                        Array.Empty<GameContentSetAsset>(),
+                        null,
+                        Array.Empty<string>(),
+                        Array.Empty<string>(),
+                        string.Empty,
+                        Array.Empty<string>());
+                    AssetDatabase.CreateAsset(pack, root + "/Candidate" + i + ".asset");
+                }
+                AssetDatabase.SaveAssets();
+
+                IdleAutoDefenseContentPackIndex index = IdleAutoDefenseContentPackIndex.Discover(root);
+
+                Assert.That(index.SourceState, Is.EqualTo(GameContentPackSourceState.DuplicateConflict));
+                Assert.That(index.Records, Is.Empty);
+                Assert.That(index.SourceClaims, Is.Empty);
+                Assert.That(index.Validation.Issues.Any(issue => issue.Message.Contains("Multiple generated")), Is.True);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(root);
+            }
+        }
+
+        [Test]
         public void SetupWizardCopiesStarterToProjectOwnedFolderAndBlocksOverwrite()
         {
             string tempRoot = "Assets/T";
@@ -2101,6 +2174,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/WizardSmoke.IdleAutoDefense.asmdef"), "Deucarian.TemplateGameIdleAutoDefense");
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 AssertGeneratedContentIsDiscoverableInGameContentLibrary(contentRoot);
+                AssertGeneratedContentPackAppearsInGameContentAuthoring(contentRoot, generatedSceneAssetPath);
 
                 string secondTargetRoot = tempRoot + "/W" + Guid.NewGuid().ToString("N").Substring(0, 8);
                 var secondRequest = new IdleAutoDefenseTemplateSetupRequest
@@ -2827,6 +2901,95 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(6, contentPackSummary.EnemyCount);
             Assert.AreEqual(7, contentPackSummary.WaveCount);
             Assert.AreEqual(6, contentPackSummary.UpgradeCount);
+        }
+
+        private static void AssertGeneratedContentPackAppearsInGameContentAuthoring(
+            string contentRoot,
+            string generatedSceneAssetPath)
+        {
+            IdleAutoDefenseContentLensAdapters.EnsureRegistered();
+            var idleProvider = new GameContentPackAuthoringProvider(contentRoot);
+            GameContentPackDescriptor pack = idleProvider.GetContentPacks().Single();
+            IReadOnlyList<GameContentRecordDescriptor> records = idleProvider.GetRecords(pack.PackId);
+
+            Assert.That(pack.PackId, Is.EqualTo(IdleAutoDefenseContentPackIndex.PackId));
+            Assert.That(pack.OwningPackageId, Is.EqualTo(IdleAutoDefenseContentPackIndex.OwningPackageId));
+            Assert.That(pack.DisplayName, Is.EqualTo(IdleAutoDefenseContentPackIndex.DisplayName));
+            Assert.That(pack.SourceState, Is.EqualTo(GameContentPackSourceState.Available), FormatValidation(pack.Validation));
+            Assert.That(pack.Access.IsWritable, Is.False);
+            Assert.That(pack.Access.PersistenceLabel, Is.EqualTo("Read-only ScriptableObject graph"));
+            Assert.That(pack.Manifest, Is.Null);
+            Assert.That(pack.PlayableScene, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(pack.PlayableScene), Is.EqualTo(generatedSceneAssetPath));
+            Assert.That(pack.Metadata.Single(value => value.Label == "GameContentPackAsset").Value, Is.Not.EqualTo("Missing"));
+            Assert.That(pack.Metadata.Single(value => value.Label == "GameContentSetAsset").Value, Is.Not.EqualTo("Missing"));
+            Assert.That(pack.Actions.Any(action => action.ActionId == IdleAutoDefenseContentPackIndex.ValidateActionId && action.Enabled), Is.True);
+            Assert.That(pack.Actions.Any(action => action.ActionId == IdleAutoDefenseContentPackIndex.RevealActionId && action.Enabled), Is.True);
+            Assert.That(pack.Actions.Any(action => action.ActionId == IdleAutoDefenseContentPackIndex.OpenSceneActionId && action.Enabled), Is.True);
+            Assert.That(pack.Actions.Any(action => action.ActionId == IdleAutoDefenseContentPackIndex.OpenSetupActionId), Is.False);
+
+            Assert.That(records.Count(record => record.HasCapability(GameContentRecordCapabilities.Attack)), Is.EqualTo(4));
+            Assert.That(records.Count(record => record.HasCapability(GameContentRecordCapabilities.Enemy)), Is.EqualTo(6));
+            Assert.That(records.Count(record => record.HasCapability(GameContentRecordCapabilities.Wave)), Is.EqualTo(7));
+            Assert.That(records.Count(record => record.HasCapability(GameContentRecordCapabilities.Weapon)), Is.EqualTo(4));
+            Assert.That(records.Count(record => record.HasCapability(GameContentRecordCapabilities.Tower)), Is.EqualTo(4));
+            Assert.That(records.Count(record => record.HasCapability(GameContentRecordCapabilities.Upgrade)), Is.EqualTo(6));
+            Assert.That(records.Count, Is.EqualTo(27));
+            Assert.That(records.Select(record => record.CanonicalKey).Distinct().Count(), Is.EqualTo(27));
+            Assert.That(records.All(record => record.CanonicalKey.OwningPackageId == IdleAutoDefenseContentPackIndex.OwningPackageId), Is.True);
+            Assert.That(records.All(record => record.CanonicalKey.PackId == IdleAutoDefenseContentPackIndex.PackId), Is.True);
+            Assert.That(records.All(record => record.CanonicalKey.SourceId.StartsWith(GameContentSourceIdentity.UnityAssetGuidKind + "::", StringComparison.Ordinal)), Is.True);
+
+            var projectProvider = new GameContentLibraryProvider();
+            GameContentPackCatalog catalog = GameContentPackCatalog.Build(new IGameContentAuthoringProvider[] { projectProvider, idleProvider });
+            GameContentPackCatalogEntry idleEntry = catalog.Find(pack.StableKey);
+            string projectKey = GameContentPackDescriptor.BuildStableKey(
+                "com.deucarian.game-content-authoring.project",
+                "project-content");
+            GameContentPackCatalogEntry projectEntry = catalog.Find(projectKey);
+            Assert.That(idleEntry, Is.Not.Null);
+            Assert.That(projectEntry, Is.Not.Null);
+            Assert.That(idleEntry.Records.Count, Is.EqualTo(27));
+            Assert.That(projectEntry.Records.Any(record => IsPathUnderAssetRoot(record.SourcePath, contentRoot)), Is.False);
+            Assert.That(catalog.SourceClaimConflicts, Is.Empty);
+            Assert.That(catalog.AllRecords.Count(record => IsPathUnderAssetRoot(record.SourcePath, contentRoot)), Is.EqualTo(27));
+
+            GameContentPackContext context = new GameContentPackSelectionState().Select(catalog, pack.StableKey);
+            foreach (GameContentRecordDescriptor record in context.Records)
+            {
+                foreach (GameContentRecordReferenceDescriptor reference in record.OutboundReferences.Where(value => value.TargetRecordKey != null))
+                    Assert.That(context.ResolveReference(record, reference), Is.Not.Null, record.SourceRecordId + " -> " + reference.TargetRecordId);
+            }
+
+            GameContentRecordDescriptor attack = records.First(record => record.HasCapability(GameContentRecordCapabilities.Attack));
+            GameContentRecordDescriptor enemy = records.First(record => record.HasCapability(GameContentRecordCapabilities.Enemy));
+            GameContentRecordDescriptor wave = records.First(record => record.HasCapability(GameContentRecordCapabilities.Wave));
+            GameContentRecordDescriptor weapon = records.First(record => record.HasCapability(GameContentRecordCapabilities.Weapon));
+            GameContentRecordDescriptor upgrade = records.First(record => record.HasCapability(GameContentRecordCapabilities.Upgrade));
+            Assert.That(GameContentRecordProjectionRegistry<AttackContentRecordProjection>.TryProject(attack, out AttackContentRecordProjection attackProjection), Is.True);
+            Assert.That(attackProjection.StatusSummary, Does.Contain("simulation ticks"));
+            Assert.That(GameContentRecordProjectionRegistry<EnemyContentRecordProjection>.TryProject(enemy, out _), Is.True);
+            Assert.That(GameContentRecordProjectionRegistry<EncounterContentRecordProjection>.TryProject(wave, out EncounterContentRecordProjection waveProjection), Is.True);
+            Assert.That(waveProjection.EncounterKind, Does.Contain("tick"));
+            Assert.That(GameContentRecordProjectionRegistry<WeaponContentRecordProjection>.TryProject(weapon, out WeaponContentRecordProjection weaponProjection), Is.True);
+            Assert.That(weaponProjection.IsTower, Is.True);
+            Assert.That(weaponProjection.RankPathSummary, Does.Contain("simulation ticks"));
+            Assert.That(GameContentRecordProjectionRegistry<UpgradeContentRecordProjection>.TryProject(upgrade, out _), Is.True);
+
+            UnityEngine.Object[] sourceAssets = records.Select(record => record.SourceAsset).Where(value => value != null).ToArray();
+            Assert.That(sourceAssets.Any(EditorUtility.IsDirty), Is.False);
+            Assert.That(idleProvider.GetSourceClaims(pack.PackId).Count, Is.GreaterThanOrEqualTo(29));
+            Assert.That(idleProvider.ValidatePack(pack.PackId).IsValid, Is.True, FormatValidation(idleProvider.ValidatePack(pack.PackId)));
+            Assert.That(idleProvider.ExecuteAction(pack.PackId, IdleAutoDefenseContentPackIndex.ValidateActionId).Succeeded, Is.True);
+            Assert.That(idleProvider.ExecuteAction(pack.PackId, IdleAutoDefenseContentPackIndex.RevealActionId).Succeeded, Is.True);
+            Assert.That(sourceAssets.Any(EditorUtility.IsDirty), Is.False);
+        }
+
+        private static string FormatValidation(GameContentAuthoringValidationResult validation)
+        {
+            return validation == null
+                ? "No validation result."
+                : string.Join("\n", validation.Issues.Select(issue => issue.Severity + " " + issue.Path + ": " + issue.Message));
         }
 
         private static int CountLibraryItems(GameContentLibraryReport report, string contentRoot, GameContentLibraryKind kind)

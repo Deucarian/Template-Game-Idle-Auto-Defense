@@ -7,9 +7,13 @@
     "Deucarian.GameContentAuthoring.Editor",
     "Deucarian.GameplayFoundation",
     "Deucarian.Attacks.Authoring",
+    "Deucarian.Attacks.Editor",
     "Deucarian.WeaponSystems",
     "Deucarian.WeaponSystems.Authoring",
-    "Deucarian.RunUpgrades.Authoring"
+    "Deucarian.WeaponSystems.Editor",
+    "Deucarian.RunUpgrades",
+    "Deucarian.RunUpgrades.Authoring",
+    "Deucarian.RunUpgrades.Editor"
   ],
   "includePlatforms": [
     "Editor"

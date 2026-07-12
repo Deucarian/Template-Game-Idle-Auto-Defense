@@ -38,6 +38,8 @@ The authored gameplay data is created separately under `Assets/GameContent/IdleA
 
 The generated scene references the generated content pack and content set. The controller should report `UsingAssignedContentSet == true` with zero content pack/set validation errors.
 
+The generated graph also appears in `Tools > Deucarian > Game Content Authoring` as the read-only named pack `Basic Idle Auto Defense`. Its Attack, Enemy, Wave / Encounter, Weapon / Tower, Upgrade, All Content, and Pack Dashboard views all project the existing ScriptableObjects without making copies. See [Game Content Authoring](Documentation~/game-content-authoring.md).
+
 ## Template Source
 
 The package-owned source lives at:
@@ -68,7 +70,7 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 ## Editing Content
 
-Open `Tools > Deucarian > Game Content Authoring` and tune the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Replace or extend the starter Kenney visuals in the generated game root, tune waves/upgrades/progression in Game Content Authoring, and rename `template.*` IDs into product-owned IDs as the game becomes real product content.
+Open `Tools > Deucarian > Game Content Authoring` to browse, validate, reveal, and navigate the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. The named pack is read-only in this milestone; unclaimed standalone ScriptableObjects retain the existing writable Project Content workflows. Stable-ID changes still require a coordinated reference and runtime audit.
 
 During play, the sample controller turns kills, wave progress, elite kills, boss kills, and a guaranteed early run moment into a visible three-choice reward draft. Early level-up drafts prefer at least one module unlock so the player gets a build direction quickly. Normal choices unlock or improve owned tower weapons; after three normal investments in a weapon, Epic choices can appear for that weapon, and after three Epic investments a Legendary choice can appear. Keep the authored weapons, attacks, enemies, waves, starter upgrades, reward draft settings/catalog, debug defaults, and Kenney presentation bindings under `Assets/GameContent`; the generated controller consumes the assigned content set instead of owning a second editable catalog.
 
