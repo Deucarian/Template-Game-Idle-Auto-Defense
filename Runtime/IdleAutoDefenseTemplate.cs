@@ -1410,11 +1410,39 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public bool IsUnlock { get; }
         public double AuthoredAmount => Amount;
         public double AuthoredWeight => Weight;
-        internal string TargetWeaponId { get; }
-        internal IdleAutoDefenseRewardEffectKind EffectKind { get; }
+        public string TargetWeaponId { get; }
+        public IdleAutoDefenseRewardEffectKind EffectKind { get; }
+        public string EffectKindName => EffectKind.ToString();
         internal double Amount { get; }
         internal string DedupeKey { get; }
         internal double Weight { get; }
+    }
+
+    public readonly struct IdleAutoDefenseMajorThreatSnapshot
+    {
+        public IdleAutoDefenseMajorThreatSnapshot(
+            long instanceId,
+            string displayName,
+            bool boss,
+            double health,
+            double maximumHealth,
+            Vector3 worldPosition)
+        {
+            InstanceId = instanceId;
+            DisplayName = displayName ?? string.Empty;
+            Boss = boss;
+            Health = Math.Max(0d, health);
+            MaximumHealth = Math.Max(1d, maximumHealth);
+            WorldPosition = worldPosition;
+        }
+
+        public long InstanceId { get; }
+        public string DisplayName { get; }
+        public bool Boss { get; }
+        public double Health { get; }
+        public double MaximumHealth { get; }
+        public float HealthNormalized => Mathf.Clamp01((float)(Health / MaximumHealth));
+        public Vector3 WorldPosition { get; }
     }
 
     public class IdleAutoDefenseTemplateController : MonoBehaviour
@@ -1496,6 +1524,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private IdleAutoDefenseGameRulesAsset _activeGameRules;
         private float _simulationTickAccumulator;
         private int _sessionElapsedTicks;
+        private int _runSequence;
         private bool _endlessRestartPending;
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
@@ -1675,6 +1704,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int WaveRewardExperienceCount { get; private set; }
         public int EpicRewardSelectionCount { get; private set; }
         public int LegendaryRewardSelectionCount { get; private set; }
+        public int EliteDefeatCount { get; private set; }
+        public int BossDefeatCount { get; private set; }
         public int UpgradeFeedbackSpawnCount { get; private set; }
         public int CommanderLevel { get; private set; } = 1;
         public long CommanderExperience { get; private set; }
@@ -1690,6 +1721,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public double RewardCreditMultiplierBonus { get; private set; }
         public double OfflineRewardMultiplierBonus { get; private set; }
         public long RuntimeCurrency { get; private set; }
+        public long RuntimeCurrencyEarned { get; private set; }
+        public long RuntimeCurrencySpent { get; private set; }
         public float SurvivalSeconds { get; private set; }
         public int DamageUpgradeRank { get; private set; }
         public int AttackSpeedUpgradeRank { get; private set; }
@@ -1733,6 +1766,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public bool CanPurchaseHomingPulseModule => !HomingPulseUnlocked && CanSpendRuntimeCurrency(HomingPulseUnlockCost);
         public bool CanPurchaseOverdrive => !OverdriveActive && OverdriveCooldownSecondsRemaining <= 0f && CanSpendRuntimeCurrency(OverdriveCost);
         public int UnlockedModuleCount => 1 + (PulseBeamUnlocked ? 1 : 0) + (ArcBurstUnlocked ? 1 : 0) + (HomingPulseUnlocked ? 1 : 0);
+        public IdleAutoDefenseRewardCatalogAsset ActiveRewardCatalog => _activeRewardCatalog;
+        public IdleAutoDefenseEconomyAsset ActiveEconomy => _activeEconomy;
+        public IdleAutoDefenseRunProfileAsset ActiveRunProfile => _activeRunProfile;
+        public IdleAutoDefenseProgressionAsset ActiveProgression => _activeProgression;
+        public IdleAutoDefenseOfflineProgressionAsset ActiveOfflineProgression => _activeOfflineProgression;
+        public IdleAutoDefenseGameRulesAsset ActiveGameRules => _activeGameRules;
+        public int TotalWaveCount => _resolvedWaveDefinitions.Length;
+        public int CurrentWaveNumber => ResolveCurrentWaveNumber();
         public int ModuleActivationCount { get; private set; }
         public int OverdriveActivationCount { get; private set; }
         public bool CanPurchaseDamageUpgrade => CanSpendRuntimeCurrency(DamageUpgradeCost);
@@ -1879,8 +1920,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             element.style.bottom = 0;
             element.style.width = Length.Percent(100);
             element.style.height = Length.Percent(100);
-            element.style.minWidth = RuntimeUiFallbackWidth;
-            element.style.minHeight = RuntimeUiFallbackHeight;
+            element.style.minWidth = 0;
+            element.style.minHeight = 0;
             element.style.backgroundColor = Color.clear;
             element.style.flexDirection = FlexDirection.Column;
             element.style.flexGrow = 1f;
@@ -2073,6 +2114,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : _activeOfflineProgression.CreateRuntimeDefinition();
             ApplyContentSetEconomyTuning(_resolvedContentSet);
             RuntimeCurrency = ResolveRuntimeStartingCredits(_resolvedContentSet);
+            _runSequence++;
+            ApplyAllPersistentProgressionEffects();
 
             _runtime.Start();
         }
@@ -2416,6 +2459,124 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : _progressionState.GetResearchRank(new ResearchNodeId(nodeId));
         }
 
+        public long GetPersistentCurrencyBalance(string currencyId)
+        {
+            return _progressionState == null || string.IsNullOrWhiteSpace(currencyId)
+                ? 0L
+                : _progressionState.GetBalance(new CurrencyId(currencyId)).Value;
+        }
+
+        public IdleAutoDefensePersistentProgressionData CapturePersistentProgression()
+        {
+            var data = new IdleAutoDefensePersistentProgressionData();
+            if (_progressionState == null) return data;
+            ProgressionSnapshot snapshot = _progressionState.CreateSnapshot();
+            for (int i = 0; i < snapshot.Balances.Count; i++)
+                data.Balances.Add(new IdleAutoDefensePersistentLongValue { Id = snapshot.Balances[i].Id.Value, Value = snapshot.Balances[i].Value });
+            for (int i = 0; i < snapshot.Tracks.Count; i++)
+                data.Tracks.Add(new IdleAutoDefensePersistentLongValue { Id = snapshot.Tracks[i].Id.Value, Value = snapshot.Tracks[i].Value });
+            for (int i = 0; i < snapshot.Research.Count; i++)
+                data.ResearchRanks.Add(new IdleAutoDefensePersistentIntValue { Id = snapshot.Research[i].Id.Value, Value = snapshot.Research[i].Value });
+            for (int i = 0; i < snapshot.Unlocks.Count; i++) data.UnlockIds.Add(snapshot.Unlocks[i].Value);
+            return data;
+        }
+
+        public bool RestorePersistentProgression(IdleAutoDefensePersistentProgressionData data)
+        {
+            if (data == null || !data.HasData || _progressionCatalog == null || _activeProgression == null) return false;
+            var restored = new ProgressionState();
+            var balances = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            var researchFunds = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < data.Balances.Count; i++)
+            {
+                IdleAutoDefensePersistentLongValue value = data.Balances[i];
+                if (value != null && !string.IsNullOrWhiteSpace(value.Id)) balances[value.Id] = Math.Max(0L, value.Value);
+            }
+
+            var targetRanks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < data.ResearchRanks.Count; i++)
+            {
+                IdleAutoDefensePersistentIntValue value = data.ResearchRanks[i];
+                if (value != null && !string.IsNullOrWhiteSpace(value.Id)) targetRanks[value.Id] = Math.Max(0, value.Value);
+            }
+            for (int i = 0; i < _activeProgression.ResearchNodes.Count; i++)
+            {
+                IdleAutoDefenseResearchNodeRecord node = _activeProgression.ResearchNodes[i];
+                if (node == null || !targetRanks.TryGetValue(node.Id, out int targetRank)) continue;
+                long cost = 0L;
+                for (int rank = 0; rank < Math.Min(targetRank, node.RankCosts.Count); rank++) cost += Math.Max(0L, node.RankCosts[rank]);
+                researchFunds.TryGetValue(node.CostCurrencyId, out long current);
+                researchFunds[node.CostCurrencyId] = current + cost;
+            }
+
+            var researchCurrencyLines = new List<CurrencyLine>();
+            foreach (KeyValuePair<string, long> balance in researchFunds)
+                if (balance.Value > 0L) researchCurrencyLines.Add(new CurrencyLine(new CurrencyId(balance.Key), new ProgressionAmount(balance.Value), true));
+            var finalCurrencyLines = new List<CurrencyLine>();
+            foreach (KeyValuePair<string, long> balance in balances)
+                if (balance.Value > 0L) finalCurrencyLines.Add(new CurrencyLine(new CurrencyId(balance.Key), new ProgressionAmount(balance.Value), true));
+            var xp = new List<XpGrant>();
+            for (int i = 0; i < data.Tracks.Count; i++)
+            {
+                IdleAutoDefensePersistentLongValue value = data.Tracks[i];
+                if (value != null && !string.IsNullOrWhiteSpace(value.Id) && value.Value > 0L)
+                    xp.Add(new XpGrant(new TrackId(value.Id), new ProgressionAmount(value.Value)));
+            }
+            var unlocks = new List<UnlockId>();
+            for (int i = 0; i < data.UnlockIds.Count; i++)
+                if (!string.IsNullOrWhiteSpace(data.UnlockIds[i])) unlocks.Add(new UnlockId(data.UnlockIds[i]));
+            ProgressionResult seed = restored.ApplyReward(
+                _progressionCatalog,
+                new ProgressionOperationId("idle-auto-defense.profile.restore.seed"),
+                new RewardBundle(researchCurrencyLines, xp, unlocks));
+            if (!seed.Succeeded) return false;
+
+            int remaining = 0;
+            foreach (int target in targetRanks.Values) remaining += target;
+            for (int pass = 0; pass < remaining + 1 && remaining > 0; pass++)
+            {
+                bool progressed = false;
+                for (int i = 0; i < _activeProgression.ResearchNodes.Count; i++)
+                {
+                    IdleAutoDefenseResearchNodeRecord node = _activeProgression.ResearchNodes[i];
+                    if (node == null || !targetRanks.TryGetValue(node.Id, out int targetRank)) continue;
+                    int currentRank = restored.GetResearchRank(new ResearchNodeId(node.Id));
+                    if (currentRank >= targetRank) continue;
+                    ProgressionResult purchase = restored.PurchaseResearch(
+                        _progressionCatalog,
+                        new ProgressionOperationId("idle-auto-defense.profile.restore." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(node.Id) + "." + (currentRank + 1).ToString(CultureInfo.InvariantCulture)),
+                        new ResearchNodeId(node.Id));
+                    if (!purchase.Succeeded) continue;
+                    remaining--;
+                    progressed = true;
+                }
+                if (!progressed) break;
+            }
+            if (remaining > 0) return false;
+
+            ProgressionResult finalBalances = restored.ApplyReward(
+                _progressionCatalog,
+                new ProgressionOperationId("idle-auto-defense.profile.restore.balances"),
+                new RewardBundle(finalCurrencyLines));
+            if (!finalBalances.Succeeded) return false;
+
+            _progressionState = restored;
+            ApplyAllPersistentProgressionEffects();
+            OfflineRewardCredits = GetPersistentCurrencyBalance(_activeEconomy.PrimaryCurrencyId);
+            OfflineRewardParts = GetPersistentCurrencyBalance(_activeEconomy.SecondaryCurrencyId);
+            return true;
+        }
+
+        public void ResetPersistentProgression()
+        {
+            _progressionState = new ProgressionState();
+            if (_progressionCatalog == null && _activeProgression != null && _activeEconomy != null)
+                _progressionCatalog = _activeProgression.CreateRuntimeCatalog(_activeEconomy);
+            ApplyContentSetStartingResources(_resolvedContentSet);
+            OfflineRewardCredits = GetPersistentCurrencyBalance(_activeEconomy == null ? string.Empty : _activeEconomy.PrimaryCurrencyId);
+            OfflineRewardParts = GetPersistentCurrencyBalance(_activeEconomy == null ? string.Empty : _activeEconomy.SecondaryCurrencyId);
+        }
+
         public bool TryPurchasePersistentUpgrade(string nodeId)
         {
             if (_progressionState == null || _progressionCatalog == null || _activeProgression == null || string.IsNullOrWhiteSpace(nodeId))
@@ -2442,6 +2603,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _shardVolleyBonus += Math.Max(1, (int)Math.Round(node.EffectAmountPerRank));
             else if (node.EffectKind == IdleAutoDefenseProgressionEffectKind.OfflineRewardMultiplier)
                 OfflineRewardMultiplierBonus += Math.Max(0d, node.EffectAmountPerRank);
+        }
+
+        private void ApplyAllPersistentProgressionEffects()
+        {
+            if (_activeProgression == null || _progressionState == null) return;
+            for (int i = 0; i < _activeProgression.ResearchNodes.Count; i++)
+            {
+                IdleAutoDefenseResearchNodeRecord node = _activeProgression.ResearchNodes[i];
+                if (node == null) continue;
+                int rank = GetPersistentResearchRank(node.Id);
+                for (int applied = 0; applied < rank; applied++) ApplyPersistentProgressionEffect(node);
+            }
         }
 
         private void DraftAndApplyUpgradeIfDue(int ticks)
@@ -3186,11 +3359,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EmitKenneySpriteBurst("Credit Pickup Burst", "Art/currency_coin_gold", CreateEnemyAimPosition(enemy.Position), new Color(1f, 0.88f, 0.18f), 0.62f, 0.72f, 0.72f, 65);
             if (IsBossEnemy(enemy))
             {
+                BossDefeatCount++;
                 AddCommanderExperience(RewardDraftSettings.BossEnemyExperience);
                 QueueOrOpenRewardDraft(IdleAutoDefenseRewardDraftKind.BossDefeated);
             }
             else if (IsEliteEnemy(enemy))
             {
+                EliteDefeatCount++;
                 AddCommanderExperience(RewardDraftSettings.EliteEnemyExperience);
                 QueueOrOpenRewardDraft(IdleAutoDefenseRewardDraftKind.EliteDefeated);
             }
@@ -4871,6 +5046,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _pendingAuthoredKillCredits = 0L;
             long earned = Math.Max(kills, (long)Math.Ceiling(authoredBase * (1d + RewardCreditMultiplierBonus)));
             RuntimeCurrency += earned;
+            RuntimeCurrencyEarned += earned;
             EmitFloatingStatusText(CreateTowerMuzzlePosition(Vector3.zero), "+" + earned.ToString(CultureInfo.InvariantCulture) + " credits", new Color(1f, 0.86f, 0.2f));
         }
 
@@ -4882,13 +5058,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             int intervals = _passiveIncomeTicks / intervalTicks;
             _passiveIncomeTicks %= intervalTicks;
             long amount = _activeEconomy == null ? 1L : Math.Max(0L, _activeEconomy.PassiveIncomeAmount);
-            RuntimeCurrency += intervals * amount;
+            long earned = intervals * amount;
+            RuntimeCurrency += earned;
+            RuntimeCurrencyEarned += earned;
         }
 
         private bool SpendRuntimeCurrency(int cost)
         {
             if (!CanSpendRuntimeCurrency(cost)) return false;
             RuntimeCurrency -= cost;
+            RuntimeCurrencySpent += cost;
             return true;
         }
 
@@ -4940,6 +5119,83 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return string.IsNullOrWhiteSpace(lastStarted) ? "None" : ResolveWaveDisplayName(lastStarted);
         }
 
+        private int ResolveCurrentWaveNumber()
+        {
+            if (_encounter == null) return 0;
+            EncounterSnapshot snapshot = _encounter.CreateSnapshot();
+            int lastStarted = 0;
+            for (int i = 0; i < snapshot.Waves.Count; i++)
+            {
+                WaveProgressSnapshot wave = snapshot.Waves[i];
+                if (wave.Started) lastStarted = i + 1;
+                if (wave.Started && !wave.Emitted) return i + 1;
+            }
+
+            return lastStarted;
+        }
+
+        public int GetRewardDraftChoiceCurrentRank(IdleAutoDefenseRewardDraftChoice choice)
+        {
+            if (choice == null || choice.IsUnlock) return 0;
+            if (!string.IsNullOrWhiteSpace(choice.TargetWeaponId))
+            {
+                if (choice.Rarity == IdleAutoDefenseRewardRarity.Epic)
+                    return GetRank(_weaponEpicUpgradeRanks, choice.TargetWeaponId);
+                if (choice.Rarity == IdleAutoDefenseRewardRarity.Legendary)
+                    return _weaponLegendaryUnlocks.Contains(choice.TargetWeaponId) ? 1 : 0;
+                return GetRank(_weaponNormalUpgradeRanks, choice.TargetWeaponId);
+            }
+
+            switch (choice.EffectKind)
+            {
+                case IdleAutoDefenseRewardEffectKind.DamageRank: return DamageUpgradeRank;
+                case IdleAutoDefenseRewardEffectKind.FireRateRank: return AttackSpeedUpgradeRank;
+                case IdleAutoDefenseRewardEffectKind.RangeRank: return RangeUpgradeRank;
+                case IdleAutoDefenseRewardEffectKind.Repair: return RepairUpgradeRank;
+                default: return GetRank(_baseRewardRanks, choice.DedupeKey);
+            }
+        }
+
+        public bool TryGetPrimaryMajorThreat(out IdleAutoDefenseMajorThreatSnapshot threat)
+        {
+            threat = default;
+            if (_runtime == null) return false;
+            AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
+            AutoDefenseEnemySnapshot selected = default;
+            bool found = false;
+            bool selectedBoss = false;
+            for (int i = 0; i < snapshot.Enemies.Count; i++)
+            {
+                AutoDefenseEnemySnapshot candidate = snapshot.Enemies[i];
+                if (candidate.Lifecycle != AutoDefenseEnemyLifecycle.Active) continue;
+                bool boss = IsBossEnemy(candidate);
+                if (!boss && !IsEliteEnemy(candidate)) continue;
+                if (!found || boss && !selectedBoss || boss == selectedBoss && candidate.ObjectiveProgress > selected.ObjectiveProgress)
+                {
+                    selected = candidate;
+                    selectedBoss = boss;
+                    found = true;
+                }
+            }
+
+            if (!found) return false;
+            EnemyDefinitionAsset definition = FindEnemyDefinitionForPresentation(selected.SpawnableId);
+            string displayName = definition == null || string.IsNullOrWhiteSpace(definition.DisplayName)
+                ? (selectedBoss ? "Boss" : "Elite")
+                : definition.DisplayName;
+            double maximumHealth = definition == null || definition.Stats == null
+                ? Math.Max(1d, selected.Health)
+                : Math.Max(1d, definition.Stats.MaximumHealth);
+            threat = new IdleAutoDefenseMajorThreatSnapshot(
+                selected.Id,
+                displayName,
+                selectedBoss,
+                selected.Health,
+                maximumHealth,
+                selected.Position);
+            return true;
+        }
+
         private string ResolveWaveDisplayName(string waveId)
         {
             if (string.IsNullOrWhiteSpace(waveId)) return "None";
@@ -4961,7 +5217,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : _activeProgression.CreateEncounterCompletionReward(_activeEconomy);
             ProgressionResult result = _progressionState.ApplyReward(
                 _progressionCatalog,
-                new ProgressionOperationId("idle-auto-defense.encounter.terminal.1"),
+                new ProgressionOperationId("idle-auto-defense.encounter.terminal." + _runSequence.ToString(CultureInfo.InvariantCulture)),
                 authoredReward);
             if (!result.Succeeded) return;
             long baseCredits = _activeEconomy == null ? 60L : Math.Max(0L, _activeEconomy.EncounterCompletionCredits);
@@ -5974,12 +6230,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (renderer != null && shader != null) renderer.sharedMaterial = new Material(shader) { color = color };
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
             DisposeRuntimeObjects(!Application.isPlaying);
         }
 
-        private void OnApplicationQuit()
+        protected virtual void OnApplicationQuit()
         {
             ClearSpawnedRuntimeObjects();
         }
@@ -6054,6 +6310,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             WaveRewardExperienceCount = 0;
             EpicRewardSelectionCount = 0;
             LegendaryRewardSelectionCount = 0;
+            EliteDefeatCount = 0;
+            BossDefeatCount = 0;
             UpgradeFeedbackSpawnCount = 0;
             CommanderLevel = 1;
             CommanderExperience = 0;
@@ -6063,6 +6321,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             RewardCreditMultiplierBonus = 0d;
             OfflineRewardMultiplierBonus = 0d;
             RuntimeCurrency = 0;
+            RuntimeCurrencyEarned = 0;
+            RuntimeCurrencySpent = 0;
             SurvivalSeconds = 0f;
             _sessionElapsedTicks = 0;
             _simulationTickAccumulator = 0f;

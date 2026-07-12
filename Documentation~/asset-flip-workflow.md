@@ -12,13 +12,14 @@ The wizard creates the playable scene at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefen
 
 1. Press Play and verify enemies spawn outside the view and move toward the central core.
 2. Verify the direct and projectile mounts fire.
-3. Choose reward draft cards during the run and verify 1/2/3 hotkeys select them.
-4. Save a snapshot and reset it from the HUD.
+3. Unlock or improve modules, activate Overdrive, and choose reward cards by touch/click and `1`/`2`/`3`.
+4. Verify pause/build/settings, victory/defeat summary, restart, return to menu, and a one-time offline claim.
 5. Replace starter visuals under `Prefabs` and `Visuals`.
-6. Tune generated enemies, attacks, towers, waves, reward choices, economy, run profile, upgrades, progression, offline settings, and game rules under `Assets/GameContent`.
-7. Rename template IDs into product IDs.
+6. Replace themes, UI copy/tokens, tutorial copy, and audio clips under `Assets/GameContent/IdleAutoDefense/Presentation`.
+7. Tune gameplay only through the existing authored gameplay folders.
+8. Rename template IDs into product IDs as references are coordinated.
 
-Keep reusable framework behavior in Deucarian packages. Keep product theme, scene composition, and save names in the generated product folder; keep authored gameplay balance under `Assets/GameContent`.
+Keep reusable framework behavior in Deucarian packages. Keep product player flow and scene composition in the generated product folder; keep authored gameplay and presentation records under `Assets/GameContent`.
 
 The generated `GameContentSetAsset` is the graph root, not a duplicate balance container. Follow its references to `Rewards`, `Economy`, `RunProfiles`, `Progression`, `OfflineProgression`, and `GameRules`; tune weapon, attack, enemy, wave, and run-upgrade assets in their existing folders. The controller reads these assets at runtime. Do not maintain a separate reward catalog, JSON mirror, economy table, or tower map on the scene object.
 

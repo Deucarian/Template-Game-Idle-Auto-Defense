@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Reflection;
 using Deucarian.Attacks.Authoring;
 using Deucarian.IdleProgression;
@@ -80,11 +81,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             GameObject host = new GameObject("idle-auto-defense-template-smoke");
             var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
             controller.enabled = false;
+            bool observedMajorThreat = false;
 
             for (int i = 0; i < 6400; i++)
             {
                 BuyAvailableLivePurchases(controller);
                 controller.Step(1, 0.05f);
+                if (controller.TryGetPrimaryMajorThreat(out IdleAutoDefenseMajorThreatSnapshot threat))
+                {
+                    observedMajorThreat = true;
+                    Assert.That(threat.DisplayName, Is.Not.Empty);
+                    Assert.That(threat.MaximumHealth, Is.GreaterThan(0d));
+                    Assert.That(threat.HealthNormalized, Is.InRange(0f, 1f));
+                }
                 if (controller.EncounterCompleted || controller.EncounterFailed)
                     break;
                 if (i % 30 == 0) yield return null;
@@ -127,6 +136,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             Assert.That(controller.FirstRewardDraftSeconds, Is.GreaterThanOrEqualTo(30f).And.LessThanOrEqualTo(60f), controller.StatusSummary);
             Assert.That(controller.UpgradeFeedbackSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.EliteOrBossSpawnCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(observedMajorThreat, Is.True, "Elite/boss health-bar data should be observable while the threat is active.");
             Assert.That(controller.ObjectiveDamageEvents, Is.GreaterThan(0), controller.StatusSummary);
             Assert.That(controller.ModuleActivationCount, Is.GreaterThan(0));
             Assert.That(controller.OverdriveActivationCount, Is.GreaterThan(0), controller.StatusSummary);
@@ -264,6 +274,155 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             UnityEngine.Object.Destroy(host);
         }
 
+        [UnityTest]
+        public IEnumerator PlayerExperienceBootsToMenuAndRoutesRunPauseBuildThemeAndDebugFlow()
+        {
+            string persistenceRoot = Path.Combine(Path.GetTempPath(), "IdleAutoDefensePlayerFlow", Guid.NewGuid().ToString("N"));
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(200);
+            IdleAutoDefensePlayerExperienceAsset experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            GameObject host = new GameObject("idle-auto-defense-player-flow");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            host.SetActive(true);
+            yield return null;
+            yield return null;
+
+            Assert.That(controller.PlayerExperienceValid, Is.True, controller.PlayerFacingError);
+            Assert.That(controller.UsingAuthoredCore, Is.True);
+            Assert.That(controller.FallbackModeActive, Is.False);
+            Assert.That(controller.MainMenuVisible, Is.True);
+            Assert.That(controller.RunActive, Is.False);
+            Assert.That(controller.NormalHudVisible, Is.False);
+            Assert.That(controller.DebugUiVisible, Is.False);
+            Assert.That(controller.SurvivalSeconds, Is.Zero, "Menu-first boot must not advance combat.");
+            Assert.That(controller.PlayerUiButtonCount, Is.GreaterThanOrEqualTo(16));
+
+            controller.PlayerProfile.LastSeenUtcTicks = DateTimeOffset.UnixEpoch.UtcTicks;
+            controller.PlayerProfile.LastOfflineClaimUtcTicks = DateTimeOffset.UnixEpoch.UtcTicks;
+            Assert.That(controller.RefreshOfflinePreview(DateTimeOffset.UnixEpoch.AddHours(1)), Is.True);
+            Assert.That(controller.OfflineClaimVisible, Is.True);
+            controller.ClaimOfflineReward();
+            long claimedCredits = controller.PlayerProfile.LifetimeCredits;
+            Assert.That(claimedCredits, Is.GreaterThan(0));
+            controller.ClaimOfflineReward();
+            Assert.That(controller.PlayerProfile.LifetimeCredits, Is.EqualTo(claimedCredits), "Offline claim must be idempotent.");
+
+            controller.StartFreshRun();
+            Assert.That(controller.TutorialVisible, Is.True, "First run should show the authored tutorial.");
+            controller.CompleteTutorial();
+            Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+            Assert.That(controller.NormalHudVisible, Is.True);
+            Assert.That(controller.RunActive, Is.True);
+
+            controller.TogglePause();
+            Assert.That(controller.PauseMenuVisible, Is.True);
+            Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Paused));
+            controller.OpenBuildView();
+            Assert.That(controller.PauseMenuVisible, Is.True);
+            controller.ResumeRun();
+            Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+
+            controller.SelectTheme("theme.idle-auto-defense.neon-bastion");
+            Assert.That(controller.ActiveThemeId, Is.EqualTo("theme.idle-auto-defense.neon-bastion"));
+            Assert.That(controller.TryPurchasePersistentUpgradeFromUi("research.idle-auto-defense.core-plating"), Is.True);
+            Assert.That(controller.GetPersistentResearchRank("research.idle-auto-defense.core-plating"), Is.EqualTo(1));
+            controller.ToggleDebugUi();
+            Assert.That(controller.DebugUiVisible, Is.True);
+            controller.RestartCurrentRun();
+            Assert.That(controller.DebugUiVisible, Is.False, "Restart must return debug UI to its hidden default.");
+            Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+            controller.ReturnToMainMenu();
+            Assert.That(controller.MainMenuVisible, Is.True);
+            Assert.That(controller.RunActive, Is.False);
+
+            UnityEngine.Object.Destroy(host);
+            yield return null;
+
+            GameObject restoredHost = new GameObject("idle-auto-defense-restored-player-flow");
+            restoredHost.SetActive(false);
+            var restored = restoredHost.AddComponent<PlayerExperienceProbeController>();
+            restored.ContentSet = contentSet;
+            restored.Experience = experience;
+            restored.ConfigurePersistenceRoot(persistenceRoot);
+            restoredHost.SetActive(true);
+            yield return null;
+            Assert.That(restored.PlayerProfile.TutorialSeen, Is.True);
+            Assert.That(restored.ActiveThemeId, Is.EqualTo("theme.idle-auto-defense.neon-bastion"));
+            Assert.That(restored.GetPersistentResearchRank("research.idle-auto-defense.core-plating"), Is.EqualTo(1));
+            UnityEngine.Object.Destroy(restoredHost);
+            yield return null;
+            DestroyPlayerFlowContent(contentSet, experience);
+            if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerExperienceUsesAuthoredPurchasesRewardsOverdriveAndShowsTerminalSummary()
+        {
+            string persistenceRoot = Path.Combine(Path.GetTempPath(), "IdleAutoDefensePlayerSummary", Guid.NewGuid().ToString("N"));
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(500);
+            contentSet.RunProfile.Configure(
+                contentSet.RunProfile.Id,
+                contentSet.RunProfile.DisplayName,
+                20,
+                20,
+                contentSet.RunProfile.Waves,
+                contentSet.RunProfile.DifficultyMultiplier,
+                false,
+                IdleAutoDefenseVictoryRule.SurviveSessionDuration,
+                contentSet.RunProfile.DefeatRule,
+                contentSet.RunProfile.RewardMultiplier,
+                contentSet.RunProfile.PreparationTicks,
+                contentSet.RunProfile.EncounterSeed);
+            IdleAutoDefensePlayerExperienceAsset experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            GameObject host = new GameObject("idle-auto-defense-player-summary");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            host.SetActive(true);
+            yield return null;
+            controller.StartFreshRun();
+            controller.CompleteTutorial();
+
+            Assert.That(controller.PulseBeamUnlockCost, Is.EqualTo(contentSet.GameRules.GetModule(IdleAutoDefenseModuleRole.PrecisionBeam).BuildCost));
+            Assert.That(controller.TryUseModuleAction(IdleAutoDefenseModuleRole.PrecisionBeam), Is.True);
+            Assert.That(controller.PulseBeamUnlocked, Is.True);
+            Assert.That(controller.RuntimeCurrencySpent, Is.EqualTo(controller.PulseBeamUnlockCost));
+            Assert.That(controller.TryActivateOverdriveFromUi(), Is.True);
+            Assert.That(controller.OverdriveActive, Is.True);
+
+            controller.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+            Assert.That(controller.RewardDraftChoiceCount, Is.EqualTo(3));
+            IdleAutoDefenseRewardDraftChoice selected = controller.RewardDraftChoices[0];
+            int beforeRank = controller.GetRewardDraftChoiceCurrentRank(selected);
+            Assert.That(controller.ChooseRewardCard(0), Is.True);
+            Assert.That(controller.RewardDraftSelectionCount, Is.EqualTo(1));
+            if (!selected.IsUnlock)
+                Assert.That(controller.GetRewardDraftChoiceCurrentRank(selected), Is.GreaterThanOrEqualTo(beforeRank + 1));
+
+            for (int i = 0; i < 24 && !controller.EncounterCompleted; i++)
+                controller.Step(1, 0.05f);
+            for (int i = 0; i < 10 && !controller.RunSummaryVisible; i++)
+                yield return null;
+
+            Assert.That(controller.EncounterCompleted, Is.True, controller.StatusSummary);
+            Assert.That(controller.RunSummaryVisible, Is.True);
+            Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.RunSummary));
+            Assert.That(controller.PlayerProfile.CompletedRuns, Is.EqualTo(1));
+            controller.RestartCurrentRun();
+            Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+            Assert.That(controller.RunSummaryVisible, Is.False);
+
+            UnityEngine.Object.Destroy(host);
+            yield return null;
+            DestroyPlayerFlowContent(contentSet, experience);
+            if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+        }
+
         private static void BuyAvailableLivePurchases(IdleAutoDefenseTemplateController controller)
         {
             if (controller.RewardDraftActive)
@@ -292,6 +451,58 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
         {
             public UIDocument RuntimeDocument => EnsureRuntimeUiDocument();
             public VisualElement Root => RuntimeUiRoot;
+        }
+
+        private sealed class PlayerExperienceProbeController : IdleAutoDefensePlayerExperienceController
+        {
+            public GameContentSetAsset ContentSet { get; set; }
+            public IdleAutoDefensePlayerExperienceAsset Experience { get; set; }
+
+            protected override void ConfigurePlayerExperienceBeforeBuild()
+            {
+                ConfigureContentPack(null, ContentSet);
+                RequireAuthoredContentOnStartup();
+                ConfigurePlayerExperience(Experience);
+            }
+        }
+
+        private static GameContentSetAsset CreatePlayerFlowContentSet(int startingCredits)
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            return GameContentSetAsset.CreateTransient(
+                "contentset.test.player-experience",
+                "Player Experience Test",
+                weapons[0],
+                weapons,
+                enemies,
+                waves,
+                upgrades,
+                startingCredits,
+                0,
+                1f,
+                1f,
+                5600,
+                false,
+                "Player-facing flow fixture.",
+                new[] { "test", "player-experience" });
+        }
+
+        private static void DestroyPlayerFlowContent(GameContentSetAsset contentSet, IdleAutoDefensePlayerExperienceAsset experience)
+        {
+            if (experience != null)
+            {
+                for (int i = 0; i < experience.Themes.Count; i++)
+                    if (experience.Themes[i] != null) UnityEngine.Object.DestroyImmediate(experience.Themes[i]);
+                if (experience.UiSettings != null) UnityEngine.Object.DestroyImmediate(experience.UiSettings);
+                if (experience.Tutorial != null) UnityEngine.Object.DestroyImmediate(experience.Tutorial);
+                if (experience.AudioPalette != null) UnityEngine.Object.DestroyImmediate(experience.AudioPalette);
+                UnityEngine.Object.DestroyImmediate(experience);
+            }
+            if (contentSet != null) UnityEngine.Object.DestroyImmediate(contentSet);
         }
     }
 }

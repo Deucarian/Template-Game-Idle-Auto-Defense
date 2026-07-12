@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2d6a5f3e4c74829b0d1f2a3b4c5d6e7, type: 3}
+  m_Name: tutorial.idle-auto-defense.first-run
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseTutorialAsset
+  _id: tutorial.idle-auto-defense.first-run
+  _displayName: First Defense Briefing
+  _steps:
+  - _id: tutorial.protect-core
+    _title: Protect the Core
+    _body: Keep the central objective alive until the authored defense run ends.
+    _focusTarget: objective-health
+  - _id: tutorial.authored-waves
+    _title: Read the Wave
+    _body: Enemies arrive in authored waves. The timer and wave display show how far the defense has progressed.
+    _focusTarget: run-timer
+  - _id: tutorial.automatic-defense
+    _title: Automatic Fire
+    _body: Mounted defense modules acquire targets and attack automatically.
+    _focusTarget: module-bar
+  - _id: tutorial.earn-credits
+    _title: Earn Credits
+    _body: Defeated enemies and passive income provide credits for the current run.
+    _focusTarget: credits
+  - _id: tutorial.modules
+    _title: Build the Mounts
+    _body: Unlock or improve all four mounted modules from the controls along the bottom edge.
+    _focusTarget: module-bar
+  - _id: tutorial.reward-draft
+    _title: Choose One Reward
+    _body: When a draft opens, choose one of three eligible authored rewards. Combat waits for your decision.
+    _focusTarget: reward-draft
+  - _id: tutorial.rarity-paths
+    _title: Shape the Build
+    _body: Normal rewards build ranks; Epic and Legendary rewards create stronger authored paths.
+    _focusTarget: reward-progress
+  - _id: tutorial.overdrive
+    _title: Use Overdrive
+    _body: Spend the shown credits to empower mounted defenses for the authored duration. Press Space or tap the ability.
+    _focusTarget: overdrive
+  - _id: tutorial.major-threats
+    _title: Major Threats
+    _body: Elite and boss health bars appear at the top. A marker keeps important threats readable offscreen.
+    _focusTarget: threat-bar
+  - _id: tutorial.persistent-progress
+    _title: Return Stronger
+    _body: Run rewards and authored offline production support persistent progress between sessions.
+    _focusTarget: offline-claim

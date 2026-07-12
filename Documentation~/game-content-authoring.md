@@ -29,14 +29,21 @@ The pack exposes exactly the current authored gameplay graph:
 | Persistent Progression | 6 | One catalog, one account track, and four research nodes |
 | Offline Progression | 1 | Production rates, cycle reward, cap, multiplier, rounding, and save key |
 | Game Rules | 1 | Objective, module roles, elite/boss references, combat, repair, projectile, and Overdrive rules |
+| Player Experience | 1 | Root references for the complete player-facing presentation graph |
+| Theme | 2 | Bastion Command default and Neon Bastion alternate color/style tokens |
+| Audio Palette | 1 | Event-to-clip/category/volume/throttle owner |
+| Audio Event | 26 | UI, gameplay, warning, reward, victory/defeat, summary, and offline claim events |
+| Tutorial Definition | 1 | First-run tutorial owner |
+| Tutorial Step | 10 | Stable IDs, player copy, and optional focus targets |
+| UI Settings | 1 | Title/ability copy, module tokens, safe-area policy, touch size, and breakpoints |
 
-All Content shows 82 canonical records: the original 27 plus 55 authored-core projections. Nested records share their owning ScriptableObject source but retain distinct stable IDs and canonical record keys. Weapon-to-attack, wave-to-enemy, reward-to-weapon, cost-to-currency, run-profile-to-wave, progression prerequisite/target, and game-rule links resolve through pack references.
+All Content shows 124 canonical records: 82 gameplay/core records plus 42 presentation records. Nested records share their owning ScriptableObject source but retain distinct stable IDs and canonical record keys. Gameplay links and player-experience-to-presentation links resolve through pack references.
 
 Raw cooldown and schedule ticks remain visible as ticks. The authored Run Profile declares fixed-rate semantics and 20 ticks per second, so its dashboard shows both 5,600 ticks and 280 seconds. No raw tick value is presented as seconds without that profile conversion.
 
 ## Project Content Ownership
 
-The Idle provider claims the generated pack, content set, six authored-core owners, root records, and their authored companion section assets by Unity asset GUID. Claimed gameplay records are omitted from synthetic Project Content, so they do not appear twice or remain writable through an unrelated backend. Unclaimed ScriptableObjects keep the existing Project Content create/edit workflow.
+The Idle provider claims the generated pack, content set, six authored-core owners, presentation owners, root records, and companion assets by Unity asset GUID. Claimed records are omitted from synthetic Project Content, so they do not appear twice or remain writable through an unrelated backend.
 
 If setup has not run, the named pack remains visible in a missing/generated-content state and offers the existing setup wizard. If multiple generated packs use the expected stable ID, discovery reports ambiguity and does not select one.
 
@@ -51,4 +58,4 @@ Browsing is read-only and must not dirty assets, prefabs, metadata, or scenes. T
 
 ## Current Limits
 
-The named pack remains intentionally read-only; this milestone does not add transactional GCA editing or generic economy/progression lenses. UI theme, tutorial, audio palette, player-facing offline claim flow, menus, and final mobile layout remain later product-UX work. The gameplay core is authored and strict, but the template is not yet claimed as fully product-complete.
+The named pack remains intentionally read-only; this milestone does not add transactional GCA editing, generic presentation lenses, or a second gameplay content pack. Presentation records are browsed through Pack Dashboard, All Content, and the pack-specific categories above.

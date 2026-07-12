@@ -101,7 +101,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             AddPackValidation(pack, issues);
             IReadOnlyList<GameContentRecordDescriptor> records = BuildRecords(pack, contentSet, contentRoot, issues);
             AddExpectedCountIssues(records, issues);
-            IReadOnlyList<GameContentSourceClaim> claims = BuildSourceClaims(pack);
+            IReadOnlyList<GameContentSourceClaim> claims = BuildSourceClaims(pack, contentRoot);
             GameContentPackSourceState state = issues.Any(value => value.Severity == GameContentAuthoringValidationSeverity.Error)
                 ? GameContentPackSourceState.ValidationFailed
                 : GameContentPackSourceState.Available;
@@ -317,6 +317,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             drafts.AddRange(weapons.Select(asset => WeaponDraft(asset, order++, library)));
             drafts.AddRange(upgrades.Select(asset => UpgradeDraft(asset, order++, library)));
             AddAuthoredCoreDrafts(contentSet, drafts, ref order);
+            AddPlayerExperienceDrafts(contentRoot, drafts, ref order, packIssues);
 
             AddIdentityIssues(drafts, packIssues);
             Dictionary<RecordDraft, GameContentRecordKey> keys = drafts.ToDictionary(
@@ -324,6 +325,164 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 draft => BuildKey(draft, packIssues));
             AddReferences(drafts, keys);
             return BuildDescriptors(drafts, keys);
+        }
+
+        private static void AddPlayerExperienceDrafts(
+            string contentRoot,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            ICollection<GameContentAuthoringValidationIssue> packIssues)
+        {
+            IdleAutoDefensePlayerExperienceAsset experience = FindFirstAsset<IdleAutoDefensePlayerExperienceAsset>(contentRoot);
+            if (experience == null)
+            {
+                packIssues.Add(GameContentAuthoringValidationIssue.Error(
+                    "Player Experience",
+                    "Generated player-experience content is missing. Rerun the Idle Auto Defense setup wizard."));
+                return;
+            }
+
+            var root = new RecordDraft(
+                experience,
+                experience.Id,
+                "player-experience",
+                experience.DisplayName,
+                "Authored root for the complete player-facing vertical slice.",
+                experience.Themes.Count + " themes, " + experience.AudioPalette.Events.Count + " audio events, " + experience.Tutorial.Steps.Count + " tutorial steps",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                PresentationValidation(experience.Validate(), AssetDatabase.GetAssetPath(experience)),
+                new[]
+                {
+                    Metadata("Default Theme", experience.DefaultThemeId),
+                    Metadata("Theme Count", experience.Themes.Count.ToString(CultureInfo.InvariantCulture)),
+                    Metadata("Audio Event Count", experience.AudioPalette.Events.Count.ToString(CultureInfo.InvariantCulture)),
+                    Metadata("Tutorial Step Count", experience.Tutorial.Steps.Count.ToString(CultureInfo.InvariantCulture))
+                });
+            drafts.Add(root);
+
+            IdleAutoDefenseUiSettingsAsset ui = experience.UiSettings;
+            var uiDraft = new RecordDraft(
+                ui,
+                ui.Id,
+                "ui-settings",
+                "Mobile Landscape UI Settings",
+                "Authored title copy, Overdrive copy, safe-area policy, touch size, breakpoints, and module presentation tokens.",
+                ui.MinimumTouchTarget.ToString("0", CultureInfo.InvariantCulture) + "px touch targets; safe area " + (ui.RespectSafeArea ? "enabled" : "disabled"),
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                SinglePresentationValidation(ui.IsValid(out string uiIssue), uiIssue, AssetDatabase.GetAssetPath(ui)),
+                new[]
+                {
+                    Metadata("Game Title", ui.GameTitle),
+                    Metadata("Minimum Touch Target", ui.MinimumTouchTarget.ToString("0", CultureInfo.InvariantCulture)),
+                    Metadata("Compact Width", ui.CompactWidthThreshold.ToString("0", CultureInfo.InvariantCulture)),
+                    Metadata("Compact Height", ui.CompactHeightThreshold.ToString("0", CultureInfo.InvariantCulture)),
+                    Metadata("Safe Area", ui.RespectSafeArea ? "Yes" : "No")
+                });
+            drafts.Add(uiDraft);
+            root.References.Add(ReferenceDraft.ToAsset(ui, "ui-settings", "uses UI settings", true));
+
+            for (int i = 0; i < experience.Themes.Count; i++)
+            {
+                IdleAutoDefenseThemeAsset theme = experience.Themes[i];
+                if (theme == null) continue;
+                var themeDraft = new RecordDraft(
+                    theme,
+                    theme.Id,
+                    "themes",
+                    theme.DisplayName,
+                    "Authored Idle-owned UI color and style-token theme.",
+                    string.Equals(theme.Id, experience.DefaultThemeId, StringComparison.OrdinalIgnoreCase) ? "Default player theme" : "Alternate player theme",
+                    order++,
+                    Array.Empty<GameContentRecordCapability>(),
+                    SinglePresentationValidation(theme.IsValid(out string themeIssue), themeIssue, AssetDatabase.GetAssetPath(theme)),
+                    new[]
+                    {
+                        Metadata("Theme ID", theme.Id),
+                        Metadata("Style Token", theme.FontStyleToken),
+                        Metadata("Default", string.Equals(theme.Id, experience.DefaultThemeId, StringComparison.OrdinalIgnoreCase) ? "Yes" : "No")
+                    });
+                drafts.Add(themeDraft);
+                root.References.Add(ReferenceDraft.ToAsset(theme, "themes", "offers theme", true));
+            }
+
+            IdleAutoDefenseAudioPaletteAsset audio = experience.AudioPalette;
+            var audioPaletteDraft = new RecordDraft(
+                audio,
+                audio.Id,
+                "audio-palettes",
+                audio.DisplayName,
+                "Authored event-to-clip palette with categories, volume weights, and repetition throttles.",
+                audio.Events.Count.ToString(CultureInfo.InvariantCulture) + " player-facing audio events",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                SinglePresentationValidation(audio.IsValid(out string audioIssue), audioIssue, AssetDatabase.GetAssetPath(audio)),
+                new[] { Metadata("Event Count", audio.Events.Count.ToString(CultureInfo.InvariantCulture)) });
+            drafts.Add(audioPaletteDraft);
+            root.References.Add(ReferenceDraft.ToAsset(audio, "audio-palettes", "uses audio palette", true));
+            for (int i = 0; i < audio.Events.Count; i++)
+            {
+                IdleAutoDefenseAudioEventRecord audioEvent = audio.Events[i];
+                if (audioEvent == null) continue;
+                var eventDraft = new RecordDraft(
+                    audio,
+                    audio.Id + ".event." + audioEvent.Id,
+                    "audio-events",
+                    NicifyPresentationId(audioEvent.Id),
+                    "Read-only authored audio event mapping.",
+                    audioEvent.Category + " / " + (audioEvent.Clip == null ? "silent-safe" : audioEvent.Clip.name),
+                    order++,
+                    Array.Empty<GameContentRecordCapability>(),
+                    GameContentAuthoringValidationResult.Valid,
+                    new[]
+                    {
+                        Metadata("Event ID", audioEvent.Id),
+                        Metadata("Category", audioEvent.Category.ToString()),
+                        Metadata("Clip", audioEvent.Clip == null ? "Optional / missing" : audioEvent.Clip.name),
+                        Metadata("Volume", audioEvent.Volume.ToString("0.##", CultureInfo.InvariantCulture)),
+                        Metadata("Minimum Interval", audioEvent.MinimumIntervalSeconds.ToString("0.##", CultureInfo.InvariantCulture) + " seconds")
+                    });
+                eventDraft.References.Add(ReferenceDraft.ToAsset(audio, "audio-palettes", "belongs to palette", true));
+                drafts.Add(eventDraft);
+            }
+
+            IdleAutoDefenseTutorialAsset tutorial = experience.Tutorial;
+            var tutorialDraft = new RecordDraft(
+                tutorial,
+                tutorial.Id,
+                "tutorial-definitions",
+                tutorial.DisplayName,
+                "Authored first-run briefing with stable step IDs and optional focus targets.",
+                tutorial.Steps.Count.ToString(CultureInfo.InvariantCulture) + " skippable steps",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                SinglePresentationValidation(tutorial.IsValid(out string tutorialIssue), tutorialIssue, AssetDatabase.GetAssetPath(tutorial)),
+                new[] { Metadata("Step Count", tutorial.Steps.Count.ToString(CultureInfo.InvariantCulture)) });
+            drafts.Add(tutorialDraft);
+            root.References.Add(ReferenceDraft.ToAsset(tutorial, "tutorial-definitions", "uses tutorial", true));
+            for (int i = 0; i < tutorial.Steps.Count; i++)
+            {
+                IdleAutoDefenseTutorialStep step = tutorial.Steps[i];
+                if (step == null) continue;
+                var stepDraft = new RecordDraft(
+                    tutorial,
+                    step.Id,
+                    "tutorials",
+                    step.Title,
+                    step.Body,
+                    string.IsNullOrWhiteSpace(step.FocusTarget) ? "General briefing" : "Focus: " + step.FocusTarget,
+                    order++,
+                    Array.Empty<GameContentRecordCapability>(),
+                    GameContentAuthoringValidationResult.Valid,
+                    new[]
+                    {
+                        Metadata("Step ID", step.Id),
+                        Metadata("Focus Target", step.FocusTarget)
+                    });
+                stepDraft.References.Add(ReferenceDraft.ToAsset(tutorial, "tutorial-definitions", "belongs to tutorial", true));
+                drafts.Add(stepDraft);
+            }
         }
 
         private static RecordDraft AttackDraft(AttackDefinitionAsset asset, int order, GameContentLibraryReport library)
@@ -1102,7 +1261,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 new GameContentAuthoringValidationIssue(issue.Severity, issue.Path, issue.Message)).ToArray());
         }
 
-        private static IReadOnlyList<GameContentSourceClaim> BuildSourceClaims(GameContentPackAsset pack)
+        private static IReadOnlyList<GameContentSourceClaim> BuildSourceClaims(GameContentPackAsset pack, string contentRoot)
         {
             if (pack == null) return Array.Empty<GameContentSourceClaim>();
             var objects = new List<UnityEngine.Object> { pack };
@@ -1153,6 +1312,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 objects.Add(contentSet.GameRules);
             }
 
+            IdleAutoDefensePlayerExperienceAsset experience = FindFirstAsset<IdleAutoDefensePlayerExperienceAsset>(contentRoot);
+            if (experience != null)
+            {
+                objects.Add(experience);
+                objects.Add(experience.UiSettings);
+                objects.Add(experience.Tutorial);
+                objects.Add(experience.AudioPalette);
+                for (int i = 0; i < experience.Themes.Count; i++) objects.Add(experience.Themes[i]);
+            }
+
             return objects.Where(value => value != null)
                 .Select(GameContentSourceClaim.ForAsset)
                 .Where(value => value != null && value.IsValid)
@@ -1199,10 +1368,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             RequireCategoryCount(records, "persistent-progression", 6, "Persistent Progression", issues);
             RequireCategoryCount(records, "offline-progression", 1, "Offline Progression", issues);
             RequireCategoryCount(records, "game-rules", 1, "Game Rules", issues);
-            if (records.Count != 82)
+            RequireCategoryCount(records, "player-experience", 1, "Player Experience", issues);
+            RequireCategoryCount(records, "themes", 2, "Theme", issues);
+            RequireCategoryCount(records, "audio-palettes", 1, "Audio Palette", issues);
+            RequireCategoryCount(records, "audio-events", 26, "Audio Event", issues);
+            RequireCategoryCount(records, "tutorial-definitions", 1, "Tutorial Definition", issues);
+            RequireCategoryCount(records, "tutorials", 10, "Tutorial Step", issues);
+            RequireCategoryCount(records, "ui-settings", 1, "UI Settings", issues);
+            if (records.Count != 124)
                 issues.Add(GameContentAuthoringValidationIssue.Error(
                     "Record Counts/Total",
-                    "Expected 82 total pack record(s), found " + records.Count.ToString(CultureInfo.InvariantCulture) + "."));
+                    "Expected 124 total pack record(s), found " + records.Count.ToString(CultureInfo.InvariantCulture) + "."));
         }
 
         private static void RequireCount(
@@ -1240,13 +1416,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 "attacks", "enemies", "waves", "weapons", "upgrades",
                 "reward-choices", "normal-upgrades", "epic-upgrades", "legendary-upgrades", "reward-tables",
-                "economy", "currencies", "run-profiles", "persistent-progression", "offline-progression", "game-rules"
+                "economy", "currencies", "run-profiles", "persistent-progression", "offline-progression", "game-rules",
+                "player-experience", "themes", "audio-palettes", "audio-events", "tutorial-definitions", "tutorials", "ui-settings"
             };
             string[] labels =
             {
                 "Attack", "Enemy", "Wave / Encounter", "Weapon / Tower", "Upgrade",
                 "Reward Choice", "Normal Upgrade", "Epic Upgrade", "Legendary Upgrade", "Reward Table",
-                "Economy", "Currency", "Run Profile", "Persistent Progression", "Offline Progression", "Game Rules"
+                "Economy", "Currency", "Run Profile", "Persistent Progression", "Offline Progression", "Game Rules",
+                "Player Experience", "Theme", "Audio Palette", "Audio Event", "Tutorial Definition", "Tutorial Step", "UI Settings"
             };
             return categories.Select((category, index) => new GameContentCategoryDescriptor(
                 category,
@@ -1284,6 +1462,43 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private static string Number(double value)
         {
             return value.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        private static T FindFirstAsset<T>(string searchRoot) where T : UnityEngine.Object
+        {
+            if (string.IsNullOrWhiteSpace(searchRoot)) return null;
+            string[] guids = AssetDatabase.FindAssets("t:" + typeof(T).Name, new[] { searchRoot });
+            for (int i = 0; i < guids.Length; i++)
+            {
+                T asset = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[i]));
+                if (asset != null) return asset;
+            }
+            return null;
+        }
+
+        private static GameContentAuthoringValidationResult PresentationValidation(IReadOnlyList<string> issues, string path)
+        {
+            if (issues == null || issues.Count == 0) return GameContentAuthoringValidationResult.Valid;
+            return new GameContentAuthoringValidationResult(issues
+                .Select(issue => GameContentAuthoringValidationIssue.Error(path, issue))
+                .ToArray());
+        }
+
+        private static GameContentAuthoringValidationResult SinglePresentationValidation(bool valid, string issue, string path)
+        {
+            return valid
+                ? GameContentAuthoringValidationResult.Valid
+                : new GameContentAuthoringValidationResult(new[]
+                {
+                    GameContentAuthoringValidationIssue.Error(path, string.IsNullOrWhiteSpace(issue) ? "Presentation content is invalid." : issue)
+                });
+        }
+
+        private static string NicifyPresentationId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "Audio Event";
+            string text = value.Replace('.', ' ').Replace('-', ' ');
+            return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(text);
         }
 
         private static string NormalizePath(string value)
