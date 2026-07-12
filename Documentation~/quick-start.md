@@ -15,5 +15,6 @@ In Play Mode, verify these starter pieces:
 - direct and projectile attacks
 - HUD state, credits, parts, enemies, kills, projectiles, upgrades, objective hits, and save status
 - Save Snapshot and Reset Save buttons
+- `UsingAuthoredCore == true`, `FallbackModeActive == false`, and no strict-startup error
 
-Tune the generated authored content under `Assets/GameContent/IdleAutoDefense` through `Tools > Deucarian > Game Content Authoring`. Do not import a package sample; this template's official onboarding path is generated product-owned content.
+Tune the generated authored content under `Assets/GameContent/IdleAutoDefense` through `Tools > Deucarian > Game Content Authoring`. Rewards, economy, run timing, persistent progression, offline progression, and game rules are first-class ScriptableObjects referenced by the content set. Do not import a package sample; this template's official onboarding path is generated product-owned content.

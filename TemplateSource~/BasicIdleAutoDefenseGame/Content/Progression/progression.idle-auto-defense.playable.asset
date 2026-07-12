@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14b5c00a43ed47a4a97dd6d5ae08e4a9, type: 3}
+  m_Name: progression.idle-auto-defense.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseProgressionAsset
+  _id: progression.idle-auto-defense.playable
+  _displayName: Basic Idle Auto Defense Progression
+  _tracks:
+  - _id: track.idle-auto-defense.account
+    _displayName: Account XP
+    _startingLevel: 0
+    _cumulativeThresholds:
+    - 100
+    - 250
+    - 500
+    - 900
+  _researchNodes:
+  - _id: research.idle-auto-defense.core-plating
+    _displayName: Core Plating
+    _maxRank: 3
+    _costCurrencyId: currency.idle-auto-defense.credits
+    _rankCosts:
+    - 25
+    - 75
+    - 160
+    _prerequisites: []
+    _requiredUnlockIds: []
+    _effectKind: 1
+    _effectTargetId: objective.idle-auto-defense.core
+    _effectAmountPerRank: 8
+  - _id: research.idle-auto-defense.pulse-capacitor
+    _displayName: Pulse Capacitor
+    _maxRank: 2
+    _costCurrencyId: currency.idle-auto-defense.parts
+    _rankCosts:
+    - 2
+    - 5
+    _prerequisites: []
+    _requiredUnlockIds:
+    - unlock.idle-auto-defense.module.pulse-cannon
+    _effectKind: 2
+    _effectTargetId: weapon.idle-auto-defense.pulse-beam
+    _effectAmountPerRank: 1
+  - _id: research.idle-auto-defense.shard-loader
+    _displayName: Shard Loader
+    _maxRank: 2
+    _costCurrencyId: currency.idle-auto-defense.parts
+    _rankCosts:
+    - 2
+    - 5
+    _prerequisites: []
+    _requiredUnlockIds:
+    - unlock.idle-auto-defense.module.shard-launcher
+    _effectKind: 3
+    _effectTargetId: weapon.idle-auto-defense.shard-launcher
+    _effectAmountPerRank: 1
+  - _id: research.idle-auto-defense.offline-routing
+    _displayName: Offline Routing
+    _maxRank: 2
+    _costCurrencyId: currency.idle-auto-defense.credits
+    _rankCosts:
+    - 40
+    - 120
+    _prerequisites:
+    - _nodeId: research.idle-auto-defense.core-plating
+      _minimumRank: 1
+    _requiredUnlockIds: []
+    _effectKind: 4
+    _effectTargetId: offline-progression.idle-auto-defense.playable
+    _effectAmountPerRank: 0.1
+  _encounterCompletionUnlockIds:
+  - unlock.idle-auto-defense.starter
+  - unlock.idle-auto-defense.stage.pressure-ring
+  - unlock.idle-auto-defense.module.pulse-cannon
+  - unlock.idle-auto-defense.module.shard-launcher
+  _accountTrackId: track.idle-auto-defense.account
+  _profileDocumentId: idle-auto-defense-template-profile
+  _runDocumentId: idle-auto-defense-template-run
+  _settingsDocumentId: idle-auto-defense-template-settings
+  _saveVersion: 2

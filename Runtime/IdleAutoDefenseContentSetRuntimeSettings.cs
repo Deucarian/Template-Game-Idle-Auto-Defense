@@ -7,8 +7,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     [Serializable]
     public sealed class IdleAutoDefenseContentSetRuntimeSettings
     {
-        [SerializeField] private IdleAutoDefenseRewardDraftSettings _rewardDraftSettings = IdleAutoDefenseRewardDraftSettings.CreateDefault();
-        [SerializeField] private IdleAutoDefenseRewardDraftCatalog _rewardDraftCatalog = IdleAutoDefenseRewardDraftCatalog.CreateDefault();
+        // Compatibility drafts seed transient editor/test content only. Persisted gameplay owns rewards through GameContentSetAsset.RewardCatalog.
+        [NonSerialized] private IdleAutoDefenseRewardDraftSettings _rewardDraftSettings = IdleAutoDefenseRewardDraftSettings.CreateDefault();
+        [NonSerialized] private IdleAutoDefenseRewardDraftCatalog _rewardDraftCatalog = IdleAutoDefenseRewardDraftCatalog.CreateDefault();
         [SerializeField] private IdleAutoDefensePresentationDebugSettings _presentationDebug = IdleAutoDefensePresentationDebugSettings.CreateDefault();
         [SerializeField] private IdleAutoDefenseObjectivePresentationBinding _objectivePresentation = IdleAutoDefenseObjectivePresentationBinding.CreateDefault();
         [SerializeField] private IdleAutoDefenseModuleSlotPresentationBinding[] _moduleSlotPresentationBindings = IdleAutoDefenseModuleSlotPresentationBinding.CreateDefaultBindings();

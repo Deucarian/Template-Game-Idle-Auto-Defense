@@ -143,7 +143,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (contentSet.WaveSet.Count == 0) issues.Add(GameContentSetValidationIssue.Error("WaveSet", "Add at least one authored wave."));
             if (contentSet.UpgradePool.Count == 0) issues.Add(GameContentSetValidationIssue.Warning("UpgradePool", "No upgrades are assigned. The run remains playable, but upgrade drafts will be empty."));
 
-            ValidateEconomy(contentSet, issues);
+            IdleAutoDefenseAuthoredCoreValidator.AddIssues(contentSet, issues);
             HashSet<string> weaponIds = ValidateWeapons(contentSet, issues);
             HashSet<string> enemyIds = ValidateEnemies(contentSet, issues);
             ValidateWaves(contentSet, enemyIds, issues);
@@ -359,9 +359,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AddAll(knownTargets, weaponIds);
             AddAll(knownTargets, enemyIds);
             AddAll(knownTargets, attackAndProjectileIds);
-            knownTargets.Add("objective.idle-auto-defense.core");
-            knownTargets.Add("reward.idle-auto-defense.run");
-            knownTargets.Add("offline.idle-auto-defense.credits");
+            if (contentSet.GameRules != null)
+            {
+                AddIfPresent(knownTargets, contentSet.GameRules.ObjectiveId);
+                AddIfPresent(knownTargets, contentSet.GameRules.RunRewardTargetId);
+                AddIfPresent(knownTargets, contentSet.GameRules.OfflineRewardTargetId);
+            }
 
             for (int i = 0; i < contentSet.UpgradePool.Count; i++)
             {
@@ -395,12 +398,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             IdleAutoDefenseContentSetRuntimeSettings settings = contentSet.RuntimeSettings;
             if (settings == null)
             {
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings", "Runtime reward, debug, and presentation settings are required on the content set."));
+                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings", "Runtime debug and presentation settings are required on the content set."));
                 return;
             }
 
-            ValidateRewardDraftSettings(settings.RewardDraftSettings, issues);
-            ValidateRewardDraftCatalog(settings.RewardDraftCatalog, weaponIds, contentSet.StartingWeapon == null ? string.Empty : contentSet.StartingWeapon.Id, issues);
             ValidatePresentationDebugSettings(settings.PresentationDebug, issues);
             if (!settings.HasAuthoredObjectivePresentation)
                 issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.ObjectivePresentation", "The visible core/base presentation must be authored on the content set."));
@@ -411,119 +412,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             else
                 ValidateModuleSlotPresentationBindings(settings.ModuleSlotPresentationBindings, weaponIds, issues);
             ValidateWeaponPresentationBindings(settings.WeaponPresentationBindings, weaponIds, issues);
-        }
-
-        private static void ValidateRewardDraftSettings(IdleAutoDefenseRewardDraftSettings settings, List<GameContentSetValidationIssue> issues)
-        {
-            if (settings == null)
-            {
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftSettings", "Reward draft settings are required."));
-                return;
-            }
-
-            if (settings.ChoiceCount != 3)
-                issues.Add(GameContentSetValidationIssue.Warning("RuntimeSettings.RewardDraftSettings.ChoiceCount", "The sample is tuned around three readable reward cards."));
-            if (settings.NormalEnemyExperience <= 0)
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftSettings.NormalEnemyExperience", "Normal enemies must grant reward draft experience."));
-            if (settings.BaseExperienceToNextLevel <= 0)
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftSettings.BaseExperienceToNextLevel", "Experience to next level must be positive."));
-            if (settings.LevelUpRarityWeights.Common <= 0d && settings.LevelUpRarityWeights.Uncommon <= 0d && settings.LevelUpRarityWeights.Rare <= 0d)
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftSettings.LevelUpRarityWeights", "Level-up rewards need at least one common, uncommon, or rare weight."));
-        }
-
-        private static void ValidateRewardDraftCatalog(
-            IdleAutoDefenseRewardDraftCatalog catalog,
-            HashSet<string> weaponIds,
-            string startingWeaponId,
-            List<GameContentSetValidationIssue> issues)
-        {
-            if (catalog == null)
-            {
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftCatalog", "Reward draft catalog is required."));
-                return;
-            }
-
-            if (catalog.BaseRewards.Count == 0)
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftCatalog.BaseRewards", "Add at least one base reward so drafts never become empty."));
-            if (catalog.NormalWeaponRewards.Count == 0)
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftCatalog.NormalWeaponRewards", "Add normal weapon rewards for authored towers."));
-            if (catalog.WeaponUnlocks.Count == 0 && weaponIds.Count > 1)
-                issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftCatalog.WeaponUnlocks", "Non-starting authored weapons need unlock rewards."));
-
-            var unlockIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < catalog.WeaponUnlocks.Count; i++)
-            {
-                IdleAutoDefenseWeaponUnlockReward reward = catalog.WeaponUnlocks[i];
-                string path = "RuntimeSettings.RewardDraftCatalog.WeaponUnlocks[" + i.ToString(CultureInfo.InvariantCulture) + "]";
-                if (reward == null || string.IsNullOrWhiteSpace(reward.WeaponId))
-                {
-                    issues.Add(GameContentSetValidationIssue.Error(path, "Weapon unlock reward must target a weapon ID."));
-                    continue;
-                }
-
-                if (!weaponIds.Contains(reward.WeaponId.Trim()))
-                    issues.Add(GameContentSetValidationIssue.Error(path + ".WeaponId", "Reward unlock targets a weapon outside this content set: " + reward.WeaponId));
-                unlockIds.Add(reward.WeaponId.Trim());
-            }
-
-            foreach (string weaponId in weaponIds)
-            {
-                if (string.Equals(weaponId, startingWeaponId, StringComparison.OrdinalIgnoreCase)) continue;
-                if (!unlockIds.Contains(weaponId))
-                    issues.Add(GameContentSetValidationIssue.Error("RuntimeSettings.RewardDraftCatalog.WeaponUnlocks", "Missing unlock reward for authored weapon: " + weaponId));
-            }
-
-            ValidateWeaponRewardDefinitions(catalog.NormalWeaponRewards, "RuntimeSettings.RewardDraftCatalog.NormalWeaponRewards", weaponIds, issues);
-            ValidateWeaponRewardDefinitions(catalog.EpicWeaponRewards, "RuntimeSettings.RewardDraftCatalog.EpicWeaponRewards", weaponIds, issues);
-            ValidateWeaponRewardDefinitions(catalog.LegendaryWeaponRewards, "RuntimeSettings.RewardDraftCatalog.LegendaryWeaponRewards", weaponIds, issues);
-
-            var baseIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < catalog.BaseRewards.Count; i++)
-            {
-                IdleAutoDefenseBaseRewardDefinition reward = catalog.BaseRewards[i];
-                string path = "RuntimeSettings.RewardDraftCatalog.BaseRewards[" + i.ToString(CultureInfo.InvariantCulture) + "]";
-                if (reward == null || string.IsNullOrWhiteSpace(reward.Key))
-                {
-                    issues.Add(GameContentSetValidationIssue.Error(path, "Base reward key is required."));
-                    continue;
-                }
-
-                if (!baseIds.Add(reward.Key.Trim()))
-                    issues.Add(GameContentSetValidationIssue.Error(path + ".Key", "Duplicate base reward key: " + reward.Key));
-            }
-        }
-
-        private static void ValidateWeaponRewardDefinitions(
-            IReadOnlyList<IdleAutoDefenseWeaponRewardDefinition> rewards,
-            string pathPrefix,
-            HashSet<string> weaponIds,
-            List<GameContentSetValidationIssue> issues)
-        {
-            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (rewards == null) return;
-            for (int i = 0; i < rewards.Count; i++)
-            {
-                IdleAutoDefenseWeaponRewardDefinition reward = rewards[i];
-                string path = pathPrefix + "[" + i.ToString(CultureInfo.InvariantCulture) + "]";
-                if (reward == null || string.IsNullOrWhiteSpace(reward.WeaponId))
-                {
-                    issues.Add(GameContentSetValidationIssue.Error(path, "Weapon reward must target a weapon ID."));
-                    continue;
-                }
-
-                if (!weaponIds.Contains(reward.WeaponId.Trim()))
-                    issues.Add(GameContentSetValidationIssue.Error(path + ".WeaponId", "Reward targets a weapon outside this content set: " + reward.WeaponId));
-                if (reward.EffectKind == IdleAutoDefenseRewardEffectKind.None)
-                    issues.Add(GameContentSetValidationIssue.Error(path + ".EffectKind", "Reward must apply an authored gameplay effect."));
-                if ((reward.Rarity == IdleAutoDefenseRewardRarity.Epic || reward.Rarity == IdleAutoDefenseRewardRarity.Legendary) &&
-                    string.IsNullOrWhiteSpace(reward.EffectDescription))
-                {
-                    issues.Add(GameContentSetValidationIssue.Error(path + ".EffectDescription", "Epic and Legendary rewards must describe the visible behavior change they create."));
-                }
-                string key = reward.WeaponId.Trim() + ":" + reward.TierKey.Trim() + ":" + reward.Rarity;
-                if (!keys.Add(key))
-                    issues.Add(GameContentSetValidationIssue.Error(path, "Duplicate reward track entry: " + key));
-            }
         }
 
         private static void ValidatePresentationDebugSettings(IdleAutoDefensePresentationDebugSettings debug, List<GameContentSetValidationIssue> issues)
@@ -746,6 +634,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             foreach (string id in source)
                 if (!string.IsNullOrWhiteSpace(id))
                     target.Add(id.Trim());
+        }
+
+        private static void AddIfPresent(HashSet<string> target, string id)
+        {
+            if (!string.IsNullOrWhiteSpace(id)) target.Add(id.Trim());
         }
 
         private static void AddWeaponIssues(string prefix, WeaponDefinitionValidationReport report, List<GameContentSetValidationIssue> issues)

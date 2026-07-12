@@ -197,9 +197,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 Metadata("GameContentSet Source", ContentSetAsset == null ? "Missing" : NormalizePath(AssetDatabase.GetAssetPath(ContentSetAsset))),
                 Metadata("Playable Scene", string.IsNullOrWhiteSpace(PlayableScenePath) ? "Missing" : PlayableScenePath),
                 Metadata("Availability", SourceState.ToString()),
+                Metadata("Strict Authored Binding", ContentSetAsset != null && GameContentSetValidator.Validate(ContentSetAsset).IsValid ? "Ready" : "Blocked by validation"),
+                Metadata("Authored Core Sources", ContentSetAsset == null ? "0 / 6" : CountAuthoredCoreSources(ContentSetAsset) + " / 6"),
+                Metadata("Reward Catalog", ContentSetAsset == null || ContentSetAsset.RewardCatalog == null ? "Missing" : ContentSetAsset.RewardCatalog.Id),
+                Metadata("Economy", ContentSetAsset == null || ContentSetAsset.Economy == null ? "Missing" : ContentSetAsset.Economy.Id),
+                Metadata("Run Profile", ContentSetAsset == null || ContentSetAsset.RunProfile == null ? "Missing" : ContentSetAsset.RunProfile.Id),
+                Metadata("Progression", ContentSetAsset == null || ContentSetAsset.Progression == null ? "Missing" : ContentSetAsset.Progression.Id),
+                Metadata("Offline Progression", ContentSetAsset == null || ContentSetAsset.OfflineProgression == null ? "Missing" : ContentSetAsset.OfflineProgression.Id),
+                Metadata("Game Rules", ContentSetAsset == null || ContentSetAsset.GameRules == null ? "Missing" : ContentSetAsset.GameRules.Id),
+                Metadata("Projected Records", Records.Count.ToString(CultureInfo.InvariantCulture)),
+                Metadata("Validation", Validation.IsValid ? "Valid" : Validation.Issues.Count + " issue(s)"),
                 Metadata("Setup State", PackAsset == null ? "Not generated" : "Generated project content"),
                 Metadata("Content Root", string.IsNullOrWhiteSpace(ContentRootPath) ? GeneratedContentSearchRoot : ContentRootPath)
             };
+        }
+
+        private static int CountAuthoredCoreSources(GameContentSetAsset contentSet)
+        {
+            int count = 0;
+            if (contentSet.RewardCatalog != null) count++;
+            if (contentSet.Economy != null) count++;
+            if (contentSet.RunProfile != null) count++;
+            if (contentSet.Progression != null) count++;
+            if (contentSet.OfflineProgression != null) count++;
+            if (contentSet.GameRules != null) count++;
+            return count;
         }
 
         private static IdleAutoDefenseContentPackIndex Empty(
@@ -294,10 +316,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 drafts.Add(WaveDraft(waves[waveIndex], order++, waveIndex, library));
             drafts.AddRange(weapons.Select(asset => WeaponDraft(asset, order++, library)));
             drafts.AddRange(upgrades.Select(asset => UpgradeDraft(asset, order++, library)));
+            AddAuthoredCoreDrafts(contentSet, drafts, ref order);
 
             AddIdentityIssues(drafts, packIssues);
-            Dictionary<UnityEngine.Object, GameContentRecordKey> keys = drafts.ToDictionary(
-                draft => draft.Asset,
+            Dictionary<RecordDraft, GameContentRecordKey> keys = drafts.ToDictionary(
+                draft => draft,
                 draft => BuildKey(draft, packIssues));
             AddReferences(drafts, keys);
             return BuildDescriptors(drafts, keys);
@@ -506,16 +529,467 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return draft;
         }
 
-        private static void AddReferences(
-            IEnumerable<RecordDraft> drafts,
-            IReadOnlyDictionary<UnityEngine.Object, GameContentRecordKey> keys)
+        private static void AddAuthoredCoreDrafts(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order)
         {
+            GameContentAuthoringValidationResult validation = AuthoredCoreValidationFor(contentSet);
+            AddRewardDrafts(contentSet, drafts, ref order, validation);
+            AddEconomyDrafts(contentSet, drafts, ref order, validation);
+            AddRunProfileDraft(contentSet, drafts, ref order, validation);
+            AddProgressionDrafts(contentSet, drafts, ref order, validation);
+            AddOfflineProgressionDraft(contentSet, drafts, ref order, validation);
+            AddGameRulesDraft(contentSet, drafts, ref order, validation);
+        }
+
+        private static void AddRewardDrafts(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            IdleAutoDefenseRewardCatalogAsset asset = contentSet.RewardCatalog;
+            if (asset == null) return;
+            IdleAutoDefenseRewardDraftSettings settings = asset.Settings;
+            IdleAutoDefenseRewardDraftCatalog catalog = asset.Catalog;
+            var table = new RecordDraft(
+                asset,
+                asset.Id,
+                "reward-tables",
+                asset.DisplayName,
+                "Authoritative live draft cadence, rarity tables, thresholds, and player-facing choices.",
+                catalog == null ? "Missing reward choices" : RewardChoiceCount(catalog).ToString(CultureInfo.InvariantCulture) + " authored choices",
+                order++,
+                new[] { GameContentRecordCapabilities.Reward },
+                validation,
+                new[]
+                {
+                    Metadata("First Draft", Number(asset.FirstDraftSeconds) + " seconds"),
+                    Metadata("Choice Count", settings == null ? "Missing" : settings.ChoiceCount.ToString(CultureInfo.InvariantCulture)),
+                    Metadata("Normal / Epic / Legendary", catalog == null ? "Missing" : catalog.NormalWeaponRewards.Count + " / " + catalog.EpicWeaponRewards.Count + " / " + catalog.LegendaryWeaponRewards.Count),
+                    Metadata("XP Curve", settings == null ? "Missing" : settings.BaseExperienceToNextLevel + " + " + settings.ExperienceToNextLevelGrowth + " per level")
+                });
+            drafts.Add(table);
+            if (catalog == null) return;
+
+            foreach (IdleAutoDefenseWeaponUnlockReward reward in catalog.WeaponUnlocks.Where(value => value != null))
+            {
+                var draft = RewardChoiceDraft(
+                    asset,
+                    reward.Id,
+                    reward.DisplayName,
+                    reward.EffectDescription,
+                    reward.Track.ToString(),
+                    "Level " + reward.GetRarity(IdleAutoDefenseRewardDraftKind.LevelUp) + ", Elite " + reward.GetRarity(IdleAutoDefenseRewardDraftKind.EliteDefeated) + ", Boss " + reward.GetRarity(IdleAutoDefenseRewardDraftKind.BossDefeated),
+                    reward.Weight,
+                    reward.MaxRank,
+                    reward.EligibleSources,
+                    reward.PrerequisiteIds,
+                    order++,
+                    validation,
+                    Array.Empty<string>());
+                if (reward.Weapon != null) draft.References.Add(ReferenceDraft.ToAsset(reward.Weapon, "weapons", "unlocks weapon", true));
+                drafts.Add(draft);
+            }
+
+            AddWeaponRewardDrafts(asset, catalog.NormalWeaponRewards, "normal-upgrades", drafts, ref order, validation);
+            AddWeaponRewardDrafts(asset, catalog.EpicWeaponRewards, "epic-upgrades", drafts, ref order, validation);
+            AddWeaponRewardDrafts(asset, catalog.LegendaryWeaponRewards, "legendary-upgrades", drafts, ref order, validation);
+            foreach (IdleAutoDefenseBaseRewardDefinition reward in catalog.BaseRewards.Where(value => value != null))
+            {
+                var draft = RewardChoiceDraft(
+                    asset,
+                    reward.Id,
+                    reward.DisplayName,
+                    reward.EffectDescription,
+                    reward.Track.ToString(),
+                    reward.Rarity.ToString(),
+                    reward.Weight,
+                    reward.MaxRank,
+                    reward.EligibleSources,
+                    reward.PrerequisiteIds,
+                    order++,
+                    validation,
+                    Array.Empty<string>(),
+                    Metadata("Target", reward.TargetId),
+                    Metadata("Effect", reward.EffectKind + " " + Number(reward.Amount)));
+                if (contentSet.GameRules != null)
+                    draft.References.Add(ReferenceDraft.ToAsset(contentSet.GameRules, "game-rules", "targets authored objective", true));
+                drafts.Add(draft);
+            }
+        }
+
+        private static void AddWeaponRewardDrafts(
+            IdleAutoDefenseRewardCatalogAsset asset,
+            IEnumerable<IdleAutoDefenseWeaponRewardDefinition> rewards,
+            string filteredCategory,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            foreach (IdleAutoDefenseWeaponRewardDefinition reward in rewards.Where(value => value != null))
+            {
+                var draft = RewardChoiceDraft(
+                    asset,
+                    reward.Id,
+                    reward.DisplayName,
+                    reward.EffectDescription,
+                    reward.Track.ToString(),
+                    reward.Rarity.ToString(),
+                    reward.Weight,
+                    reward.MaxRank,
+                    reward.EligibleSources,
+                    reward.PrerequisiteIds,
+                    order++,
+                    validation,
+                    new[] { filteredCategory },
+                    Metadata("Target", reward.WeaponId),
+                    Metadata("Effect", reward.EffectKind + " " + Number(reward.Amount)),
+                    Metadata("Required Ranks", "Normal " + reward.RequiredNormalRank + ", Epic " + reward.RequiredEpicRank));
+                if (reward.Weapon != null) draft.References.Add(ReferenceDraft.ToAsset(reward.Weapon, "weapons", "upgrades weapon", true));
+                drafts.Add(draft);
+            }
+        }
+
+        private static RecordDraft RewardChoiceDraft(
+            IdleAutoDefenseRewardCatalogAsset asset,
+            string id,
+            string displayName,
+            string description,
+            string track,
+            string rarity,
+            double weight,
+            int maxRank,
+            IdleAutoDefenseRewardSourceEligibility eligibility,
+            IEnumerable<string> prerequisites,
+            int order,
+            GameContentAuthoringValidationResult validation,
+            IEnumerable<string> additionalCategories,
+            params GameContentMetadataDescriptor[] extraMetadata)
+        {
+            var metadata = new List<GameContentMetadataDescriptor>
+            {
+                Metadata("Track", track),
+                Metadata("Rarity", rarity),
+                Metadata("Weight", Number(weight)),
+                Metadata("Max Rank", maxRank.ToString(CultureInfo.InvariantCulture)),
+                Metadata("Eligible Sources", eligibility.ToString())
+            };
+            metadata.AddRange(extraMetadata ?? Array.Empty<GameContentMetadataDescriptor>());
+            var draft = new RecordDraft(
+                asset,
+                id,
+                "reward-choices",
+                displayName,
+                description,
+                track + " reward, " + rarity,
+                order,
+                new[] { GameContentRecordCapabilities.Reward },
+                validation,
+                metadata,
+                additionalCategories);
+            foreach (string prerequisite in prerequisites ?? Array.Empty<string>())
+                draft.References.Add(ReferenceDraft.External(prerequisite, "reward-choices", "requires reward", true, false));
+            return draft;
+        }
+
+        private static int RewardChoiceCount(IdleAutoDefenseRewardDraftCatalog catalog)
+        {
+            return catalog.WeaponUnlocks.Count + catalog.NormalWeaponRewards.Count + catalog.EpicWeaponRewards.Count +
+                   catalog.LegendaryWeaponRewards.Count + catalog.BaseRewards.Count;
+        }
+
+        private static void AddEconomyDrafts(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            IdleAutoDefenseEconomyAsset asset = contentSet.Economy;
+            if (asset == null) return;
+            drafts.Add(new RecordDraft(
+                asset,
+                asset.Id,
+                "economy",
+                asset.DisplayName,
+                "Authoritative currencies, income, purchase curves, and encounter/run rewards.",
+                asset.Currencies.Count + " currencies, " + asset.UpgradeCosts.Count + " cost curves",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                validation,
+                new[]
+                {
+                    Metadata("Passive Income", asset.PassiveIncomeAmount + " " + asset.PassiveIncomeCurrencyId + " / " + asset.PassiveIncomeIntervalTicks + " ticks"),
+                    Metadata("Encounter Reward", asset.EncounterCompletionCredits + " credits, " + asset.EncounterCompletionParts + " parts, " + asset.EncounterCompletionAccountXp + " XP"),
+                    Metadata("Run Claim Multiplier", Number(asset.RunRewardClaimMultiplier))
+                }));
+            foreach (IdleAutoDefenseCurrencyRecord currency in asset.Currencies.Where(value => value != null))
+            {
+                drafts.Add(new RecordDraft(
+                    asset,
+                    currency.Id,
+                    "currencies",
+                    currency.DisplayName,
+                    "Pack-owned resource used by runtime economy and progression.",
+                    "Starts at " + currency.StartingAmount,
+                    order++,
+                    Array.Empty<GameContentRecordCapability>(),
+                    validation,
+                    new[]
+                    {
+                        Metadata("Starting Amount", currency.StartingAmount.ToString(CultureInfo.InvariantCulture)),
+                        Metadata("Capacity", currency.Capacity.ToString(CultureInfo.InvariantCulture))
+                    },
+                    new[] { "economy" }));
+            }
+            foreach (IdleAutoDefenseCostCurve cost in asset.UpgradeCosts.Where(value => value != null))
+            {
+                var draft = new RecordDraft(
+                    asset,
+                    cost.Id,
+                    "economy",
+                    cost.DisplayName,
+                    "Authoritative purchase cost curve.",
+                    cost.BaseCost + " + " + cost.CostPerRank + " per rank",
+                    order++,
+                    Array.Empty<GameContentRecordCapability>(),
+                    validation,
+                    new[]
+                    {
+                        Metadata("Currency", cost.CurrencyId),
+                        Metadata("Base Cost", cost.BaseCost.ToString(CultureInfo.InvariantCulture)),
+                        Metadata("Cost Per Rank", cost.CostPerRank.ToString(CultureInfo.InvariantCulture))
+                    });
+                draft.References.Add(ReferenceDraft.External(cost.CurrencyId, "currencies", "spends currency", true, false));
+                drafts.Add(draft);
+            }
+        }
+
+        private static void AddRunProfileDraft(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            IdleAutoDefenseRunProfileAsset asset = contentSet.RunProfile;
+            if (asset == null) return;
+            var draft = new RecordDraft(
+                asset,
+                asset.Id,
+                "run-profiles",
+                asset.DisplayName,
+                "Authoritative fixed-rate session timing, wave sequence, outcome rules, and scaling.",
+                Number(asset.SessionLengthSeconds) + " seconds at " + asset.SimulationTicksPerSecond + " Hz",
+                order++,
+                new[] { GameContentRecordCapabilities.RunProfile },
+                validation,
+                new[]
+                {
+                    Metadata("Time Unit", asset.TimeUnit.ToString()),
+                    Metadata("Tick Semantics", asset.TickSemantics.ToString()),
+                    Metadata("Tick Rate", asset.SimulationTicksPerSecond + " per second"),
+                    Metadata("Session Length", asset.SessionLengthTicks + " ticks / " + Number(asset.SessionLengthSeconds) + " seconds"),
+                    Metadata("Wave Sequence", asset.Waves.Count.ToString(CultureInfo.InvariantCulture)),
+                    Metadata("Difficulty", Number(asset.DifficultyMultiplier)),
+                    Metadata("Endless", asset.Endless ? "Enabled" : "Disabled"),
+                    Metadata("Victory / Defeat", asset.VictoryRule + " / " + asset.DefeatRule),
+                    Metadata("Reward Multiplier", Number(asset.RewardMultiplier))
+                });
+            foreach (WaveDefinitionAsset wave in asset.Waves.Where(value => value != null))
+                draft.References.Add(ReferenceDraft.ToAsset(wave, "waves", "schedules wave", true));
+            drafts.Add(draft);
+        }
+
+        private static void AddProgressionDrafts(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            IdleAutoDefenseProgressionAsset asset = contentSet.Progression;
+            if (asset == null) return;
+            drafts.Add(new RecordDraft(
+                asset,
+                asset.Id,
+                "persistent-progression",
+                asset.DisplayName,
+                "Authoritative account tracks, research nodes, unlocks, and save document IDs.",
+                asset.Tracks.Count + " tracks, " + asset.ResearchNodes.Count + " research nodes",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                validation,
+                new[]
+                {
+                    Metadata("Account Track", asset.AccountTrackId),
+                    Metadata("Save Version", asset.SaveVersion.ToString(CultureInfo.InvariantCulture)),
+                    Metadata("Profile / Run / Settings", asset.ProfileDocumentId + " / " + asset.RunDocumentId + " / " + asset.SettingsDocumentId)
+                }));
+            foreach (IdleAutoDefenseProgressionTrackRecord track in asset.Tracks.Where(value => value != null))
+            {
+                drafts.Add(new RecordDraft(
+                    asset,
+                    track.Id,
+                    "persistent-progression",
+                    track.DisplayName,
+                    "Authored persistent progression track.",
+                    track.CumulativeThresholds.Count + " level thresholds",
+                    order++,
+                    Array.Empty<GameContentRecordCapability>(),
+                    validation,
+                    new[]
+                    {
+                        Metadata("Starting Level", track.StartingLevel.ToString(CultureInfo.InvariantCulture)),
+                        Metadata("Thresholds", string.Join(", ", track.CumulativeThresholds))
+                    }));
+            }
+            foreach (IdleAutoDefenseResearchNodeRecord node in asset.ResearchNodes.Where(value => value != null))
+            {
+                var draft = new RecordDraft(
+                    asset,
+                    node.Id,
+                    "persistent-progression",
+                    node.DisplayName,
+                    "Authored research cost, prerequisites, unlock gates, and applied effect.",
+                    node.EffectKind + " " + Number(node.EffectAmountPerRank) + " per rank",
+                    order++,
+                    new[] { GameContentRecordCapabilities.MetaUpgrade },
+                    validation,
+                    new[]
+                    {
+                        Metadata("Max Rank", node.MaxRank.ToString(CultureInfo.InvariantCulture)),
+                        Metadata("Costs", string.Join(", ", node.RankCosts)),
+                        Metadata("Currency", node.CostCurrencyId),
+                        Metadata("Effect Target", node.EffectTargetId),
+                        Metadata("Required Unlocks", string.Join(", ", node.RequiredUnlockIds))
+                    });
+                draft.References.Add(ReferenceDraft.External(node.CostCurrencyId, "currencies", "spends currency", true, false));
+                foreach (IdleAutoDefenseResearchPrerequisiteRecord prerequisite in node.Prerequisites.Where(value => value != null))
+                    draft.References.Add(ReferenceDraft.External(prerequisite.NodeId, "persistent-progression", "requires research rank " + prerequisite.MinimumRank, true, false));
+                AddProgressionTargetReference(contentSet, node.EffectTargetId, draft);
+                drafts.Add(draft);
+            }
+        }
+
+        private static void AddProgressionTargetReference(GameContentSetAsset contentSet, string targetId, RecordDraft draft)
+        {
+            WeaponDefinitionAsset weapon = contentSet.AvailableWeapons.FirstOrDefault(value => value != null && string.Equals(value.Id, targetId, StringComparison.OrdinalIgnoreCase));
+            if (weapon != null)
+            {
+                draft.References.Add(ReferenceDraft.ToAsset(weapon, "weapons", "applies persistent effect", true));
+                return;
+            }
+            if (contentSet.OfflineProgression != null && string.Equals(contentSet.OfflineProgression.Id, targetId, StringComparison.OrdinalIgnoreCase))
+            {
+                draft.References.Add(ReferenceDraft.ToAsset(contentSet.OfflineProgression, "offline-progression", "modifies offline settings", true));
+                return;
+            }
+            if (contentSet.GameRules != null)
+                draft.References.Add(ReferenceDraft.ToAsset(contentSet.GameRules, "game-rules", "applies objective rule", true));
+        }
+
+        private static void AddOfflineProgressionDraft(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            IdleAutoDefenseOfflineProgressionAsset asset = contentSet.OfflineProgression;
+            if (asset == null) return;
+            var draft = new RecordDraft(
+                asset,
+                asset.Id,
+                "offline-progression",
+                asset.DisplayName,
+                "Authoritative deterministic offline accumulation, cap, claim, rounding, and save key.",
+                Number(asset.ProductionAmountPerSecond) + " " + asset.ProductionCurrencyId + "/second, capped at " + Number(asset.MaximumOfflineSeconds) + " seconds",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                validation,
+                new[]
+                {
+                    Metadata("Enabled", asset.Enabled ? "Yes" : "No"),
+                    Metadata("Maximum Duration", Number(asset.MaximumOfflineSeconds) + " seconds"),
+                    Metadata("Minimum Duration", Number(asset.MinimumEligibleSeconds) + " seconds"),
+                    Metadata("Production", Number(asset.ProductionAmountPerSecond) + " " + asset.ProductionCurrencyId + " / second"),
+                    Metadata("Cycle Reward", asset.CycleRewardAmount + " " + asset.CycleCurrencyId + " / " + Number(asset.CycleDurationSeconds) + " seconds"),
+                    Metadata("Claim / Rounding", Number(asset.ClaimMultiplier) + "x / " + asset.Rounding),
+                    Metadata("Save Timestamp Key", asset.SaveTimestampKey)
+                });
+            draft.References.Add(ReferenceDraft.External(asset.ProductionCurrencyId, "currencies", "produces currency", true, false));
+            draft.References.Add(ReferenceDraft.External(asset.CycleCurrencyId, "currencies", "produces cycle currency", true, false));
+            drafts.Add(draft);
+        }
+
+        private static void AddGameRulesDraft(
+            GameContentSetAsset contentSet,
+            ICollection<RecordDraft> drafts,
+            ref int order,
+            GameContentAuthoringValidationResult validation)
+        {
+            IdleAutoDefenseGameRulesAsset asset = contentSet.GameRules;
+            if (asset == null) return;
+            var draft = new RecordDraft(
+                asset,
+                asset.Id,
+                "game-rules",
+                asset.DisplayName,
+                "Authoritative objective, spawn channels, module roles, projectile, repair, and Overdrive rules.",
+                asset.Modules.Count + " module roles, " + asset.SpawnChannels.Count + " spawn channels",
+                order++,
+                Array.Empty<GameContentRecordCapability>(),
+                validation,
+                new[]
+                {
+                    Metadata("Objective", asset.ObjectiveId + ", " + Number(asset.ObjectiveMaximumHealth) + " HP, " + asset.ObjectiveLives + " lives"),
+                    Metadata("Run / Offline Targets", asset.RunRewardTargetId + " / " + asset.OfflineRewardTargetId),
+                    Metadata("Spawn Ring", Number(asset.SpawnRingRadius)),
+                    Metadata("Elite / Boss", asset.EliteEnemyId + " / " + asset.BossEnemyId),
+                    Metadata("Overdrive", Number(asset.OverdriveDurationSeconds) + " seconds, " + Number(asset.OverdriveDamageMultiplier) + "x damage")
+                });
+            foreach (IdleAutoDefenseModuleRule module in asset.Modules.Where(value => value != null && value.Weapon != null))
+                draft.References.Add(ReferenceDraft.ToAsset(module.Weapon, "weapons", "assigns " + module.Role + " module", true));
+            if (asset.EliteEnemy != null) draft.References.Add(ReferenceDraft.ToAsset(asset.EliteEnemy, "enemies", "assigns elite", true));
+            if (asset.BossEnemy != null) draft.References.Add(ReferenceDraft.ToAsset(asset.BossEnemy, "enemies", "assigns boss", true));
+            drafts.Add(draft);
+        }
+
+        private static GameContentAuthoringValidationResult AuthoredCoreValidationFor(GameContentSetAsset contentSet)
+        {
+            GameContentSetValidationReport report = GameContentSetValidator.Validate(contentSet);
+            return new GameContentAuthoringValidationResult(report.Issues.Select(issue =>
+                new GameContentAuthoringValidationIssue(
+                    issue.Severity == GameContentSetValidationSeverity.Error
+                        ? GameContentAuthoringValidationSeverity.Error
+                        : issue.Severity == GameContentSetValidationSeverity.Warning
+                            ? GameContentAuthoringValidationSeverity.Warning
+                            : GameContentAuthoringValidationSeverity.Info,
+                    issue.Path,
+                    issue.Message)).ToArray());
+        }
+
+        private static void AddReferences(
+            IReadOnlyList<RecordDraft> drafts,
+            IReadOnlyDictionary<RecordDraft, GameContentRecordKey> keys)
+        {
+            Dictionary<UnityEngine.Object, RecordDraft> primaryByAsset = drafts
+                .Where(value => value.Asset != null)
+                .GroupBy(value => value.Asset)
+                .ToDictionary(group => group.Key, group => group.First());
+            Dictionary<string, RecordDraft> byId = drafts
+                .Where(value => !string.IsNullOrWhiteSpace(value.Id))
+                .GroupBy(value => value.Id, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
             foreach (RecordDraft draft in drafts)
             {
                 foreach (ReferenceDraft reference in draft.References)
                 {
-                    if (reference.TargetAsset == null || !keys.TryGetValue(reference.TargetAsset, out GameContentRecordKey targetKey))
-                        continue;
+                    RecordDraft target = null;
+                    if (reference.TargetAsset != null)
+                        primaryByAsset.TryGetValue(reference.TargetAsset, out target);
+                    else if (!string.IsNullOrWhiteSpace(reference.TargetRecordId))
+                        byId.TryGetValue(reference.TargetRecordId, out target);
+                    if (target == null || !keys.TryGetValue(target, out GameContentRecordKey targetKey)) continue;
                     reference.TargetKey = targetKey;
                     reference.TargetRecordId = targetKey.SourceRecordId;
                     reference.Valid = true;
@@ -525,15 +999,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static IReadOnlyList<GameContentRecordDescriptor> BuildDescriptors(
             IReadOnlyList<RecordDraft> drafts,
-            IReadOnlyDictionary<UnityEngine.Object, GameContentRecordKey> keys)
+            IReadOnlyDictionary<RecordDraft, GameContentRecordKey> keys)
         {
-            var inbound = drafts.ToDictionary(draft => draft.Asset, draft => new List<GameContentRecordReferenceDescriptor>());
+            var inbound = drafts.ToDictionary(draft => draft, draft => new List<GameContentRecordReferenceDescriptor>());
+            Dictionary<GameContentRecordKey, RecordDraft> draftsByKey = keys.ToDictionary(pair => pair.Value, pair => pair.Key);
             foreach (RecordDraft source in drafts)
             {
-                foreach (ReferenceDraft reference in source.References.Where(value => value.TargetAsset != null && inbound.ContainsKey(value.TargetAsset)))
+                foreach (ReferenceDraft reference in source.References.Where(value => value.TargetKey != null))
                 {
-                    GameContentRecordKey sourceKey = keys[source.Asset];
-                    inbound[reference.TargetAsset].Add(new GameContentRecordReferenceDescriptor(
+                    if (!draftsByKey.TryGetValue(reference.TargetKey, out RecordDraft target)) continue;
+                    GameContentRecordKey sourceKey = keys[source];
+                    inbound[target].Add(new GameContentRecordReferenceDescriptor(
                         sourceKey.SourceRecordId,
                         source.CategoryId,
                         sourceKey.PackId,
@@ -549,14 +1025,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 PackId + "::" + draft.CategoryId + "::" + draft.Id,
                 draft.Id,
                 draft.CategoryId,
-                null,
+                draft.CategoryIds,
                 draft.DisplayName,
                 draft.Description,
                 draft.Summary,
                 draft.Metadata,
                 draft.Asset,
                 AssetDatabase.GetAssetPath(draft.Asset),
-                keys[draft.Asset].SourceId,
+                keys[draft].SourceId,
                 draft.References.Select(reference => new GameContentRecordReferenceDescriptor(
                     reference.TargetRecordId,
                     reference.TargetCategoryId,
@@ -566,12 +1042,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     reference.Valid,
                     OwningPackageId,
                     reference.TargetKey)).ToArray(),
-                inbound[draft.Asset],
+                inbound[draft],
                 draft.Validation,
                 draft.Order,
                 draft.Asset,
                 draft.CategoryId,
-                keys[draft.Asset],
+                keys[draft],
                 draft.Capabilities)).ToArray();
         }
 
@@ -668,6 +1144,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     objects.Add(upgrade.Economy);
                     objects.Add(upgrade.Effects);
                 }
+
+                objects.Add(contentSet.RewardCatalog);
+                objects.Add(contentSet.Economy);
+                objects.Add(contentSet.RunProfile);
+                objects.Add(contentSet.Progression);
+                objects.Add(contentSet.OfflineProgression);
+                objects.Add(contentSet.GameRules);
             }
 
             return objects.Where(value => value != null)
@@ -705,6 +1188,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             RequireCount(records, GameContentRecordCapabilities.Wave, 7, "Wave / Encounter", issues);
             RequireCount(records, GameContentRecordCapabilities.Weapon, 4, "Weapon / Tower", issues);
             RequireCount(records, GameContentRecordCapabilities.Upgrade, 6, "Upgrade", issues);
+            RequireCategoryCount(records, "reward-choices", 37, "Reward Choice", issues);
+            RequireCategoryCount(records, "reward-tables", 1, "Reward Table", issues);
+            RequireCategoryCount(records, "normal-upgrades", 12, "Normal Upgrade", issues);
+            RequireCategoryCount(records, "epic-upgrades", 12, "Epic Upgrade", issues);
+            RequireCategoryCount(records, "legendary-upgrades", 4, "Legendary Upgrade", issues);
+            RequireCategoryCount(records, "economy", 8, "Economy", issues);
+            RequireCategoryCount(records, "currencies", 2, "Currency", issues);
+            RequireCategoryCount(records, "run-profiles", 1, "Run Profile", issues);
+            RequireCategoryCount(records, "persistent-progression", 6, "Persistent Progression", issues);
+            RequireCategoryCount(records, "offline-progression", 1, "Offline Progression", issues);
+            RequireCategoryCount(records, "game-rules", 1, "Game Rules", issues);
+            if (records.Count != 82)
+                issues.Add(GameContentAuthoringValidationIssue.Error(
+                    "Record Counts/Total",
+                    "Expected 82 total pack record(s), found " + records.Count.ToString(CultureInfo.InvariantCulture) + "."));
         }
 
         private static void RequireCount(
@@ -721,11 +1219,35 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     "Expected " + expected.ToString(CultureInfo.InvariantCulture) + " " + label + " record(s), found " + count.ToString(CultureInfo.InvariantCulture) + "."));
         }
 
+        private static void RequireCategoryCount(
+            IEnumerable<GameContentRecordDescriptor> records,
+            string category,
+            int expected,
+            string label,
+            ICollection<GameContentAuthoringValidationIssue> issues)
+        {
+            int count = records.Count(record => record.IsInCategory(category));
+            if (count != expected)
+                issues.Add(GameContentAuthoringValidationIssue.Error(
+                    "Record Counts/" + label,
+                    "Expected " + expected.ToString(CultureInfo.InvariantCulture) + " " + label + " record(s), found " + count.ToString(CultureInfo.InvariantCulture) + "."));
+        }
+
         private static IReadOnlyList<GameContentCategoryDescriptor> BuildCategories(
             IReadOnlyList<GameContentRecordDescriptor> records)
         {
-            string[] categories = { "attacks", "enemies", "waves", "weapons", "upgrades" };
-            string[] labels = { "Attack", "Enemy", "Wave / Encounter", "Weapon / Tower", "Upgrade" };
+            string[] categories =
+            {
+                "attacks", "enemies", "waves", "weapons", "upgrades",
+                "reward-choices", "normal-upgrades", "epic-upgrades", "legendary-upgrades", "reward-tables",
+                "economy", "currencies", "run-profiles", "persistent-progression", "offline-progression", "game-rules"
+            };
+            string[] labels =
+            {
+                "Attack", "Enemy", "Wave / Encounter", "Weapon / Tower", "Upgrade",
+                "Reward Choice", "Normal Upgrade", "Epic Upgrade", "Legendary Upgrade", "Reward Table",
+                "Economy", "Currency", "Run Profile", "Persistent Progression", "Offline Progression", "Game Rules"
+            };
             return categories.Select((category, index) => new GameContentCategoryDescriptor(
                 category,
                 labels[index],
@@ -781,11 +1303,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 int order,
                 IEnumerable<GameContentRecordCapability> capabilities,
                 GameContentAuthoringValidationResult validation,
-                IEnumerable<GameContentMetadataDescriptor> metadata)
+                IEnumerable<GameContentMetadataDescriptor> metadata,
+                IEnumerable<string> categoryIds = null)
             {
                 Asset = asset;
                 Id = id ?? string.Empty;
                 CategoryId = categoryId ?? string.Empty;
+                CategoryIds = categoryIds == null
+                    ? Array.Empty<string>()
+                    : categoryIds.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
                 DisplayName = displayName ?? string.Empty;
                 Description = description ?? string.Empty;
                 Summary = summary ?? string.Empty;
@@ -798,6 +1324,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             public UnityEngine.Object Asset { get; }
             public string Id { get; }
             public string CategoryId { get; }
+            public IReadOnlyList<string> CategoryIds { get; }
             public string DisplayName { get; }
             public string Description { get; }
             public string Summary { get; }

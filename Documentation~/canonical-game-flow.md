@@ -4,7 +4,7 @@ The template owns a starter idle auto-defense flow. Product games should begin b
 
 ```text
 Boot
--> resolve assigned content pack/set
+-> strictly validate and bind assigned content pack/set plus six authored-core owners
 -> apply offline reward smoke
 -> start run
 -> spawn profiles
@@ -16,4 +16,4 @@ Boot
 -> restart
 ```
 
-The generated scene is intentionally compact: enemies spawn from the perimeter, the player tower sits in the middle, visible direct/projectile mounts fire, and a small HUD shows run state, rewards, upgrade progress, and save controls. Advanced theme, economy, and product-specific scene flow should be added in the generated game root; authored gameplay data should be tuned under `Assets/GameContent`.
+The generated scene is intentionally compact: enemies spawn from the perimeter, the player tower sits in the middle, visible direct/projectile mounts fire, and a small HUD shows run state, rewards, upgrade progress, and save controls. Its existing economy is authored under `Assets/GameContent`; later theme and product-specific UI flow belong in the generated game root. Invalid required gameplay content blocks startup instead of silently selecting fallback balance.

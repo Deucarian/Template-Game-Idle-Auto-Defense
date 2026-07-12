@@ -1,6 +1,10 @@
 using System;
 using System.Collections;
+using System.Reflection;
+using Deucarian.Attacks.Authoring;
 using Deucarian.IdleProgression;
+using Deucarian.RunUpgrades.Authoring;
+using Deucarian.WeaponSystems.Authoring;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -10,6 +14,66 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 {
     public sealed class IdleAutoDefenseTemplatePlayModeTests
     {
+        [UnityTest]
+        public IEnumerator StrictAuthoredControllerBindsCoreAndRunsGameplayWithoutFallback()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            GameContentSetAsset contentSet = GameContentSetAsset.CreateTransient(
+                "contentset.test.playmode.strict-authored",
+                "Strict Authored PlayMode",
+                weapons[0],
+                weapons,
+                enemies,
+                waves,
+                upgrades,
+                10,
+                0,
+                1f,
+                1f,
+                5600,
+                false,
+                "Strict generated-scene binding fixture.",
+                new[] { "test", "strict-authored" });
+
+            GameObject host = new GameObject("idle-auto-defense-strict-authored-playmode");
+            host.SetActive(false);
+            var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            FieldInfo contentSetField = typeof(IdleAutoDefenseTemplateController).GetField("_contentSet", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(contentSetField, Is.Not.Null);
+            contentSetField.SetValue(controller, contentSet);
+            controller.ConfigureStrictAuthoredStartup(true);
+            host.SetActive(true);
+            controller.enabled = false;
+            controller.RewardDraftPausesCombat = false;
+            yield return null;
+
+            for (int i = 0; i < 900; i++)
+            {
+                controller.Step(1, 0.05f);
+                if (controller.RewardDraftActive) controller.TryChooseRewardDraftChoice(0);
+                if (i % 60 == 0) yield return null;
+            }
+
+            Assert.That(controller.StartupBlocked, Is.False, controller.StartupError);
+            Assert.That(controller.FallbackModeActive, Is.False);
+            Assert.That(controller.UsingAuthoredCore, Is.True);
+            Assert.That(controller.ActiveRewardCatalogId, Is.EqualTo(contentSet.RewardCatalog.Id));
+            Assert.That(controller.ActiveEconomyId, Is.EqualTo(contentSet.Economy.Id));
+            Assert.That(controller.ActiveRunProfileId, Is.EqualTo(contentSet.RunProfile.Id));
+            Assert.That(controller.ActiveProgressionId, Is.EqualTo(contentSet.Progression.Id));
+            Assert.That(controller.ActiveOfflineProgressionId, Is.EqualTo(contentSet.OfflineProgression.Id));
+            Assert.That(controller.ActiveGameRulesId, Is.EqualTo(contentSet.GameRules.Id));
+            Assert.That(controller.SpawnedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);
+
+            UnityEngine.Object.Destroy(host);
+        }
+
         [UnityTest]
         public IEnumerator BasicIdleAutoDefenseControllerRunsDeterministicSmoke()
         {

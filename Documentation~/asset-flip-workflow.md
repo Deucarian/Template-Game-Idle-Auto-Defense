@@ -15,9 +15,11 @@ The wizard creates the playable scene at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefen
 3. Choose reward draft cards during the run and verify 1/2/3 hotkeys select them.
 4. Save a snapshot and reset it from the HUD.
 5. Replace starter visuals under `Prefabs` and `Visuals`.
-6. Tune generated enemies, attacks, towers, waves, upgrades, and progression assets under `Assets/GameContent`.
+6. Tune generated enemies, attacks, towers, waves, reward choices, economy, run profile, upgrades, progression, offline settings, and game rules under `Assets/GameContent`.
 7. Rename template IDs into product IDs.
 
 Keep reusable framework behavior in Deucarian packages. Keep product theme, scene composition, and save names in the generated product folder; keep authored gameplay balance under `Assets/GameContent`.
 
-For first-balance passes, tune the authored weapon/attack/enemy/wave values first, then tune the generated `GameContentSetAsset` under `Assets/GameContent` if the product run needs different XP pacing, rarity weights, unlock weighting, projectile retarget tolerance, debug defaults, reward tracks, or Kenney turret presentation bindings. The controller reads the assigned content set at runtime; do not maintain a separate reward catalog or tower visual map on the scene object. Epic choices are intentionally gated behind three normal investments in the affected weapon, and Legendary choices are gated behind three Epic investments by default.
+The generated `GameContentSetAsset` is the graph root, not a duplicate balance container. Follow its references to `Rewards`, `Economy`, `RunProfiles`, `Progression`, `OfflineProgression`, and `GameRules`; tune weapon, attack, enemy, wave, and run-upgrade assets in their existing folders. The controller reads these assets at runtime. Do not maintain a separate reward catalog, JSON mirror, economy table, or tower map on the scene object.
+
+After an asset flip, run content validation and press Play. A valid generated scene reports `UsingAuthoredCore == true` and `FallbackModeActive == false`. If required content is missing, strict startup intentionally blocks; fix the reported asset/reference instead of enabling fallback.

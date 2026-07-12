@@ -33,12 +33,13 @@ The playable scene is generated in a fixed top-level folder so it is easy to fin
 The authored gameplay data is created separately under `Assets/GameContent/IdleAutoDefense` by default:
 
 - `Attacks`, `Enemies`, `Weapons`, `Waves`, and `Upgrades`: editable starter definitions.
+- `Rewards`, `Economy`, `RunProfiles`, `Progression`, `OfflineProgression`, and `GameRules`: the live gameplay-core catalogs and tuning consumed by runtime.
 - `ContentSets`: the playable run recipe assigned by the generated scene.
 - `ContentPacks`: the package-style wrapper assigned by the generated scene.
 
-The generated scene references the generated content pack and content set. The controller should report `UsingAssignedContentSet == true` with zero content pack/set validation errors.
+The generated scene references the generated content pack and content set. Its bootstrap enables strict authored startup. A valid run reports `UsingAssignedContentSet == true`, `UsingAuthoredCore == true`, and `FallbackModeActive == false`; incomplete required content blocks startup instead of substituting hidden balance.
 
-The generated graph also appears in `Tools > Deucarian > Game Content Authoring` as the read-only named pack `Basic Idle Auto Defense`. Its Attack, Enemy, Wave / Encounter, Weapon / Tower, Upgrade, All Content, and Pack Dashboard views all project the existing ScriptableObjects without making copies. See [Game Content Authoring](Documentation~/game-content-authoring.md).
+The generated graph also appears in `Tools > Deucarian > Game Content Authoring` as the read-only named pack `Basic Idle Auto Defense`. In addition to the original gameplay categories, it exposes Reward Choices, Normal/Epic/Legendary Upgrades, Reward Tables, Economy, Currencies, Run Profiles, Persistent Progression, Offline Progression, and Game Rules. See [Game Content Authoring](Documentation~/game-content-authoring.md).
 
 ## Template Source
 
@@ -50,11 +51,16 @@ TemplateSource~/BasicIdleAutoDefenseGame
 |   |-- Attacks
 |   |-- ContentPacks
 |   |-- ContentSets
+|   |-- Economy
 |   |-- Enemies
+|   |-- GameRules
+|   |-- OfflineProgression
+|   |-- Progression
+|   |-- Rewards
+|   |-- RunProfiles
 |   |-- Upgrades
 |   |-- Waves
-|   |-- Weapons
-|   `-- starter-content.json
+|   `-- Weapons
 |-- Prefabs
 |-- Resources
 |   `-- Kenney
@@ -72,7 +78,7 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 Open `Tools > Deucarian > Game Content Authoring` to browse, validate, reveal, and navigate the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. The named pack is read-only in this milestone; unclaimed standalone ScriptableObjects retain the existing writable Project Content workflows. Stable-ID changes still require a coordinated reference and runtime audit.
 
-During play, the sample controller turns kills, wave progress, elite kills, boss kills, and a guaranteed early run moment into a visible three-choice reward draft. Early level-up drafts prefer at least one module unlock so the player gets a build direction quickly. Normal choices unlock or improve owned tower weapons; after three normal investments in a weapon, Epic choices can appear for that weapon, and after three Epic investments a Legendary choice can appear. Keep the authored weapons, attacks, enemies, waves, starter upgrades, reward draft settings/catalog, debug defaults, and Kenney presentation bindings under `Assets/GameContent`; the generated controller consumes the assigned content set instead of owning a second editable catalog.
+During play, the sample controller turns kills, wave progress, elite kills, boss kills, and a guaranteed early run moment into a visible three-choice reward draft. The live choices, weights, targets, prerequisites, source eligibility, XP cadence, and rarity tables come from the first-class reward-catalog asset. Economy, run/session rules, persistent progression, offline accumulation, objective/module rules, and reward values are likewise authored under `Assets/GameContent`; the generated controller consumes those assigned references instead of owning a second editable catalog.
 
 The starter balance is tuned as a 3-5 minute vertical slice. The Shard Launcher begins with short range, low starting credits, and a slower cadence so enemies survive multiple hits and can pressure the core. The first reward appears around 30-60 seconds, mid-run enemies should sometimes reach the base, and Pulse Beam, Arc Burst, Homing Pulse, and Overdrive create visible relief after pressure spikes. To make the first two minutes easier or harder, tune authored enemy health/speed under `Assets/GameContent/IdleAutoDefense/Enemies`, wave timings under `Waves`, weapon cooldown/range under `Weapons`, and attack damage/range/projectile speed under `Attacks`.
 
@@ -83,6 +89,8 @@ The starter content intentionally stays generic and reusable:
 - 4 tower weapons
 - 7 spawn profiles, including authored elite and boss waves
 - 6 authored starter upgrades plus runtime three-choice reward drafts
+
+The template doctrine and extraction boundary are defined in [the template contract](Documentation~/template-contract.md). Numerical ownership and parity are recorded in [the authored-core parity inventory](Documentation~/idle-auto-defense-authored-core-parity.md).
 
 ## Package Boundary
 

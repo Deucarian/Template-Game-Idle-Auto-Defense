@@ -42,6 +42,7 @@ Architecture exceptions:
 
 ## Policies
 
+- Template contract: Follow [Documentation~/template-contract.md](Documentation~/template-contract.md). Extract only reusable infrastructure, never the playable vertical slice.
 - Template code: Keep product-specific starter glue local to the template; move reusable behavior down only through explicit governance.
 - Samples: Keep imported sample content under `Samples~`.
 - Editor UI: Use shared Editor and Game Content Authoring surfaces rather than local copies.

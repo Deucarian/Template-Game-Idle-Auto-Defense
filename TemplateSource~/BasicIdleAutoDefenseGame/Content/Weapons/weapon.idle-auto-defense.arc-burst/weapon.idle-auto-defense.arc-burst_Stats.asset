@@ -20,6 +20,6 @@ MonoBehaviour:
   _burstCount: 1
   _volleyCount: 1
   _spreadDegrees: 0
-  _buildCost: 65
+  _buildCost: 62
   _targetingRoleId: nearest
   _muzzleRoleId: primary

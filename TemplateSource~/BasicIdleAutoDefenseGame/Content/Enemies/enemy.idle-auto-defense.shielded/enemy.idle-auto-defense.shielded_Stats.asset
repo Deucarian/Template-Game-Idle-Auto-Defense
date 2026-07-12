@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyStatsDefinitionAsset
   _maximumHealth: 46
   _moveSpeed: 0.64
-  _rewardValue: 7
+  _rewardValue: 5
   _contactDamage: 4
   _damageTypeId: damage.idle-auto-defense.basic
   _collisionRadius: 0.38

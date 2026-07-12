@@ -432,8 +432,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "3. Tune the enemy assets in `" + contentRoot + "/Enemies`.\n" +
                    "4. Tune the attack and tower assets in `" + contentRoot + "/Attacks` and `" + contentRoot + "/Weapons`.\n" +
                    "5. Tune the spawn profiles and upgrades in `" + contentRoot + "/Waves` and `" + contentRoot + "/Upgrades`.\n" +
-                   "6. Rename template IDs into your product namespace as content becomes product-owned.\n" +
-                   "7. Keep Deucarian package source out of this folder.\n";
+                   "6. Tune live rewards, economy, run timing, progression, offline settings, and game rules in their authored folders under `" + contentRoot + "`.\n" +
+                   "7. Validate the named pack; the generated scene uses strict authored startup and must report fallback false.\n" +
+                   "8. Rename template IDs into your product namespace as content becomes product-owned.\n" +
+                   "9. Keep Deucarian package source out of this folder.\n";
         }
 
         private static string CreateSetupReport(string targetRoot, string contentRoot, string gameNamespace, string prefix, string sceneAssetPath)
@@ -445,14 +447,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "- Namespace: `" + gameNamespace + "`\n" +
                    "- Prefix: `" + prefix + "`\n" +
                    "- Scene: `" + sceneAssetPath + "`\n" +
+                   "- Authored core: reward catalog, economy, run profile, progression, offline progression, and game rules copied with remapped references.\n" +
+                   "- Startup: strict authored binding; missing or invalid required content blocks gameplay instead of using fallback.\n" +
                    "- Dependencies: kept in Deucarian packages; generated assembly references `Deucarian.TemplateGameIdleAutoDefense`.\n\n" +
                    "## Next Steps\n\n" +
                    "1. Open the created scene and press Play.\n" +
                    "2. Open `Tools > Deucarian > Game Content Authoring` and tune assets under `" + contentRoot + "`.\n" +
                    "3. Replace starter visuals.\n" +
                    "4. Rename product content IDs.\n" +
-                   "5. Tune enemies, attacks, towers, spawn profiles, and upgrades.\n" +
-                   "6. Keep reusable framework code in Deucarian packages.\n";
+                   "5. Tune enemies, attacks, towers, waves, rewards, economy, run profile, progression, offline settings, and game rules.\n" +
+                   "6. Confirm `UsingAuthoredCore` is true and `FallbackModeActive` is false in Play Mode.\n" +
+                   "7. Keep reusable framework code in Deucarian packages.\n";
         }
 
         private static string AssetPathToFullPath(string assetPath)

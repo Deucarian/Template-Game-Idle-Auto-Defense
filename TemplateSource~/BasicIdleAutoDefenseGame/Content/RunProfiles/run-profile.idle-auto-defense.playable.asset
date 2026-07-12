@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9d65aa2bcef4e58aca610cc8d2ac457, type: 3}
+  m_Name: run-profile.idle-auto-defense.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseRunProfileAsset
+  _id: run-profile.idle-auto-defense.playable
+  _displayName: Basic Idle Auto Defense Run
+  _timeUnit: 0
+  _tickSemantics: 0
+  _simulationTicksPerSecond: 20
+  _sessionLengthTicks: 5600
+  _waves:
+  - {fileID: 11400000, guid: 139ea81c2ca6259408bcf0527b568e74, type: 2}
+  - {fileID: 11400000, guid: 9bfe6c935b0d4599b65986b90fca9e3a, type: 2}
+  - {fileID: 11400000, guid: 5d70da8f6532ba943864e8ceae03d767, type: 2}
+  - {fileID: 11400000, guid: df211f7653b74b708cb8648b4c0d0c21, type: 2}
+  - {fileID: 11400000, guid: d0b884e8b4a74e4eac54796e5003f919, type: 2}
+  - {fileID: 11400000, guid: 03d0c000098e49699eb86ed1176892d4, type: 2}
+  - {fileID: 11400000, guid: 7df0e750dfab40b28145ffcbd4951cdb, type: 2}
+  _difficultyMultiplier: 1
+  _endless: 0
+  _victoryRule: 0
+  _defeatRule: 0
+  _rewardMultiplier: 1
+  _preparationTicks: 0
+  _encounterSeed: 20260623

@@ -1,0 +1,669 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 712890d205284dc29fd6da8138ca555a, type: 3}
+  m_Name: reward-catalog.idle-auto-defense.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseRewardCatalogAsset
+  _id: reward-catalog.idle-auto-defense.playable
+  _displayName: Basic Idle Auto Defense Reward Catalog
+  _firstDraftSeconds: 30
+  _settings:
+    _choiceCount: 3
+    _normalEnemyExperience: 9
+    _eliteEnemyExperience: 42
+    _bossEnemyExperience: 120
+    _waveCompletionExperience: 18
+    _baseExperienceToNextLevel: 38
+    _experienceToNextLevelGrowth: 18
+    _normalInvestmentsForEpic: 3
+    _epicInvestmentsForLegendary: 3
+    _projectileRetargetRadius: 3.25
+    _levelUpUnlockWeightMultiplier: 1.35
+    _eliteUnlockWeightMultiplier: 1.1
+    _bossUnlockWeightMultiplier: 1.1
+    _levelUpRarityWeights:
+      _common: 100
+      _uncommon: 70
+      _rare: 36
+      _epic: 12
+      _legendary: 2
+    _eliteRarityWeights:
+      _common: 22
+      _uncommon: 56
+      _rare: 78
+      _epic: 44
+      _legendary: 10
+    _bossRarityWeights:
+      _common: 8
+      _uncommon: 24
+      _rare: 58
+      _epic: 86
+      _legendary: 42
+  _catalog:
+    _weaponUnlocks:
+    - _id: reward.unlock.weapon.idle-auto-defense.pulse-beam
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _displayName: "Pulse Beam Module"
+      _effectDescription: "Unlocks a precise beam module that burns down the leading enemy."
+      _levelUpRarity: 1
+      _eliteRarity: 2
+      _bossRarity: 3
+      _weight: 1
+      _maxRank: 1
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.unlock.weapon.idle-auto-defense.arc-burst
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _displayName: "Arc Cannon Module"
+      _effectDescription: "Unlocks a splash module that detonates around clustered enemies."
+      _levelUpRarity: 1
+      _eliteRarity: 2
+      _bossRarity: 3
+      _weight: 1
+      _maxRank: 1
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.unlock.weapon.idle-auto-defense.homing-pulse
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _displayName: "Homing Spire Module"
+      _effectDescription: "Unlocks a seeker module for cleanup shots and pressure relief."
+      _levelUpRarity: 1
+      _eliteRarity: 2
+      _bossRarity: 3
+      _weight: 1
+      _maxRank: 1
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    _normalWeaponRewards:
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.normal.0
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Sharper Shards"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for shard impacts."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.normal.1
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Quick Chisel"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for faster shard volleys."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.shard-launcher.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.normal.2
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Split Tip"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Adds one extra shard to each visible volley."
+      _effectKind: 8
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.shard-launcher.normal.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.normal.0
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Focused Lens"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for beam impacts."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.normal.1
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Faster Capacitors"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for more beam pulses."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.pulse-beam.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.normal.2
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Piercing Beam"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Pulse Beam hits one extra enemy with authored beam VFX."
+      _effectKind: 9
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.pulse-beam.normal.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.normal.0
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Packed Powder"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for area detonations."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.normal.1
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Fast Loader"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for more splash bursts."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.arc-burst.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.normal.2
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Forked Burst"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Arc Burst detonates into one extra nearby enemy."
+      _effectKind: 10
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.arc-burst.normal.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.normal.0
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Sharper Signal"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for seeker impacts."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.normal.1
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Efficient Engines"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for more seeker launches."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.homing-pulse.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.normal.2
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Second Lock"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Homing Pulse launches one extra authored seeker."
+      _effectKind: 11
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.homing-pulse.normal.1
+      _eligibleSources: 15
+    _epicWeaponRewards:
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.epic.0
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Fracture Burst"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Shard Launcher fires two extra visible shards per volley."
+      _effectKind: 8
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.shard-launcher.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.epic.1
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Ricochet Shards"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Shard volleys travel faster and retarget more cleanly after impact."
+      _effectKind: 7
+      _amount: 0.25
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.shard-launcher.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.epic.2
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Shard Storm"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Visible shard hits punch much harder across all weapons."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.shard-launcher.epic.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.epic.0
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Refracting Beam"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Pulse Beam hits one extra target with authored beam VFX."
+      _effectKind: 9
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.pulse-beam.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.epic.1
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Overcharged Pulse"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Pulse Beam cycles faster for more visible beam shots."
+      _effectKind: 3
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.pulse-beam.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.epic.2
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Ion Burn"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Beam impacts deal a large visible damage spike."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.pulse-beam.epic.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.epic.0
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Cluster Shells"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Arc Cannon blasts one extra enemy in the detonation."
+      _effectKind: 10
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.arc-burst.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.epic.1
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Burning Ground"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Arc Cannon holds pressure farther from the core."
+      _effectKind: 4
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.arc-burst.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.epic.2
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Shockwave Impact"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Area impacts hit harder and produce larger damage-number spikes."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.arc-burst.epic.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.epic.0
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Extra Seeker"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Homing Pulse fires one extra authored seeker projectile."
+      _effectKind: 11
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.homing-pulse.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.epic.1
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Target Painter"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Marked targets take a large visible damage spike."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.homing-pulse.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.epic.2
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Overclocked Guidance"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "The seeker module fires more often during pressure waves."
+      _effectKind: 3
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.homing-pulse.epic.1
+      _eligibleSources: 15
+    _legendaryWeaponRewards:
+    - _id: reward.weapon.idle-auto-defense.shard-launcher.legendary
+      _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+      _weaponId: weapon.idle-auto-defense.shard-launcher
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Crystal Tempest"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Shard Launcher becomes a storm of three extra visible shards per volley."
+      _effectKind: 8
+      _amount: 3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.shard-launcher.epic.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.pulse-beam.legendary
+      _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+      _weaponId: weapon.idle-auto-defense.pulse-beam
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Orbital Lance"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Pulse Beam becomes a build-defining beam that hits two extra targets."
+      _effectKind: 9
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.pulse-beam.epic.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.arc-burst.legendary
+      _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+      _weaponId: weapon.idle-auto-defense.arc-burst
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Siege Barrage"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Arc Cannon detonations hit two extra enemies during pressure spikes."
+      _effectKind: 10
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.arc-burst.epic.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.homing-pulse.legendary
+      _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+      _weaponId: weapon.idle-auto-defense.homing-pulse
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Carrier Hive"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Homing Spire launches two extra authored seeker projectiles."
+      _effectKind: 11
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.homing-pulse.epic.2
+      _eligibleSources: 15
+    _baseRewards:
+    - _id: base.damage
+      _displayName: "Targeting Drill"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.core
+      _targetName: "Tower"
+      _effectDescription: "+2 damage ranks for immediate relief."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 8
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.fire-rate
+      _displayName: "Tactical Overclock"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.core
+      _targetName: "Tower"
+      _effectDescription: "+2 fire-rate ranks so weapons visibly fire faster."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 6
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.range
+      _displayName: "Sensor Array"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.core
+      _targetName: "Tower"
+      _effectDescription: "+1 range rank to catch enemies before they leak."
+      _effectKind: 4
+      _amount: 1
+      _maxRank: 6
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.repair
+      _displayName: "Emergency Repairs"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.core
+      _targetName: "Tower"
+      _effectDescription: "Repair and increase maximum HP."
+      _effectKind: 5
+      _amount: 1
+      _maxRank: 5
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.velocity
+      _displayName: "Velocity Matrix"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: projectile.idle-auto-defense.shard
+      _targetName: "Projectiles"
+      _effectDescription: "+25% projectile travel speed for snappier impacts."
+      _effectKind: 7
+      _amount: 0.25
+      _maxRank: 4
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.credits
+      _displayName: "Scrap Collector"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Economy"
+      _targetId: economy.idle-auto-defense.playable
+      _targetName: "Tower"
+      _effectDescription: "+25% credits from kills for more live purchases."
+      _effectKind: 6
+      _amount: 0.25
+      _maxRank: 5
+      _prerequisiteIds: []
+      _eligibleSources: 15

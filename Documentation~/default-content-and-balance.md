@@ -15,16 +15,22 @@ The setup wizard copies this content into `Assets/GameContent/IdleAutoDefense` b
 | `Weapons` | Tower definitions wired to the attack recipes. |
 | `Waves` | Spawn profiles used by the starter encounter. |
 | `Upgrades` | Starter authored upgrade definitions used by content validation and product tuning. |
-| `ContentSets` | Playable run recipe assigned by the generated scene, including reward draft settings/catalog, debug defaults, and Kenney turret presentation bindings. |
+| `Rewards` | Live draft cadence, rarity tables, and 37 stable choices. |
+| `Economy` | Currencies, starting resources, passive income, costs, and run/encounter rewards. |
+| `RunProfiles` | Truthful fixed-rate timing, wave sequence, scaling, outcome, and endless settings. |
+| `Progression` | Account track, research nodes, costs, prerequisites, effects, and save IDs. |
+| `OfflineProgression` | Offline rates, cap, cycle reward, multiplier, rounding, and timestamp key. |
+| `GameRules` | Objective, module roles, elite/boss references, combat, repair, projectile, and Overdrive values. |
+| `ContentSets` | Playable graph root assigned by the generated scene, plus presentation/debug bindings. |
 | `ContentPacks` | Wrapper assigned by the generated scene. |
 
 The starter pack contains four generic attacks, six enemies, four tower weapons, seven spawn profiles, six authored upgrades, one content set, and one content pack. Starter tuning is a tight 3-5 minute vertical slice: weak Shard Launcher start, visible pressure, a first reward around 30-60 seconds, near-leaks and tower damage around the middle, then elite/boss spikes with stronger reward drafts. Use it to verify spawning, targeting, attacks, upgrades, elite/boss rewards, and save smoke before building a real product loop.
 
-The playable sample also builds a runtime three-choice reward draft from the resolved tower weapons. Kills grant commander experience, wave completion contributes experience, elite kills always queue a reward, boss kills queue a stronger reward, and the controller guarantees an early reward prompt around the opening pressure beat if XP has not already produced one. Early level-up drafts prefer one module unlock, then fill the rest from owned weapon/base upgrades. The generated `GameContentSetAsset` owns the sample XP values, rarity weights, unlock weighting, progression thresholds, projectile retarget tolerance, actual unlock cards, normal weapon tracks, Epic tracks, Legendary tracks, and base reward entries. The controller consumes that assigned content set; fallback defaults exist only so isolated smoke tests fail gracefully instead of blocking the editor. Each owned weapon has three normal investments, three Epic investments unlocked after the normal track, and one Legendary investment unlocked after the Epic track by default.
+The playable sample builds its three-choice draft from the referenced reward-catalog asset. Kills and waves grant the catalog's authored XP; elite and boss sources use authored eligibility and rarity tables. Stable choices carry explicit targets, effects, amounts, weights, rank limits, prerequisites, and source eligibility. Transient defaults exist only for explicitly unbound tests/debug hosts and expose fallback mode.
 
 The first-view runtime layout shows the core, the starter Shard Launcher, and three colored Kenney build pads for the unlockable Pulse Beam, Arc Burst, and Homing Pulse modules. Kenney 3D model names, mount offsets, muzzle positions, turn speeds, and debug visibility defaults are authored on the content set. Runtime code creates the presenters and consumes those bindings; it should not become a second tower visual catalog.
 
-The authored content set deliberately starts with only 10 credits, no parts, and a four-minute session hint. Do not raise the starting economy or compress the wave schedule unless a live playtest still shows enemies surviving multiple hits, reaching near the core, and damaging the tower in a normal run.
+The authored economy starts with 10 credits and no parts. The run profile declares 5,600 fixed-rate ticks at 20 Hz (280 seconds). Do not raise the starting economy or compress the wave schedule unless a live playtest still shows enemies surviving multiple hits, reaching near the core, and damaging the tower in a normal run.
 
 The first-run feel depends on authored data and small sample runtime glue:
 

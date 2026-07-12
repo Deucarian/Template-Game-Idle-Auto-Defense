@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf48b13d48cd4a089e3b2a44e27504b2, type: 3}
+  m_Name: game-rules.idle-auto-defense.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseGameRulesAsset
+  _id: game-rules.idle-auto-defense.playable
+  _displayName: Basic Idle Auto Defense Game Rules
+  _objectiveId: objective.idle-auto-defense.core
+  _runRewardTargetId: reward.idle-auto-defense.run
+  _offlineRewardTargetId: offline.idle-auto-defense.credits
+  _damageTypeId: damage.idle-auto-defense.basic
+  _objectiveMaximumHealth: 240
+  _objectiveContactRadius: 0.45
+  _objectiveLives: 60
+  _objectiveLifeRestoreAmount: 2
+  _spawnRingRadius: 18.5
+  _spawnChannels:
+  - _id: perimeter-north
+    _angleDegrees: 0
+  - _id: perimeter-northeast
+    _angleDegrees: 45
+  - _id: perimeter-east
+    _angleDegrees: 90
+  - _id: perimeter-southeast
+    _angleDegrees: 135
+  - _id: perimeter-south
+    _angleDegrees: 180
+  - _id: perimeter-southwest
+    _angleDegrees: 225
+  - _id: perimeter-west
+    _angleDegrees: 270
+  - _id: perimeter-northwest
+    _angleDegrees: 315
+  _eliteEnemy: {fileID: 11400000, guid: d26d6941ca7242cb908816ba9502bf24, type: 2}
+  _bossEnemy: {fileID: 11400000, guid: ef25c56e691d497fb84075ca427989b8, type: 2}
+  _modules:
+  - _role: 0
+    _weapon: {fileID: 11400000, guid: c3064815d1e7a5444ae1c028c4bfb579, type: 2}
+    _startsUnlocked: 1
+    _baseDamage: 3.2
+    _damagePerDamageRank: 0
+    _damagePerRangeRank: 0
+    _baseRange: 8.4
+    _minimumCooldownTicks: 18
+    _cooldownReductionPerFireRateRank: 3
+    _baseTargetCount: 1
+  - _role: 1
+    _weapon: {fileID: 11400000, guid: 5bf80ef2249d43f48a3a280d3aabc9c2, type: 2}
+    _startsUnlocked: 0
+    _baseDamage: 5
+    _damagePerDamageRank: 1.25
+    _damagePerRangeRank: 0.45
+    _baseRange: 7.4
+    _minimumCooldownTicks: 28
+    _cooldownReductionPerFireRateRank: 2
+    _baseTargetCount: 1
+  - _role: 2
+    _weapon: {fileID: 11400000, guid: 0466d7d1db40c4e4cbbe849798fb26d3, type: 2}
+    _startsUnlocked: 0
+    _baseDamage: 8
+    _damagePerDamageRank: 1.55
+    _damagePerRangeRank: 0
+    _baseRange: 6.2
+    _minimumCooldownTicks: 52
+    _cooldownReductionPerFireRateRank: 3
+    _baseTargetCount: 2
+  - _role: 3
+    _weapon: {fileID: 11400000, guid: 747507b7e4ab59d4eb6cde64c7e2d811, type: 2}
+    _startsUnlocked: 0
+    _baseDamage: 8
+    _damagePerDamageRank: 1.45
+    _damagePerRangeRank: 0.45
+    _baseRange: 8.8
+    _minimumCooldownTicks: 42
+    _cooldownReductionPerFireRateRank: 2
+    _baseTargetCount: 1
+  _manualDamageRankBonus: 1.6
+  _manualRangeRankDamageBonus: 0.4
+  _manualRangeRankBonus: 0.4
+  _moduleRangeRankBonus: 0.35
+  _manualMaximumRange: 10.6
+  _minimumProjectileImpactDelayTicks: 12
+  _maximumProjectileImpactDelayTicks: 52
+  _projectileFinishDamageThreshold: 3
+  _purchaseRangeDamageBonus: 0.5
+  _purchaseRepairMaximumHealth: 8
+  _purchaseRepairBaseHeal: 34
+  _purchaseRepairHealPerRank: 6
+  _draftRepairMaximumHealth: 8
+  _draftRepairBaseHeal: 28
+  _draftRepairHealPerRank: 4
+  _visibleArenaRadius: 14.75
+  _overdriveDurationSeconds: 7
+  _overdriveCooldownSeconds: 18
+  _overdriveCooldownBonusTicks: 10
+  _overdriveDamageMultiplier: 1.55
