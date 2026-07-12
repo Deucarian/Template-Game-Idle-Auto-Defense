@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Deucarian.GameContentAuthoring.Editor;
 using UnityEditor;
@@ -14,15 +16,32 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
     }
 
-    internal sealed class GameContentPackAuthoringProvider : IGameContentAuthoringProvider, IGameContentAuthoringSurfaceProvider
+    internal sealed class GameContentPackAuthoringProvider :
+        IGameContentAuthoringProvider,
+        IGameContentAuthoringSurfaceProvider,
+        IGameContentPackProvider,
+        IGameContentSourceClaimProvider
     {
+        public const string ContentPackProviderId = "com.deucarian.template.idle-auto-defense.content-pack";
+
         private readonly GameContentPackAuthoringState _state = new GameContentPackAuthoringState();
         private readonly GameContentPackSceneSetupState _setup = new GameContentPackSceneSetupState();
         private readonly GameContentPackPreviewController _preview = new GameContentPackPreviewController();
         private readonly GameContentPackProviderV2State _v2State = new GameContentPackProviderV2State();
         private readonly GameContentPackProviderV2View _v2View = new GameContentPackProviderV2View();
+        private readonly string _generatedContentSearchRoot;
+        private IdleAutoDefenseContentPackIndex _contentPackIndex;
 
-        public string ProviderId => "com.deucarian.template.idle-auto-defense.content-pack";
+        public GameContentPackAuthoringProvider()
+        {
+        }
+
+        internal GameContentPackAuthoringProvider(string generatedContentSearchRoot)
+        {
+            _generatedContentSearchRoot = generatedContentSearchRoot;
+        }
+
+        public string ProviderId => ContentPackProviderId;
         public string DisplayName => "Content Pack";
         public string Description => "Package playable Game / Run Content Sets and apply one to an idle auto-defense scene.";
         public int SortOrder => 175;
@@ -37,6 +56,91 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             _preview.Stop();
             _v2State.StopPreview();
+        }
+
+        public IReadOnlyList<GameContentPackDescriptor> GetContentPacks()
+        {
+            RefreshContentPackIndex();
+            return new[] { _contentPackIndex.BuildDescriptor(ProviderId) };
+        }
+
+        public IReadOnlyList<GameContentRecordDescriptor> GetRecords(string packId)
+        {
+            if (!string.Equals(packId, IdleAutoDefenseContentPackIndex.PackId, StringComparison.OrdinalIgnoreCase))
+                return Array.Empty<GameContentRecordDescriptor>();
+            EnsureContentPackIndex();
+            return _contentPackIndex.Records;
+        }
+
+        public IReadOnlyList<GameContentSourceClaim> GetSourceClaims(string packId)
+        {
+            if (!string.Equals(packId, IdleAutoDefenseContentPackIndex.PackId, StringComparison.OrdinalIgnoreCase))
+                return Array.Empty<GameContentSourceClaim>();
+            EnsureContentPackIndex();
+            return _contentPackIndex.SourceClaims;
+        }
+
+        public GameContentAuthoringValidationResult ValidatePack(string packId)
+        {
+            if (!string.Equals(packId, IdleAutoDefenseContentPackIndex.PackId, StringComparison.OrdinalIgnoreCase))
+                return new GameContentAuthoringValidationResult(new[]
+                {
+                    GameContentAuthoringValidationIssue.Error("Content Pack", "Unknown Idle Auto Defense content-pack ID.")
+                });
+            RefreshContentPackIndex();
+            return _contentPackIndex.Validation;
+        }
+
+        public GameContentActionResult ExecuteAction(string packId, string actionId)
+        {
+            if (!string.Equals(packId, IdleAutoDefenseContentPackIndex.PackId, StringComparison.OrdinalIgnoreCase))
+                return GameContentActionResult.Failure("Unknown Idle Auto Defense content-pack ID.");
+
+            RefreshContentPackIndex();
+            if (string.Equals(actionId, IdleAutoDefenseContentPackIndex.ValidateActionId, StringComparison.OrdinalIgnoreCase))
+            {
+                return _contentPackIndex.Validation.IsValid
+                    ? GameContentActionResult.Success("Basic Idle Auto Defense validation passed.", _contentPackIndex.Validation)
+                    : GameContentActionResult.Failure("Basic Idle Auto Defense has validation errors.", _contentPackIndex.Validation);
+            }
+
+            if (string.Equals(actionId, IdleAutoDefenseContentPackIndex.RevealActionId, StringComparison.OrdinalIgnoreCase))
+            {
+                if (_contentPackIndex.PackAsset == null)
+                    return GameContentActionResult.Failure("The generated GameContentPackAsset is unavailable.");
+                Selection.activeObject = _contentPackIndex.PackAsset;
+                EditorGUIUtility.PingObject(_contentPackIndex.PackAsset);
+                return GameContentActionResult.Success("Selected " + _contentPackIndex.PackAssetPath + ".");
+            }
+
+            if (string.Equals(actionId, IdleAutoDefenseContentPackIndex.OpenSceneActionId, StringComparison.OrdinalIgnoreCase))
+            {
+                if (_contentPackIndex.PlayableScene == null)
+                    return GameContentActionResult.Failure("The generated playable scene is unavailable or ambiguous.");
+                return AssetDatabase.OpenAsset(_contentPackIndex.PlayableScene)
+                    ? GameContentActionResult.Success("Opened " + _contentPackIndex.PlayableScenePath + ".")
+                    : GameContentActionResult.Failure("Unity could not open " + _contentPackIndex.PlayableScenePath + ".");
+            }
+
+            if (string.Equals(actionId, IdleAutoDefenseContentPackIndex.OpenSetupActionId, StringComparison.OrdinalIgnoreCase))
+            {
+                IdleAutoDefenseTemplateMenu.CreateGameFromTemplate();
+                return GameContentActionResult.Success("Opened the existing Idle Auto Defense setup wizard.");
+            }
+
+            return GameContentActionResult.Failure("Unknown Idle Auto Defense content-pack action '" + actionId + "'.");
+        }
+
+        private void EnsureContentPackIndex()
+        {
+            if (_contentPackIndex == null) RefreshContentPackIndex();
+        }
+
+        private void RefreshContentPackIndex()
+        {
+            _contentPackIndex = string.IsNullOrWhiteSpace(_generatedContentSearchRoot)
+                ? IdleAutoDefenseContentPackIndex.Discover()
+                : IdleAutoDefenseContentPackIndex.Discover(_generatedContentSearchRoot);
         }
 
         public void DrawCustomAuthoringSurface(GameContentAuthoringSurfaceContext context)
