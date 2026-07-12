@@ -7,7 +7,7 @@ This template must always generate and open as a complete playable vertical slic
 ## Product Boundary
 
 - The generated Basic Idle Auto Defense game must play without manual reconstruction.
-- The scene, concrete towers, attacks, enemies, waves, bosses, upgrades, economy, reward content, progression content, tuning, presentation bindings, and complete playable loop remain local to this template.
+- The scene, concrete towers, attacks, enemies, waves, bosses, upgrades, economy, reward content, progression content, tuning, menus, HUD, tutorial, themes, audio palette, presentation bindings, and complete playable loop remain local to this template.
 - Package extraction may move only reusable infrastructure through the Deucarian governance process.
 - Any future extraction must prove that a newly generated playable scene still binds its authored graph and completes the gameplay smoke tests.
 
@@ -18,9 +18,10 @@ This template must always generate and open as a complete playable vertical slic
 - Missing or invalid sample-critical content blocks strict startup with an actionable validation error.
 - The setup wizard must generate every required asset and reference so pressing Play works immediately.
 - A duplicate JSON gameplay mirror is not permitted. ScriptableObjects are the single editable source of truth.
+- Asset-flip-critical UI, tutorial, theme, and audio values come from the generated `Presentation` ScriptableObjects.
 
 ## Intentional Fallback
 
 Transient defaults remain only for explicitly unbound debug hosts, focused unit tests, and package-level recovery fixtures. These paths must expose `FallbackModeActive == true`; they are not the generated sample path and are not an alternative product balance owner.
 
-The product UX layer still has later work, including final mobile layout, tutorial, theme, audio palette, menus, and offline-claim presentation. That work may improve the vertical slice, but it must preserve this contract.
+The player-experience controller is concrete template code. It may be refined or asset-flipped, but it must remain wired to the strict authored core and must not be extracted as a generic game framework.

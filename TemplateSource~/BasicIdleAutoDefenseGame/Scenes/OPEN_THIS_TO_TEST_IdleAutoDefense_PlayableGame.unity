@@ -157,6 +157,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _templateContentPack: {fileID: 11400000, guid: c0c3d7d8e8a64c829d12784c18ce4f6a, type: 2}
   _templateContentSet: {fileID: 11400000, guid: e23c4ffed08248c48d7a71f169ad48d2, type: 2}
+  _templatePlayerExperience: {fileID: 11400000, guid: 903456789abcdef0123456789abcdef0, type: 2}
   _attackRecipes:
   - {fileID: 11400000, guid: 1ac4fa836181e64468d5bcce56a73bb6, type: 2}
   - {fileID: 11400000, guid: 16f0c102ac4c82a46b5b4094f71e156a, type: 2}

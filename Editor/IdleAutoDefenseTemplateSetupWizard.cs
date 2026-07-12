@@ -423,6 +423,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "- Spawn profiles\n" +
                    "- Run upgrades\n" +
                    "- Progression values\n" +
+                   "- UI themes and presentation tokens\n" +
+                   "- Tutorial copy\n" +
+                   "- Audio event clips\n" +
                    "- Monetization placements\n" +
                    "- Save/profile names\n\n" +
                    "The generated folder is product-owned. Do not copy package `Runtime` or `Editor` source into it.\n\n" +
@@ -432,10 +435,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "3. Tune the enemy assets in `" + contentRoot + "/Enemies`.\n" +
                    "4. Tune the attack and tower assets in `" + contentRoot + "/Attacks` and `" + contentRoot + "/Weapons`.\n" +
                    "5. Tune the spawn profiles and upgrades in `" + contentRoot + "/Waves` and `" + contentRoot + "/Upgrades`.\n" +
-                   "6. Tune live rewards, economy, run timing, progression, offline settings, and game rules in their authored folders under `" + contentRoot + "`.\n" +
-                   "7. Validate the named pack; the generated scene uses strict authored startup and must report fallback false.\n" +
-                   "8. Rename template IDs into your product namespace as content becomes product-owned.\n" +
-                   "9. Keep Deucarian package source out of this folder.\n";
+                   "6. Replace themes, tutorial copy, UI settings, and audio clips under `" + contentRoot + "/Presentation`.\n" +
+                   "7. Tune live rewards, economy, run timing, progression, offline settings, and game rules in their authored folders under `" + contentRoot + "`.\n" +
+                   "8. Validate the named pack; the generated scene uses strict authored startup and must report fallback false.\n" +
+                   "9. Test the main menu, complete run, offline claim, summary, and phone-like landscape layout.\n" +
+                   "10. Rename template IDs into your product namespace as content becomes product-owned.\n" +
+                   "11. Keep Deucarian package source out of this folder.\n";
         }
 
         private static string CreateSetupReport(string targetRoot, string contentRoot, string gameNamespace, string prefix, string sceneAssetPath)
@@ -658,6 +663,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private const int MaximumOpenAttempts = 300;
         private const string ContentPackAssetRelativePath = "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset";
         private const string ContentSetAssetRelativePath = "/ContentSets/contentset.idle-auto-defense.playable/contentset.idle-auto-defense.playable_GameContentSet.asset";
+        private const string PlayerExperienceAssetRelativePath = "/Presentation/player-experience.idle-auto-defense.playable.asset";
         private static bool _queued;
 
         static IdleAutoDefenseGeneratedSceneOpenQueue()
@@ -733,7 +739,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             GameContentPackAsset contentPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(contentRootAssetPath + ContentPackAssetRelativePath);
             GameContentSetAsset contentSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(contentRootAssetPath + ContentSetAssetRelativePath);
-            if (contentPack == null || contentSet == null) return false;
+            IdleAutoDefensePlayerExperienceAsset playerExperience = AssetDatabase.LoadAssetAtPath<IdleAutoDefensePlayerExperienceAsset>(contentRootAssetPath + PlayerExperienceAssetRelativePath);
+            if (contentPack == null || contentSet == null || playerExperience == null) return false;
 
             bool changed = false;
             MonoBehaviour[] behaviours = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -752,8 +759,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 bool behaviourChanged = false;
                 behaviourChanged |= AssignObjectReference(serialized, "_templateContentPack", contentPack);
                 behaviourChanged |= AssignObjectReference(serialized, "_templateContentSet", contentSet);
+                behaviourChanged |= AssignObjectReference(serialized, "_templatePlayerExperience", playerExperience);
                 behaviourChanged |= AssignObjectReference(serialized, "_contentPack", contentPack);
                 behaviourChanged |= AssignObjectReference(serialized, "_contentSet", contentSet);
+                behaviourChanged |= AssignObjectReference(serialized, "_playerExperience", playerExperience);
                 if (behaviourChanged)
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                 changed |= behaviourChanged;
