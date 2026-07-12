@@ -54,6 +54,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Samples
 
         protected override void Awake()
         {
+            RequireAuthoredContentOnStartup();
             if (_templateContentPack != null || _templateContentSet != null)
                 ConfigureContentPack(_templateContentPack, _templateContentSet);
             base.Awake();

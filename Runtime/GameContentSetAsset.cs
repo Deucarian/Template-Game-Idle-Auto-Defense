@@ -17,14 +17,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] private WeaponDefinitionAsset _startingWeapon;
         [SerializeField] private WeaponDefinitionAsset[] _availableWeapons = Array.Empty<WeaponDefinitionAsset>();
         [SerializeField] private EnemyDefinitionAsset[] _enemyPool = Array.Empty<EnemyDefinitionAsset>();
-        [SerializeField] private WaveDefinitionAsset[] _waveSet = Array.Empty<WaveDefinitionAsset>();
         [SerializeField] private RunUpgradeDefinitionAsset[] _upgradePool = Array.Empty<RunUpgradeDefinitionAsset>();
-        [SerializeField] private int _startingCredits = 60;
-        [SerializeField] private int _startingParts;
-        [SerializeField] private float _rewardMultiplier = 1f;
-        [SerializeField] private float _difficultyMultiplier = 1f;
-        [SerializeField] private int _sessionLengthTicks = 180;
-        [SerializeField] private bool _endless;
+        [SerializeField] private IdleAutoDefenseRewardCatalogAsset _rewardCatalog;
+        [SerializeField] private IdleAutoDefenseEconomyAsset _economy;
+        [SerializeField] private IdleAutoDefenseRunProfileAsset _runProfile;
+        [SerializeField] private IdleAutoDefenseProgressionAsset _progression;
+        [SerializeField] private IdleAutoDefenseOfflineProgressionAsset _offlineProgression;
+        [SerializeField] private IdleAutoDefenseGameRulesAsset _gameRules;
         [SerializeField] private string[] _tags = Array.Empty<string>();
         [SerializeField] private IdleAutoDefenseContentSetRuntimeSettings _runtimeSettings = IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
 
@@ -36,14 +35,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public WeaponDefinitionAsset StartingWeapon => _startingWeapon;
         public IReadOnlyList<WeaponDefinitionAsset> AvailableWeapons => _availableWeapons ?? Array.Empty<WeaponDefinitionAsset>();
         public IReadOnlyList<EnemyDefinitionAsset> EnemyPool => _enemyPool ?? Array.Empty<EnemyDefinitionAsset>();
-        public IReadOnlyList<WaveDefinitionAsset> WaveSet => _waveSet ?? Array.Empty<WaveDefinitionAsset>();
+        public IReadOnlyList<WaveDefinitionAsset> WaveSet => _runProfile == null ? Array.Empty<WaveDefinitionAsset>() : _runProfile.Waves;
         public IReadOnlyList<RunUpgradeDefinitionAsset> UpgradePool => _upgradePool ?? Array.Empty<RunUpgradeDefinitionAsset>();
-        public int StartingCredits => _startingCredits;
-        public int StartingParts => _startingParts;
-        public float RewardMultiplier => _rewardMultiplier;
-        public float DifficultyMultiplier => _difficultyMultiplier;
-        public int SessionLengthTicks => _sessionLengthTicks;
-        public bool Endless => _endless;
+        public IdleAutoDefenseRewardCatalogAsset RewardCatalog => _rewardCatalog;
+        public IdleAutoDefenseEconomyAsset Economy => _economy;
+        public IdleAutoDefenseRunProfileAsset RunProfile => _runProfile;
+        public IdleAutoDefenseProgressionAsset Progression => _progression;
+        public IdleAutoDefenseOfflineProgressionAsset OfflineProgression => _offlineProgression;
+        public IdleAutoDefenseGameRulesAsset GameRules => _gameRules;
+        public int StartingCredits => (int)Math.Min(int.MaxValue, _economy == null ? 0L : _economy.StartingCredits);
+        public int StartingParts => (int)Math.Min(int.MaxValue, _economy == null ? 0L : _economy.StartingParts);
+        public float RewardMultiplier => _runProfile == null ? 0f : _runProfile.RewardMultiplier;
+        public float DifficultyMultiplier => _runProfile == null ? 0f : _runProfile.DifficultyMultiplier;
+        public int SessionLengthTicks => _runProfile == null ? 0 : _runProfile.SessionLengthTicks;
+        public bool Endless => _runProfile != null && _runProfile.Endless;
         public IReadOnlyList<string> Tags => _tags ?? Array.Empty<string>();
         public IdleAutoDefenseContentSetRuntimeSettings RuntimeSettings => _runtimeSettings ??= IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
 
@@ -75,16 +80,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _startingWeapon = startingWeapon;
             _availableWeapons = CopyAssets(availableWeapons);
             _enemyPool = CopyAssets(enemyPool);
-            _waveSet = CopyAssets(waveSet);
             _upgradePool = CopyAssets(upgradePool);
-            _startingCredits = startingCredits;
-            _startingParts = startingParts;
-            _rewardMultiplier = rewardMultiplier;
-            _difficultyMultiplier = difficultyMultiplier;
-            _sessionLengthTicks = sessionLengthTicks;
-            _endless = endless;
             _tags = CopyTags(tags);
             _runtimeSettings = runtimeSettings == null ? IdleAutoDefenseContentSetRuntimeSettings.CreateDefault() : runtimeSettings.Clone();
+            if (_rewardCatalog == null || IsTransient(_rewardCatalog))
+                _rewardCatalog = IdleAutoDefenseRewardCatalogAsset.CreateTransient(
+                    runtimeSettings == null ? null : runtimeSettings.RewardDraftSettings,
+                    runtimeSettings == null ? null : runtimeSettings.RewardDraftCatalog);
+            if (_economy == null || IsTransient(_economy))
+                _economy = IdleAutoDefenseEconomyAsset.CreateTransient(startingCredits, startingParts);
+            if (_runProfile == null || IsTransient(_runProfile))
+                _runProfile = IdleAutoDefenseRunProfileAsset.CreateTransient(
+                    waveSet,
+                    difficultyMultiplier,
+                    sessionLengthTicks,
+                    endless,
+                    rewardMultiplier);
+            if (_progression == null || IsTransient(_progression))
+                _progression = IdleAutoDefenseProgressionAsset.CreateTransient();
+            if (_offlineProgression == null || IsTransient(_offlineProgression))
+                _offlineProgression = IdleAutoDefenseOfflineProgressionAsset.CreateTransient();
+            if (_gameRules == null || IsTransient(_gameRules))
+                _gameRules = IdleAutoDefenseGameRulesAsset.CreateTransient(_availableWeapons, _enemyPool);
+        }
+
+        public void ConfigureAuthoredCore(
+            IdleAutoDefenseRewardCatalogAsset rewardCatalog,
+            IdleAutoDefenseEconomyAsset economy,
+            IdleAutoDefenseRunProfileAsset runProfile,
+            IdleAutoDefenseProgressionAsset progression,
+            IdleAutoDefenseOfflineProgressionAsset offlineProgression,
+            IdleAutoDefenseGameRulesAsset gameRules)
+        {
+            _rewardCatalog = rewardCatalog;
+            _economy = economy;
+            _runProfile = runProfile;
+            _progression = progression;
+            _offlineProgression = offlineProgression;
+            _gameRules = gameRules;
         }
 
         public static GameContentSetAsset CreateTransient(
@@ -148,6 +181,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             return copy.ToArray();
+        }
+
+        private static bool IsTransient(UnityEngine.Object asset)
+        {
+            return asset != null && (asset.hideFlags & HideFlags.HideAndDontSave) == HideFlags.HideAndDontSave;
         }
     }
 }

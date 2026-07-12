@@ -19,7 +19,13 @@ BasicIdleAutoDefenseGame
 |-- Audio
 |-- Content
 |   |-- Attacks
+|   |-- Economy
 |   |-- Enemies
+|   |-- GameRules
+|   |-- OfflineProgression
+|   |-- Progression
+|   |-- Rewards
+|   |-- RunProfiles
 |   |-- Weapons
 |   |-- Waves
 |   |-- Upgrades

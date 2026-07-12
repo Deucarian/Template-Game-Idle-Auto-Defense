@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b4c58e06d334fb6adb691abda70f480, type: 3}
+  m_Name: economy.idle-auto-defense.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseEconomyAsset
+  _id: economy.idle-auto-defense.playable
+  _displayName: Basic Idle Auto Defense Economy
+  _currencies:
+  - _id: currency.idle-auto-defense.credits
+    _displayName: Credits
+    _capacity: 250000
+    _startingAmount: 10
+  - _id: currency.idle-auto-defense.parts
+    _displayName: Parts
+    _capacity: 25000
+    _startingAmount: 0
+  _primaryCurrencyId: currency.idle-auto-defense.credits
+  _secondaryCurrencyId: currency.idle-auto-defense.parts
+  _passiveIncomeCurrencyId: currency.idle-auto-defense.credits
+  _passiveIncomeAmount: 1
+  _passiveIncomeIntervalTicks: 60
+  _upgradeCosts:
+  - _id: cost.idle-auto-defense.damage-up
+    _displayName: Damage Upgrade
+    _currencyId: currency.idle-auto-defense.credits
+    _baseCost: 20
+    _costPerRank: 16
+  - _id: cost.idle-auto-defense.fire-rate-up
+    _displayName: Fire Rate Upgrade
+    _currencyId: currency.idle-auto-defense.credits
+    _baseCost: 18
+    _costPerRank: 15
+  - _id: cost.idle-auto-defense.range-up
+    _displayName: Range Upgrade
+    _currencyId: currency.idle-auto-defense.credits
+    _baseCost: 18
+    _costPerRank: 15
+  - _id: cost.idle-auto-defense.repair
+    _displayName: Repair Upgrade
+    _currencyId: currency.idle-auto-defense.credits
+    _baseCost: 16
+    _costPerRank: 14
+  - _id: cost.idle-auto-defense.overdrive
+    _displayName: Overdrive
+    _currencyId: currency.idle-auto-defense.credits
+    _baseCost: 22
+    _costPerRank: 0
+  _encounterCompletionCredits: 60
+  _encounterCompletionParts: 3
+  _encounterCompletionAccountXp: 35
+  _smallCurrencyBonus: 5
+  _runRewardClaimMultiplier: 2

@@ -85,18 +85,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public static readonly ResearchNodeId ShardLoaderResearch = new ResearchNodeId("research.idle-auto-defense.shard-loader");
         public static readonly ResearchNodeId OfflineRoutingResearch = new ResearchNodeId("research.idle-auto-defense.offline-routing");
 
-        public static AutoDefenseDefinition CreateDefinition(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null, IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null)
+        public static AutoDefenseDefinition CreateDefinition(
+            IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null,
+            IReadOnlyList<WeaponDefinitionAsset> weaponDefinitions = null,
+            IdleAutoDefenseGameRulesAsset gameRules = null,
+            float difficultyMultiplier = 1f)
         {
             WeaponDefinitionAsset[] weapons = weaponDefinitions == null || weaponDefinitions.Count == 0
                 ? CreateWeaponDefinitionAssets(CreateAttackRecipes())
                 : CopyWeaponDefinitions(weaponDefinitions);
             AutoDefenseEnemyDefinition[] enemies = enemyDefinitions == null
                 ? CreateDefaultAutoDefenseEnemyDefinitions()
-                : CreateAutoDefenseEnemyDefinitions(enemyDefinitions);
+                : CreateAutoDefenseEnemyDefinitions(enemyDefinitions, difficultyMultiplier);
             AutoDefenseMountDefinition[] mounts = CreateAutoDefenseMountDefinitions(weapons);
             return new AutoDefenseDefinition(
-                new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("objective.idle-auto-defense.core"), Vector3.zero, 240, DamageType, 0.45f, 60, 2),
-                CreateSampleSpawnRing(),
+                gameRules == null
+                    ? new AutoDefenseObjectiveDefinition(new DefenseObjectiveId("objective.idle-auto-defense.core"), Vector3.zero, 240, DamageType, 0.45f, 60, 2)
+                    : gameRules.CreateObjectiveDefinition(),
+                gameRules == null ? CreateSampleSpawnRing() : gameRules.CreateSpawnRingDefinition(),
                 enemies,
                 mounts,
                 CreateAutoDefenseWeaponModuleDefinitions(weapons, mounts));
@@ -118,7 +124,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             });
         }
 
-        public static EncounterDefinition CreateEncounterDefinition(IReadOnlyList<WaveDefinitionAsset> waveDefinitions = null)
+        public static EncounterDefinition CreateEncounterDefinition(IReadOnlyList<WaveDefinitionAsset> waveDefinitions = null, int seed = 20260623)
         {
             if (waveDefinitions == null || waveDefinitions.Count == 0)
                 waveDefinitions = CreateWaveDefinitions();
@@ -127,7 +133,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 null,
                 CreateEncounterWaves(waveDefinitions),
                 new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves-emitted")) },
-                seed: 20260623);
+                seed: seed);
         }
 
         public static GameContentSetResolution ResolveGameContentSetForTemplate(GameContentSetAsset contentSet)
@@ -265,13 +271,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 seed: 20260626);
         }
 
-        public static CombatCatalog CreateCombatCatalog(IReadOnlyList<AttackDefinitionAsset> attackRecipes = null, IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null)
+        public static CombatCatalog CreateCombatCatalog(
+            IReadOnlyList<AttackDefinitionAsset> attackRecipes = null,
+            IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions = null,
+            IdleAutoDefenseGameRulesAsset gameRules = null)
         {
             attackRecipes ??= CreateAttackRecipes();
             enemyDefinitions ??= CreateEnemyDefinitions();
             var damageTypes = new List<DamageTypeDefinition>();
             var damageIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             AddDamageType(damageTypes, damageIds, DamageType);
+            if (gameRules != null && !string.IsNullOrWhiteSpace(gameRules.DamageTypeId))
+                AddDamageType(damageTypes, damageIds, new DamageTypeId(gameRules.DamageTypeId));
             for (int i = 0; i < attackRecipes.Count; i++)
             {
                 AttackDefinitionAsset recipe = attackRecipes[i];
@@ -345,7 +356,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     pulse,
                     72,
                     5.0f,
-                    buildCost: 25,
+                    buildCost: 34,
                     upgradeGroupId: "upgrade.group.idle-auto-defense.pulse",
                     prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Pulse Beam Presentation", "weapon-turret", new Color(0.35f, 0.82f, 1f)),
                     tags: new[] { "idle-auto-defense", "hitscan", "tower" }),
@@ -356,7 +367,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     arc,
                     108,
                     4.1f,
-                    buildCost: 65,
+                    buildCost: 62,
                     upgradeGroupId: "upgrade.group.idle-auto-defense.arc",
                     prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Arc Burst Presentation", "weapon-catapult", new Color(1f, 0.72f, 0.18f)),
                     tags: new[] { "idle-auto-defense", "area", "tower" }),
@@ -368,7 +379,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     92,
                     6.3f,
                     HomingPulseProjectileId.Value,
-                    buildCost: 55,
+                    buildCost: 78,
                     upgradeGroupId: "upgrade.group.idle-auto-defense.homing",
                     prefab: CreateTransientWeaponPresentationPrefab("Idle Auto Defense Transient Homing Pulse Presentation", "weapon-cannon", new Color(0.8f, 0.42f, 1f)),
                     tags: new[] { "idle-auto-defense", "homing", "tower" })
@@ -480,12 +491,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new[]
             {
-                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 20f, 0.72f, 1, 4f, DamageType.Value, 0.28f, tags: new[] { "idle-auto-defense", "swarm" }),
-                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 26f, 1.1f, 2, 5f, DamageType.Value, 0.27f, tags: new[] { "idle-auto-defense", "runner" }),
+                EnemyDefinitionAsset.CreateTransient(SwarmEnemySpawnableId.Value, "Swarm", EnemyRole.Swarm, 20f, 0.72f, 5, 4f, DamageType.Value, 0.28f, tags: new[] { "idle-auto-defense", "swarm" }),
+                EnemyDefinitionAsset.CreateTransient(RunnerEnemySpawnableId.Value, "Runner", EnemyRole.Fast, 26f, 1.1f, 5, 5f, DamageType.Value, 0.27f, tags: new[] { "idle-auto-defense", "runner" }),
                 EnemyDefinitionAsset.CreateTransient(TankEnemySpawnableId.Value, "Tank", EnemyRole.Tank, 74f, 0.48f, 5, 10f, DamageType.Value, 0.48f, tags: new[] { "idle-auto-defense", "tank" }),
-                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 46f, 0.64f, 4, 7f, DamageType.Value, 0.38f, tags: new[] { "idle-auto-defense", "shielded" }),
-                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 170f, 0.54f, 10, 26f, DamageType.Value, 0.54f, tags: new[] { "idle-auto-defense", "elite" }),
-                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 390f, 0.36f, 22, 60f, DamageType.Value, 0.82f, tags: new[] { "idle-auto-defense", "boss" })
+                EnemyDefinitionAsset.CreateTransient(ShieldedEnemySpawnableId.Value, "Shielded", EnemyRole.Basic, 46f, 0.64f, 5, 7f, DamageType.Value, 0.38f, tags: new[] { "idle-auto-defense", "shielded" }),
+                EnemyDefinitionAsset.CreateTransient(EliteEnemySpawnableId.Value, "Elite", EnemyRole.Boss, 170f, 0.54f, 5, 26f, DamageType.Value, 0.54f, tags: new[] { "idle-auto-defense", "elite" }),
+                EnemyDefinitionAsset.CreateTransient(BossEnemySpawnableId.Value, "Boss", EnemyRole.Boss, 390f, 0.36f, 5, 60f, DamageType.Value, 0.82f, tags: new[] { "idle-auto-defense", "boss" })
             };
         }
 
@@ -536,7 +547,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return definitions.ToArray();
         }
 
-        public static AutoDefenseEnemyDefinition[] CreateAutoDefenseEnemyDefinitions(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions)
+        public static AutoDefenseEnemyDefinition[] CreateAutoDefenseEnemyDefinitions(IReadOnlyList<EnemyDefinitionAsset> enemyDefinitions, float difficultyMultiplier = 1f)
         {
             if (enemyDefinitions == null || enemyDefinitions.Count == 0) throw new ArgumentException("At least one enemy definition is required.", nameof(enemyDefinitions));
             var definitions = new AutoDefenseEnemyDefinition[enemyDefinitions.Count];
@@ -548,11 +559,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 ContentAuthoringValidationReport report = EnemyDefinitionValidator.Validate(enemy, EnemyDefinitionValidationOptions.RuntimeFriendly);
                 if (!report.IsValid) throw new ArgumentException("Enemy definition is invalid: " + GetFirstValidationError(report), nameof(enemyDefinitions));
                 if (!seen.Add(enemy.Id.Trim())) throw new ArgumentException("Duplicate enemy definition ID: " + enemy.Id, nameof(enemyDefinitions));
+                double difficulty = float.IsNaN(difficultyMultiplier) || float.IsInfinity(difficultyMultiplier)
+                    ? 1d
+                    : Math.Max(0.01d, difficultyMultiplier);
                 definitions[i] = new AutoDefenseEnemyDefinition(
                     new WorldSpawnableId(enemy.Id),
-                    enemy.Stats.MaximumHealth,
+                    enemy.Stats.MaximumHealth * difficulty,
                     enemy.Stats.MoveSpeed,
-                    enemy.Stats.ContactDamage,
+                    enemy.Stats.ContactDamage * difficulty,
                     new DamageTypeId(enemy.Stats.DamageTypeId),
                     enemy.Stats.CollisionRadius);
             }
@@ -1367,7 +1381,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             string targetWeaponId,
             IdleAutoDefenseRewardEffectKind effectKind,
             double amount,
-            string dedupeKey)
+            string dedupeKey,
+            double weight = 1d)
         {
             Id = id ?? string.Empty;
             DisplayName = displayName ?? string.Empty;
@@ -1381,6 +1396,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             EffectKind = effectKind;
             Amount = amount;
             DedupeKey = dedupeKey ?? Id;
+            Weight = weight;
         }
 
         public string Id { get; }
@@ -1392,10 +1408,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public string EffectDescription { get; }
         public string HotkeyLabel { get; }
         public bool IsUnlock { get; }
+        public double AuthoredAmount => Amount;
+        public double AuthoredWeight => Weight;
         internal string TargetWeaponId { get; }
         internal IdleAutoDefenseRewardEffectKind EffectKind { get; }
         internal double Amount { get; }
         internal string DedupeKey { get; }
+        internal double Weight { get; }
     }
 
     public class IdleAutoDefenseTemplateController : MonoBehaviour
@@ -1459,6 +1478,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] protected RunUpgradeDefinitionAsset[] _upgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
         [SerializeField] private IdleAutoDefenseRewardDraftSettings _rewardDraftSettings = IdleAutoDefenseRewardDraftSettings.CreateDefault();
         [SerializeField] private IdleAutoDefenseRewardDraftCatalog _rewardDraftCatalog = IdleAutoDefenseRewardDraftCatalog.CreateDefault();
+        [SerializeField] private bool _requireAuthoredContent;
         [SerializeField] private bool _showDebugAimLines;
         [SerializeField] private bool _showDebugRanges;
         [SerializeField] private bool _showDebugSpawnRing;
@@ -1468,6 +1488,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private WeaponDefinitionAsset[] _resolvedWeaponDefinitions = Array.Empty<WeaponDefinitionAsset>();
         private RunUpgradeDefinitionAsset[] _resolvedUpgradeDefinitions = Array.Empty<RunUpgradeDefinitionAsset>();
         private GameContentSetResolution _resolvedContentSet;
+        private IdleAutoDefenseRewardCatalogAsset _activeRewardCatalog;
+        private IdleAutoDefenseEconomyAsset _activeEconomy;
+        private IdleAutoDefenseRunProfileAsset _activeRunProfile;
+        private IdleAutoDefenseProgressionAsset _activeProgression;
+        private IdleAutoDefenseOfflineProgressionAsset _activeOfflineProgression;
+        private IdleAutoDefenseGameRulesAsset _activeGameRules;
+        private float _simulationTickAccumulator;
+        private int _sessionElapsedTicks;
+        private bool _endlessRestartPending;
         private GameObject _enemyPrefab;
         private GameObject _projectilePrefab;
         private GameObject _root;
@@ -1486,6 +1515,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private readonly Dictionary<string, int> _weaponNormalUpgradeRanks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _weaponEpicUpgradeRanks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _weaponLegendaryUnlocks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _selectedRewardIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _baseRewardRanks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly List<DamageNumberView> _damageNumbers = new List<DamageNumberView>();
         private readonly List<ActiveBeamVisual> _activeBeamVisuals = new List<ActiveBeamVisual>();
@@ -1519,6 +1549,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private int _arcBurstBonus;
         private int _homingPulseBonus;
         private double _rewardDamageMultiplierBonus;
+        private long _pendingAuthoredKillCredits;
         private bool _starterRewardDraftOffered;
         private float _overdriveSecondsRemaining;
         private float _overdriveCooldownSecondsRemaining;
@@ -1532,7 +1563,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             set => _monetizationSession = value;
         }
 
-        public string RuntimeStateName => RuntimeState.ToString();
+        public string RuntimeStateName => RunProfileVictoryReached ? AutoDefenseRuntimeState.Completed.ToString() : RuntimeState.ToString();
         public int SpawnedCount { get; private set; }
         public int DirectOrCombatKillCount { get; private set; }
         public int ProjectileLaunchCount { get; private set; }
@@ -1611,6 +1642,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int InvalidAssignedContentSetIssueCount { get; private set; }
         public bool UsingAssignedContentPack { get; private set; }
         public bool UsingAssignedContentSet { get; private set; }
+        public bool StrictAuthoredStartup => _requireAuthoredContent;
+        public bool StartupBlocked { get; private set; }
+        public string StartupError { get; private set; } = string.Empty;
+        public bool FallbackModeActive { get; private set; }
+        public bool UsingAuthoredCore => UsingAssignedContentSet && !FallbackModeActive &&
+            _activeRewardCatalog != null && _activeEconomy != null && _activeRunProfile != null &&
+            _activeProgression != null && _activeOfflineProgression != null && _activeGameRules != null;
+        public string ActiveRewardCatalogId => _activeRewardCatalog == null ? string.Empty : _activeRewardCatalog.Id;
+        public string ActiveEconomyId => _activeEconomy == null ? string.Empty : _activeEconomy.Id;
+        public string ActiveRunProfileId => _activeRunProfile == null ? string.Empty : _activeRunProfile.Id;
+        public string ActiveProgressionId => _activeProgression == null ? string.Empty : _activeProgression.Id;
+        public string ActiveOfflineProgressionId => _activeOfflineProgression == null ? string.Empty : _activeOfflineProgression.Id;
+        public string ActiveGameRulesId => _activeGameRules == null ? string.Empty : _activeGameRules.Id;
+        public int SessionElapsedTicks => _sessionElapsedTicks;
+        public int SessionLengthTicks => _activeRunProfile == null ? 0 : _activeRunProfile.SessionLengthTicks;
+        public double SessionLengthSeconds => _activeRunProfile == null ? 0d : _activeRunProfile.SessionLengthSeconds;
+        public int SimulationTicksPerSecond => _activeRunProfile == null ? 0 : _activeRunProfile.SimulationTicksPerSecond;
+        public bool EndlessEnabled => _activeRunProfile != null && _activeRunProfile.Endless;
         public string AssignedContentPackStatus { get; private set; } = string.Empty;
         public string AssignedContentSetStatus { get; private set; } = string.Empty;
         public int ObjectiveReachCount { get; private set; }
@@ -1653,7 +1702,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public long EncounterRewardParts { get; private set; }
         public IdleProgressionResultCode LastOfflineRewardCode { get; private set; } = IdleProgressionResultCode.NoElapsedTime;
         public bool ReviveOfferAccepted { get; private set; }
-        public bool EncounterCompleted => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Completed;
+        public bool RunProfileVictoryReached { get; private set; }
+        public bool EncounterCompleted => RunProfileVictoryReached || _runtime != null && _runtime.State == AutoDefenseRuntimeState.Completed;
         public bool EncounterFailed => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Failed;
         public bool EncounterRunning => _runtime != null && _runtime.State == AutoDefenseRuntimeState.Running;
         public int ActiveEnemyCount => _runtime == null ? 0 : _runtime.ActiveEnemyCount;
@@ -1664,17 +1714,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             ? "--"
             : ObjectiveHealth.ToString("0", CultureInfo.InvariantCulture) + "/" + ObjectiveMaximumHealth.ToString("0", CultureInfo.InvariantCulture);
         public string CurrentSpawnProfileName => ResolveCurrentSpawnProfileName();
-        public int DamageUpgradeCost => CalculateUpgradeCost(20, DamageUpgradeRank);
-        public int AttackSpeedUpgradeCost => CalculateUpgradeCost(18, AttackSpeedUpgradeRank);
-        public int RangeUpgradeCost => CalculateUpgradeCost(18, RangeUpgradeRank);
-        public int RepairUpgradeCost => CalculateUpgradeCost(16, RepairUpgradeRank);
+        public int DamageUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.DamageUpgradeCostId, DamageUpgradeRank);
+        public int AttackSpeedUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.FireRateUpgradeCostId, AttackSpeedUpgradeRank);
+        public int RangeUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.RangeUpgradeCostId, RangeUpgradeRank);
+        public int RepairUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.RepairUpgradeCostId, RepairUpgradeRank);
         public bool PulseBeamUnlocked { get; private set; }
         public bool ArcBurstUnlocked { get; private set; }
         public bool HomingPulseUnlocked { get; private set; }
-        public int PulseBeamUnlockCost => PulseBeamModuleUnlockCost;
-        public int ArcBurstUnlockCost => ArcBurstModuleUnlockCost;
-        public int HomingPulseUnlockCost => HomingPulseModuleUnlockCost;
-        public int OverdriveCost => OverdriveCostCredits;
+        public int PulseBeamUnlockCost => ResolveModuleBuildCost(IdleAutoDefenseModuleRole.PrecisionBeam, PulseBeamModuleUnlockCost);
+        public int ArcBurstUnlockCost => ResolveModuleBuildCost(IdleAutoDefenseModuleRole.AreaBurst, ArcBurstModuleUnlockCost);
+        public int HomingPulseUnlockCost => ResolveModuleBuildCost(IdleAutoDefenseModuleRole.HomingProjectile, HomingPulseModuleUnlockCost);
+        public int OverdriveCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.OverdriveCostId, 0, OverdriveCostCredits);
         public bool OverdriveActive => _overdriveSecondsRemaining > 0f;
         public float OverdriveSecondsRemaining => Mathf.Max(0f, _overdriveSecondsRemaining);
         public float OverdriveCooldownSecondsRemaining => Mathf.Max(0f, _overdriveCooldownSecondsRemaining);
@@ -1728,6 +1778,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private AutoDefenseRuntimeState RuntimeState => _runtime == null ? AutoDefenseRuntimeState.Created : _runtime.State;
         private IdleAutoDefenseRewardDraftSettings RewardDraftSettings => _rewardDraftSettings ??= IdleAutoDefenseRewardDraftSettings.CreateDefault();
         private IdleAutoDefenseRewardDraftCatalog RewardDraftCatalog => _rewardDraftCatalog ??= IdleAutoDefenseRewardDraftCatalog.CreateDefault();
+        private CurrencyId RuntimeCredits => _activeEconomy == null ? BasicIdleAutoDefenseGame.Credits : _activeEconomy.PrimaryCurrency;
+        private CurrencyId RuntimeParts => _activeEconomy == null ? BasicIdleAutoDefenseGame.Parts : _activeEconomy.SecondaryCurrency;
+        private string RuntimeObjectiveId => _activeGameRules == null || string.IsNullOrWhiteSpace(_activeGameRules.ObjectiveId)
+            ? "objective.idle-auto-defense.core"
+            : _activeGameRules.ObjectiveId;
         private IdleAutoDefenseContentSetRuntimeSettings ContentSetRuntimeSettings => _resolvedContentSet != null && _resolvedContentSet.IsValid && _resolvedContentSet.ContentSet != null
             ? _resolvedContentSet.ContentSet.RuntimeSettings
             : null;
@@ -1877,6 +1932,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _contentSet = contentSet;
         }
 
+        protected void RequireAuthoredContentOnStartup()
+        {
+            _requireAuthoredContent = true;
+        }
+
+        public void ConfigureStrictAuthoredStartup(bool required)
+        {
+            if (_runtime != null) throw new InvalidOperationException("Strict authored startup must be configured before the run is built.");
+            _requireAuthoredContent = required;
+        }
+
         public void ConfigureRewardDraftSettings(IdleAutoDefenseRewardDraftSettings settings)
         {
             _rewardDraftSettings = settings ?? IdleAutoDefenseRewardDraftSettings.CreateDefault();
@@ -1889,7 +1955,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         protected virtual void Update()
         {
-            Step(1, Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime);
+            if (StartupBlocked) return;
+            if (_endlessRestartPending)
+            {
+                _endlessRestartPending = false;
+                RestartRun();
+                return;
+            }
+
+            float deltaSeconds = Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
+            if (_activeRunProfile == null || _activeRunProfile.TickSemantics != IdleAutoDefenseTickSemantics.FixedRate)
+            {
+                Step(1, deltaSeconds);
+                return;
+            }
+
+            float secondsPerTick = _activeRunProfile.SecondsPerSimulationTick;
+            _simulationTickAccumulator += deltaSeconds;
+            while (_simulationTickAccumulator + 0.000001f >= secondsPerTick)
+            {
+                _simulationTickAccumulator -= secondsPerTick;
+                Step(1, secondsPerTick);
+                if (_runtime == null || _runtime.State != AutoDefenseRuntimeState.Running) break;
+            }
         }
 
         public void Build()
@@ -1903,15 +1991,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             ResetRunStateCounters();
             if (!TryUseAssignedContentSet())
             {
+                if (_requireAuthoredContent)
+                {
+                    BlockStrictStartup();
+                    return;
+                }
+
                 _resolvedAttackRecipes = ResolveAttackRecipes();
                 _resolvedEnemyDefinitions = ResolveEnemyDefinitions();
                 _resolvedWaveDefinitions = ResolveWaveDefinitions(_resolvedEnemyDefinitions);
                 _resolvedWeaponDefinitions = ResolveWeaponDefinitions(_resolvedAttackRecipes);
                 _resolvedUpgradeDefinitions = ResolveUpgradeDefinitions();
+                BindExplicitFallbackCore();
             }
 
-            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(_resolvedEnemyDefinitions, ResolveActiveWeaponDefinitionsForRun());
-            CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes, _resolvedEnemyDefinitions);
+            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition(
+                _resolvedEnemyDefinitions,
+                ResolveActiveWeaponDefinitionsForRun(),
+                _activeGameRules,
+                _activeRunProfile == null ? 1f : _activeRunProfile.DifficultyMultiplier);
+            CombatCatalog catalog = BasicIdleAutoDefenseGame.CreateCombatCatalog(_resolvedAttackRecipes, _resolvedEnemyDefinitions, _activeGameRules);
             AttackRuntime attacks = BasicIdleAutoDefenseGame.CreateAttackRuntime(catalog, definition, _resolvedAttackRecipes);
             WeaponRuntime weapons = BasicIdleAutoDefenseGame.CreateWeaponRuntime(definition, attacks);
 
@@ -1929,7 +2028,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             CreateCorePresentation(definition.Objective.Position);
             CreatePlayAreaMarkers();
 
-            _enemyPrefab = CreateEnemyModelPrefab("Template Idle Enemy Runtime Prefab", BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value, ResolveEnemyFallbackColor(BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value));
+            string firstEnemyId = _resolvedEnemyDefinitions.Length == 0 || _resolvedEnemyDefinitions[0] == null
+                ? BasicIdleAutoDefenseGame.SwarmEnemySpawnableId.Value
+                : _resolvedEnemyDefinitions[0].Id;
+            _enemyPrefab = CreateEnemyModelPrefab("Template Idle Enemy Runtime Prefab", firstEnemyId, ResolveEnemyFallbackColor(firstEnemyId));
             _projectilePrefab = CreateProjectileModelPrefab("Template Idle Projectile Runtime Prefab", "weapon-ammo-arrow", new Color(1f, 0.45f, 0.1f));
 
             var poseResolver = new TemplateJitteredPerimeterPoseResolver(definition.Objective, definition.SpawnRing);
@@ -1938,7 +2040,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 poseResolver,
                 rootName: "TemplateIdleEnemies");
             _navigation = new WorldNavigationService();
-            _encounter = new EncounterRuntime(encounterDefinition ?? BasicIdleAutoDefenseGame.CreateEncounterDefinition(_resolvedWaveDefinitions));
+            _encounter = new EncounterRuntime(encounterDefinition ?? BasicIdleAutoDefenseGame.CreateEncounterDefinition(
+                _resolvedWaveDefinitions,
+                _activeRunProfile == null ? 20260623 : _activeRunProfile.EncounterSeed));
             _runtime = new AutoDefenseRuntime(definition, _enemySpawning, _navigation, weapons, catalog, _encounter, poses: poseResolver, candidateCapacity: 64);
 
             var projectilePoseResolver = new TemplateProjectileMuzzlePoseResolver(this, new WorldSpawnChannelId("projectile-origin"));
@@ -1957,12 +2061,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 ? BasicIdleAutoDefenseGame.CreateRunUpgradeCatalogOrEmpty(_resolvedUpgradeDefinitions)
                 : BasicIdleAutoDefenseGame.CreateRunUpgradeCatalog(_resolvedUpgradeDefinitions);
             _upgradeState = new RunUpgradeState();
-            _progressionCatalog ??= BasicIdleAutoDefenseGame.CreateProgressionCatalog();
+            _progressionCatalog ??= _activeProgression == null || _activeEconomy == null
+                ? BasicIdleAutoDefenseGame.CreateProgressionCatalog()
+                : _activeProgression.CreateRuntimeCatalog(_activeEconomy);
             bool createdProgressionState = _progressionState == null;
             _progressionState ??= new ProgressionState();
             if (createdProgressionState && UsingAssignedContentSet)
                 ApplyContentSetStartingResources(_resolvedContentSet);
-            _offlineDefinition = BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition();
+            _offlineDefinition = _activeOfflineProgression == null
+                ? BasicIdleAutoDefenseGame.CreateOfflineProgressionDefinition()
+                : _activeOfflineProgression.CreateRuntimeDefinition();
             ApplyContentSetEconomyTuning(_resolvedContentSet);
             RuntimeCurrency = ResolveRuntimeStartingCredits(_resolvedContentSet);
 
@@ -1991,7 +2099,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public IdleProgressionResult SimulateOfflineReward(DateTimeOffset lastSeenUtc, DateTimeOffset nowUtc)
         {
             if (_runtime == null) Build();
-            IdleProgressionResult result = IdleProgressionCalculator.Calculate(lastSeenUtc, nowUtc, _offlineDefinition);
+            if (_offlineDefinition == null || _progressionState == null || _progressionCatalog == null)
+                throw new InvalidOperationException("Offline rewards require a successfully bound authored core or an explicit fallback host.");
+            IdleProgressionResult result = _activeOfflineProgression == null
+                ? IdleProgressionCalculator.Calculate(lastSeenUtc, nowUtc, _offlineDefinition)
+                : _activeOfflineProgression.Calculate(lastSeenUtc, nowUtc);
             LastOfflineRewardCode = result.Code;
             if (result.Reward.CurrencyLines.Count > 0)
             {
@@ -2004,11 +2116,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _progressionState.ApplyReward(
                     _progressionCatalog,
                     new ProgressionOperationId("idle-auto-defense.offline.bonus." + nowUtc.UtcTicks),
-                    new RewardBundle(new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(bonusCredits), true) }));
+                    new RewardBundle(new[] { new CurrencyLine(RuntimeCredits, new ProgressionAmount(bonusCredits), true) }));
             }
 
-            OfflineRewardCredits = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value;
-            OfflineRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
+            OfflineRewardCredits = _progressionState.GetBalance(RuntimeCredits).Value;
+            OfflineRewardParts = _progressionState.GetBalance(RuntimeParts).Value;
             return result;
         }
 
@@ -2028,8 +2140,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 CreateMonetizationContext(nowUtc));
             if (result.Succeeded)
             {
-                OfflineRewardCredits += OfflineRewardCredits;
-                OfflineRewardParts += OfflineRewardParts;
+                double multiplier = _activeOfflineProgression == null ? 2d : _activeOfflineProgression.ClaimMultiplier;
+                OfflineRewardCredits = (long)Math.Ceiling(OfflineRewardCredits * multiplier);
+                OfflineRewardParts = (long)Math.Ceiling(OfflineRewardParts * multiplier);
             }
 
             return result;
@@ -2047,7 +2160,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _currentDraft = RunUpgradeDraftService.Generate(
                     _upgradeCatalog,
                     _upgradeState,
-                    new RunUpgradeDraftRequest(3, 20260623 + Math.Max(1, DraftTickCount)));
+                    new RunUpgradeDraftRequest(3, (_activeRunProfile == null ? 20260623 : _activeRunProfile.EncounterSeed) + Math.Max(1, DraftTickCount)));
             }
 
             return result;
@@ -2071,8 +2184,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 CreateMonetizationContext(nowUtc));
             if (result.Succeeded)
             {
-                EncounterRewardCredits += EncounterRewardCredits;
-                EncounterRewardParts += EncounterRewardParts;
+                double multiplier = _activeEconomy == null ? 2d : _activeEconomy.RunRewardClaimMultiplier;
+                EncounterRewardCredits = (long)Math.Ceiling(EncounterRewardCredits * multiplier);
+                EncounterRewardParts = (long)Math.Ceiling(EncounterRewardParts * multiplier);
             }
 
             return result;
@@ -2084,7 +2198,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 IdleAutoDefenseTemplateMonetization.SmallCurrencyBonus,
                 claimId,
                 CreateMonetizationContext(nowUtc));
-            if (result.Succeeded) EncounterRewardCredits += 5;
+            if (result.Succeeded) EncounterRewardCredits += _activeEconomy == null ? 5 : Math.Max(0L, _activeEconomy.SmallCurrencyBonus);
             return result;
         }
 
@@ -2099,6 +2213,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public void Step(int ticks, float deltaSeconds)
         {
             if (_runtime == null || _runtime.State != AutoDefenseRuntimeState.Running) return;
+            int safeTicks = Math.Max(1, ticks);
+            _sessionElapsedTicks += safeTicks;
             UpdateOverdriveTimers(deltaSeconds);
             if (RewardDraftActive && RewardDraftPausesCombat)
             {
@@ -2188,6 +2304,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             UpdateActiveBeamVisuals(deltaSeconds);
             UpdateDamageNumbers(deltaSeconds);
             UpdateCameraShake(deltaSeconds);
+            EvaluateAuthoredRunProfileTerminalState();
+        }
+
+        private void EvaluateAuthoredRunProfileTerminalState()
+        {
+            if (_runtime == null || _activeRunProfile == null) return;
+            if (_runtime.State == AutoDefenseRuntimeState.Running &&
+                _activeRunProfile.VictoryRule == IdleAutoDefenseVictoryRule.SurviveSessionDuration &&
+                _sessionElapsedTicks >= _activeRunProfile.SessionLengthTicks)
+            {
+                RunProfileVictoryReached = true;
+                _runtime.Stop();
+                ApplyEncounterRewardIfTerminal();
+            }
+
+            if (EncounterCompleted && _activeRunProfile.Endless)
+                _endlessRestartPending = true;
         }
 
         public bool TryPurchaseDamageUpgrade()
@@ -2212,7 +2345,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (!SpendRuntimeCurrency(RangeUpgradeCost)) return false;
             RangeUpgradeRank++;
-            DirectDamageBonus += 0.5d;
+            DirectDamageBonus += _activeGameRules == null ? 0.5d : _activeGameRules.PurchaseRangeDamageBonus;
             SelectedUpgradeCount++;
             EmitUpgradeFeedback("Range Up", new Color(0.45f, 1f, 0.6f), 0.9f);
             return true;
@@ -2224,8 +2357,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             RepairUpgradeRank++;
             if (_runtime != null)
             {
-                _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + 8d, MaximumChangePolicy.PreserveAbsolute);
-                _runtime.Objective.Health.Heal(34d + RepairUpgradeRank * 6d);
+                double maximumHealth = _activeGameRules == null ? 8d : _activeGameRules.PurchaseRepairMaximumHealth;
+                double baseHeal = _activeGameRules == null ? 34d : _activeGameRules.PurchaseRepairBaseHeal;
+                double healPerRank = _activeGameRules == null ? 6d : _activeGameRules.PurchaseRepairHealPerRank;
+                _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + maximumHealth, MaximumChangePolicy.PreserveAbsolute);
+                _runtime.Objective.Health.Heal(baseHeal + RepairUpgradeRank * healPerRank);
             }
 
             SelectedUpgradeCount++;
@@ -2263,12 +2399,49 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public bool TryPurchaseOverdrive()
         {
             if (!CanPurchaseOverdrive || !SpendRuntimeCurrency(OverdriveCost)) return false;
-            _overdriveSecondsRemaining = OverdriveDurationSeconds;
-            _overdriveCooldownSecondsRemaining = OverdriveDurationSeconds + OverdriveCooldownSeconds;
+            float duration = _activeGameRules == null ? OverdriveDurationSeconds : _activeGameRules.OverdriveDurationSeconds;
+            float cooldown = _activeGameRules == null ? OverdriveCooldownSeconds : _activeGameRules.OverdriveCooldownSeconds;
+            _overdriveSecondsRemaining = duration;
+            _overdriveCooldownSecondsRemaining = duration + cooldown;
             OverdriveActivationCount++;
             SelectedUpgradeCount++;
             EmitUpgradeFeedback("OVERDRIVE", new Color(1f, 0.82f, 0.18f), 1.28f);
             return true;
+        }
+
+        public int GetPersistentResearchRank(string nodeId)
+        {
+            return _progressionState == null || string.IsNullOrWhiteSpace(nodeId)
+                ? 0
+                : _progressionState.GetResearchRank(new ResearchNodeId(nodeId));
+        }
+
+        public bool TryPurchasePersistentUpgrade(string nodeId)
+        {
+            if (_progressionState == null || _progressionCatalog == null || _activeProgression == null || string.IsNullOrWhiteSpace(nodeId))
+                return false;
+            IdleAutoDefenseResearchNodeRecord node = _activeProgression.FindResearchNode(nodeId);
+            if (node == null) return false;
+            ProgressionResult result = _progressionState.PurchaseResearch(
+                _progressionCatalog,
+                new ProgressionOperationId("idle-auto-defense.research." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(node.Id) + "." + (GetPersistentResearchRank(node.Id) + 1).ToString(CultureInfo.InvariantCulture)),
+                new ResearchNodeId(node.Id));
+            if (!result.Succeeded) return false;
+            ApplyPersistentProgressionEffect(node);
+            return true;
+        }
+
+        private void ApplyPersistentProgressionEffect(IdleAutoDefenseResearchNodeRecord node)
+        {
+            if (node == null || node.EffectAmountPerRank == 0d) return;
+            if (node.EffectKind == IdleAutoDefenseProgressionEffectKind.ObjectiveMaximumHealth && _runtime != null)
+                _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + node.EffectAmountPerRank, MaximumChangePolicy.FillToMaximum);
+            else if (node.EffectKind == IdleAutoDefenseProgressionEffectKind.DamageRank)
+                DamageUpgradeRank += Math.Max(1, (int)Math.Round(node.EffectAmountPerRank));
+            else if (node.EffectKind == IdleAutoDefenseProgressionEffectKind.ExtraProjectile)
+                _shardVolleyBonus += Math.Max(1, (int)Math.Round(node.EffectAmountPerRank));
+            else if (node.EffectKind == IdleAutoDefenseProgressionEffectKind.OfflineRewardMultiplier)
+                OfflineRewardMultiplierBonus += Math.Max(0d, node.EffectAmountPerRank);
         }
 
         private void DraftAndApplyUpgradeIfDue(int ticks)
@@ -2323,7 +2496,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private void OfferFirstRewardDraftIfReady()
         {
-            if (_starterRewardDraftOffered || FirstRewardDraftSeconds >= 0f || SurvivalSeconds < FirstRewardDraftTargetSeconds) return;
+            float targetSeconds = _activeRewardCatalog == null ? FirstRewardDraftTargetSeconds : _activeRewardCatalog.FirstDraftSeconds;
+            if (_starterRewardDraftOffered || FirstRewardDraftSeconds >= 0f || SurvivalSeconds < targetSeconds) return;
             _starterRewardDraftOffered = true;
             QueueOrOpenRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
             EmitUpgradeFeedback("Reward Ready", new Color(1f, 0.82f, 0.18f), 1.05f);
@@ -2331,15 +2505,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private int FireManualTowerShotIfReady(int ticks)
         {
+            IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.StartingProjectile);
             _manualTowerCooldownTicks += Math.Max(1, ticks);
-            int cooldownTicks = Math.Max(ManualTowerMinimumCooldownTicks, ManualTowerBaseCooldownTicks - AttackSpeedUpgradeRank * 3 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0));
+            int baseCooldown = module == null ? ManualTowerBaseCooldownTicks : module.BaseCooldownTicks;
+            int minimumCooldown = module == null ? ManualTowerMinimumCooldownTicks : module.MinimumCooldownTicks;
+            int rankReduction = module == null ? 3 : module.CooldownReductionPerFireRateRank;
+            int overdriveReduction = _activeGameRules == null ? OverdriveCooldownBonusTicks : _activeGameRules.OverdriveCooldownBonusTicks;
+            int cooldownTicks = Math.Max(minimumCooldown, baseCooldown - AttackSpeedUpgradeRank * rankReduction - (OverdriveActive ? overdriveReduction : 0));
             if (_manualTowerCooldownTicks < cooldownTicks) return 0;
             _manualTowerCooldownTicks = 0;
 
             int kills = 0;
-            int shotCount = Math.Max(1, 1 + _shardVolleyBonus);
+            int shotCount = Math.Max(1, (module == null ? 1 : module.BaseTargetCount) + _shardVolleyBonus);
             double damageAmount = ResolveManualTowerDamage();
-            AttackDefinitionAsset attack = FindAttackRecipeForPresentation(BasicIdleAutoDefenseGame.ShardAttackId.Value);
+            AttackDefinitionAsset attack = FindAttackRecipeForPresentation(module == null ? BasicIdleAutoDefenseGame.ShardAttackId.Value : module.AttackId);
             for (int shot = 0; shot < shotCount; shot++)
             {
                 AutoDefenseRuntimeSnapshot snapshot = _runtime.CreateSnapshot();
@@ -2359,46 +2538,61 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             int kills = 0;
             if (PulseBeamUnlocked)
             {
+                IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.PrecisionBeam);
                 _pulseBeamModuleCooldownTicks += Math.Max(1, ticks);
-                if (_pulseBeamModuleCooldownTicks >= Math.Max(28, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank * 2 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0)))
+                int overdriveReduction = _activeGameRules == null ? OverdriveCooldownBonusTicks : _activeGameRules.OverdriveCooldownBonusTicks;
+                int cooldown = module == null
+                    ? Math.Max(28, PulseBeamModuleCooldownTicks - AttackSpeedUpgradeRank * 2 - (OverdriveActive ? overdriveReduction : 0))
+                    : Math.Max(module.MinimumCooldownTicks, module.BaseCooldownTicks - AttackSpeedUpgradeRank * module.CooldownReductionPerFireRateRank - (OverdriveActive ? overdriveReduction : 0));
+                if (_pulseBeamModuleCooldownTicks >= cooldown)
                 {
                     _pulseBeamModuleCooldownTicks = 0;
                     ModuleActivationCount++;
                     kills += TryKillPriorityEnemies(
-                        ResolveModuleDamage(5d + DamageUpgradeRank * 1.25d + RangeUpgradeRank * 0.45d),
-                        1 + _pulseBeamBonus,
-                        BasicIdleAutoDefenseGame.PulseAttackId.Value,
-                        ResolveModuleRange(PulseBeamModuleBaseRange));
+                        ResolveModuleDamage((module == null ? 5d : module.BaseDamage) + DamageUpgradeRank * (module == null ? 1.25d : module.DamagePerDamageRank) + RangeUpgradeRank * (module == null ? 0.45d : module.DamagePerRangeRank)),
+                        (module == null ? 1 : module.BaseTargetCount) + _pulseBeamBonus,
+                        module == null ? BasicIdleAutoDefenseGame.PulseAttackId.Value : module.AttackId,
+                        ResolveModuleRange(module == null ? PulseBeamModuleBaseRange : module.BaseRange));
                 }
             }
 
             if (ArcBurstUnlocked)
             {
+                IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.AreaBurst);
                 _arcBurstModuleCooldownTicks += Math.Max(1, ticks);
-                if (_arcBurstModuleCooldownTicks >= Math.Max(52, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0)))
+                int overdriveReduction = _activeGameRules == null ? OverdriveCooldownBonusTicks : _activeGameRules.OverdriveCooldownBonusTicks;
+                int cooldown = module == null
+                    ? Math.Max(52, ArcBurstModuleCooldownTicks - AttackSpeedUpgradeRank * 3 - (OverdriveActive ? overdriveReduction : 0))
+                    : Math.Max(module.MinimumCooldownTicks, module.BaseCooldownTicks - AttackSpeedUpgradeRank * module.CooldownReductionPerFireRateRank - (OverdriveActive ? overdriveReduction : 0));
+                if (_arcBurstModuleCooldownTicks >= cooldown)
                 {
                     _arcBurstModuleCooldownTicks = 0;
                     ModuleActivationCount++;
                     kills += TryKillPriorityEnemies(
-                        ResolveModuleDamage(8d + DamageUpgradeRank * 1.55d),
-                        2 + _arcBurstBonus,
-                        BasicIdleAutoDefenseGame.ArcBurstAttackId.Value,
-                        ResolveModuleRange(ArcBurstModuleBaseRange));
+                        ResolveModuleDamage((module == null ? 8d : module.BaseDamage) + DamageUpgradeRank * (module == null ? 1.55d : module.DamagePerDamageRank) + RangeUpgradeRank * (module == null ? 0d : module.DamagePerRangeRank)),
+                        (module == null ? 2 : module.BaseTargetCount) + _arcBurstBonus,
+                        module == null ? BasicIdleAutoDefenseGame.ArcBurstAttackId.Value : module.AttackId,
+                        ResolveModuleRange(module == null ? ArcBurstModuleBaseRange : module.BaseRange));
                 }
             }
 
             if (HomingPulseUnlocked)
             {
+                IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.HomingProjectile);
                 _homingPulseModuleCooldownTicks += Math.Max(1, ticks);
-                if (_homingPulseModuleCooldownTicks >= Math.Max(42, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2 - (OverdriveActive ? OverdriveCooldownBonusTicks : 0)))
+                int overdriveReduction = _activeGameRules == null ? OverdriveCooldownBonusTicks : _activeGameRules.OverdriveCooldownBonusTicks;
+                int cooldown = module == null
+                    ? Math.Max(42, HomingPulseModuleCooldownTicks - AttackSpeedUpgradeRank * 2 - (OverdriveActive ? overdriveReduction : 0))
+                    : Math.Max(module.MinimumCooldownTicks, module.BaseCooldownTicks - AttackSpeedUpgradeRank * module.CooldownReductionPerFireRateRank - (OverdriveActive ? overdriveReduction : 0));
+                if (_homingPulseModuleCooldownTicks >= cooldown)
                 {
                     _homingPulseModuleCooldownTicks = 0;
                     ModuleActivationCount++;
                     kills += TryKillPriorityEnemies(
-                        ResolveModuleDamage(8d + DamageUpgradeRank * 1.45d + RangeUpgradeRank * 0.45d),
-                        1 + _homingPulseBonus,
-                        BasicIdleAutoDefenseGame.HomingPulseAttackId.Value,
-                        ResolveModuleRange(HomingPulseModuleBaseRange),
+                        ResolveModuleDamage((module == null ? 8d : module.BaseDamage) + DamageUpgradeRank * (module == null ? 1.45d : module.DamagePerDamageRank) + RangeUpgradeRank * (module == null ? 0.45d : module.DamagePerRangeRank)),
+                        (module == null ? 1 : module.BaseTargetCount) + _homingPulseBonus,
+                        module == null ? BasicIdleAutoDefenseGame.HomingPulseAttackId.Value : module.AttackId,
+                        ResolveModuleRange(module == null ? HomingPulseModuleBaseRange : module.BaseRange),
                         preferProjectileVisual: true);
                 }
             }
@@ -2645,7 +2839,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 projectile.Id,
                 new AttackSourceId("source.idle-auto-defense.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)),
                 new AttackDefinitionId(attack.Id),
-                new AttackSourceSnapshot(new AttackSourceId("source.idle-auto-defense.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)), new CombatantId("objective.idle-auto-defense.core")),
+                new AttackSourceSnapshot(new AttackSourceId("source.idle-auto-defense.visual." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(attack.Id)), new CombatantId(RuntimeObjectiveId)),
                 origin,
                 destination);
 
@@ -2768,38 +2962,51 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private double ResolveManualTowerDamage()
         {
-            double baseDamage = ManualTowerBaseDamage +
-                DamageUpgradeRank * ManualTowerDamageRankBonus +
-                RangeUpgradeRank * ManualTowerRangeRankBonus +
+            IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.StartingProjectile);
+            double baseDamage = (module == null ? ManualTowerBaseDamage : module.BaseDamage) +
+                DamageUpgradeRank * (_activeGameRules == null ? ManualTowerDamageRankBonus : _activeGameRules.ManualDamageRankBonus) +
+                RangeUpgradeRank * (_activeGameRules == null ? ManualTowerRangeRankBonus : _activeGameRules.ManualRangeRankDamageBonus) +
                 DirectDamageBonus;
             return ResolveModuleDamage(baseDamage);
         }
 
         private double ResolveManualTowerRange()
         {
-            return Math.Min(ManualTowerMaximumRange, ManualTowerBaseRange + RangeUpgradeRank * ManualTowerRangeRankBonus);
+            IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.StartingProjectile);
+            double maximumRange = _activeGameRules == null ? ManualTowerMaximumRange : _activeGameRules.ManualMaximumRange;
+            double baseRange = module == null ? ManualTowerBaseRange : module.BaseRange;
+            double rankBonus = _activeGameRules == null ? ManualTowerRangeRankBonus : _activeGameRules.ManualRangeRankBonus;
+            return Math.Min(maximumRange, baseRange + RangeUpgradeRank * rankBonus);
         }
 
         private double ResolveModuleRange(double baseRange)
         {
-            return Math.Min(ManualTowerMaximumRange + 1d, baseRange + RangeUpgradeRank * ModuleRangeRankBonus);
+            double maximumRange = (_activeGameRules == null ? ManualTowerMaximumRange : _activeGameRules.ManualMaximumRange) + 1d;
+            double rankBonus = _activeGameRules == null ? ModuleRangeRankBonus : _activeGameRules.ModuleRangeRankBonus;
+            return Math.Min(maximumRange, baseRange + RangeUpgradeRank * rankBonus);
         }
 
         private double ResolveModuleDamage(double baseDamage)
         {
             double multiplier = 1d + Math.Max(0d, _rewardDamageMultiplierBonus);
             if (OverdriveActive)
-                multiplier *= OverdriveDamageMultiplier;
+                multiplier *= _activeGameRules == null ? OverdriveDamageMultiplier : _activeGameRules.OverdriveDamageMultiplier;
             return Math.Max(1d, baseDamage * multiplier);
+        }
+
+        private IdleAutoDefenseModuleRule ResolveModuleRule(IdleAutoDefenseModuleRole role)
+        {
+            return _activeGameRules == null ? null : _activeGameRules.GetModule(role);
         }
 
         private bool UnlockPulseBeamModule()
         {
             if (PulseBeamUnlocked) return false;
             PulseBeamUnlocked = true;
+            IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.PrecisionBeam);
             CreateWeaponPresentation(
-                BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value,
-                BasicIdleAutoDefenseGame.PulseAttackId.Value,
+                module == null ? BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value : module.WeaponId,
+                module == null ? BasicIdleAutoDefenseGame.PulseAttackId.Value : module.AttackId,
                 true);
             return true;
         }
@@ -2808,9 +3015,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (ArcBurstUnlocked) return false;
             ArcBurstUnlocked = true;
+            IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.AreaBurst);
             CreateWeaponPresentation(
-                BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value,
-                BasicIdleAutoDefenseGame.ArcBurstAttackId.Value,
+                module == null ? BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value : module.WeaponId,
+                module == null ? BasicIdleAutoDefenseGame.ArcBurstAttackId.Value : module.AttackId,
                 true);
             return true;
         }
@@ -2819,9 +3027,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (HomingPulseUnlocked) return false;
             HomingPulseUnlocked = true;
+            IdleAutoDefenseModuleRule module = ResolveModuleRule(IdleAutoDefenseModuleRole.HomingProjectile);
             CreateWeaponPresentation(
-                BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value,
-                BasicIdleAutoDefenseGame.HomingPulseAttackId.Value,
+                module == null ? BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value : module.WeaponId,
+                module == null ? BasicIdleAutoDefenseGame.HomingPulseAttackId.Value : module.AttackId,
                 true);
             return true;
         }
@@ -2831,6 +3040,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (choiceIndex < 0 || choiceIndex >= _rewardDraftChoices.Length) return false;
             IdleAutoDefenseRewardDraftChoice choice = _rewardDraftChoices[choiceIndex];
             if (!ApplyRewardDraftChoice(choice)) return false;
+            _selectedRewardIds.Add(choice.Id);
             EmitRewardChoiceFeedback(choice);
 
             SelectedUpgradeCount++;
@@ -2878,8 +3088,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     RepairUpgradeRank++;
                     if (_runtime != null)
                     {
-                        _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + 8d, MaximumChangePolicy.PreserveAbsolute);
-                        _runtime.Objective.Health.Heal(28d + RepairUpgradeRank * 4d);
+                        double maximumHealth = _activeGameRules == null ? 8d : _activeGameRules.DraftRepairMaximumHealth;
+                        double baseHeal = _activeGameRules == null ? 28d : _activeGameRules.DraftRepairBaseHeal;
+                        double healPerRank = _activeGameRules == null ? 4d : _activeGameRules.DraftRepairHealPerRank;
+                        _runtime.Objective.Health.ChangeMaximumHealth(_runtime.Objective.Health.MaximumHealth + maximumHealth, MaximumChangePolicy.PreserveAbsolute);
+                        _runtime.Objective.Health.Heal(baseHeal + RepairUpgradeRank * healPerRank);
                     }
 
                     return true;
@@ -2929,27 +3142,47 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private bool TryUnlockWeapon(string weaponId)
         {
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, StringComparison.OrdinalIgnoreCase))
-                return UnlockPulseBeamModule();
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, StringComparison.OrdinalIgnoreCase))
-                return UnlockArcBurstModule();
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, StringComparison.OrdinalIgnoreCase))
-                return UnlockHomingPulseModule();
-            return string.Equals(weaponId, BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, StringComparison.OrdinalIgnoreCase);
+            IdleAutoDefenseModuleRule module = _activeGameRules == null ? null : _activeGameRules.GetModuleByWeaponId(weaponId);
+            if (module == null)
+            {
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return UnlockPulseBeamModule();
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return UnlockArcBurstModule();
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return UnlockHomingPulseModule();
+                return string.Equals(weaponId, BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (module.Role == IdleAutoDefenseModuleRole.PrecisionBeam) return UnlockPulseBeamModule();
+            if (module.Role == IdleAutoDefenseModuleRole.AreaBurst) return UnlockArcBurstModule();
+            if (module.Role == IdleAutoDefenseModuleRole.HomingProjectile) return UnlockHomingPulseModule();
+            return module.StartsUnlocked;
         }
 
         private bool IsWeaponUnlocked(string weaponId)
         {
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return true;
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return PulseBeamUnlocked;
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return ArcBurstUnlocked;
-            if (string.Equals(weaponId, BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return HomingPulseUnlocked;
-            return false;
+            IdleAutoDefenseModuleRule module = _activeGameRules == null ? null : _activeGameRules.GetModuleByWeaponId(weaponId);
+            if (module == null)
+            {
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return PulseBeamUnlocked;
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.ArcBurstTowerWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return ArcBurstUnlocked;
+                if (string.Equals(weaponId, BasicIdleAutoDefenseGame.HomingSpireWeaponId.Value, StringComparison.OrdinalIgnoreCase)) return HomingPulseUnlocked;
+                return false;
+            }
+
+            if (module.Role == IdleAutoDefenseModuleRole.PrecisionBeam) return PulseBeamUnlocked;
+            if (module.Role == IdleAutoDefenseModuleRole.AreaBurst) return ArcBurstUnlocked;
+            if (module.Role == IdleAutoDefenseModuleRole.HomingProjectile) return HomingPulseUnlocked;
+            return module.StartsUnlocked;
         }
 
         private void RecordEnemyDefeatedForRewards(AutoDefenseEnemySnapshot enemy)
         {
             if (enemy.Id <= 0 || !_rewardedEnemyDefeatIds.Add(enemy.Id)) return;
+            EnemyDefinitionAsset definition = FindEnemyDefinitionForPresentation(enemy.SpawnableId);
+            long authoredReward = definition == null || definition.Stats == null
+                ? KillRewardCredits
+                : Math.Max(0, definition.Stats.RewardValue);
+            _pendingAuthoredKillCredits += authoredReward;
             EmitKenneySpriteBurst("Credit Pickup Burst", "Art/currency_coin_gold", CreateEnemyAimPosition(enemy.Position), new Color(1f, 0.88f, 0.18f), 0.62f, 0.72f, 0.72f, 65);
             if (IsBossEnemy(enemy))
             {
@@ -3028,8 +3261,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             var candidates = new List<IdleAutoDefenseRewardDraftChoice>();
             AddWeaponUnlockRewardCandidates(candidates, kind);
-            AddOwnedWeaponRewardCandidates(candidates);
-            AddBaseRewardCandidates(candidates);
+            AddOwnedWeaponRewardCandidates(candidates, kind);
+            AddBaseRewardCandidates(candidates, kind);
             return SelectWeightedRewardChoices(candidates, kind);
         }
 
@@ -3043,10 +3276,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void AddWeaponUnlockRewardCandidate(List<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseWeaponUnlockReward unlock, IdleAutoDefenseRewardDraftKind kind)
         {
             if (unlock == null) return;
+            if (!unlock.IsEligible(kind) || !RewardPrerequisitesMet(unlock.PrerequisiteIds)) return;
             string weaponId = unlock.WeaponId;
             if (IsWeaponUnlocked(weaponId)) return;
             candidates.Add(new IdleAutoDefenseRewardDraftChoice(
-                "reward.unlock." + SanitizeRewardSegment(weaponId),
+                unlock.Id,
                 unlock.DisplayName,
                 unlock.GetRarity(kind),
                 "Unlock",
@@ -3057,41 +3291,48 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 weaponId,
                 IdleAutoDefenseRewardEffectKind.UnlockWeapon,
                 1d,
-                "unlock." + weaponId));
+                "unlock." + weaponId,
+                unlock.Weight));
         }
 
-        private void AddOwnedWeaponRewardCandidates(List<IdleAutoDefenseRewardDraftChoice> candidates)
+        private void AddOwnedWeaponRewardCandidates(List<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseRewardDraftKind kind)
         {
             IReadOnlyList<string> weaponIds = RewardDraftCatalog.GetWeaponIds();
             for (int i = 0; i < weaponIds.Count; i++)
             {
                 if (!IsWeaponUnlocked(weaponIds[i])) continue;
-                IdleAutoDefenseRewardDraftChoice choice = CreateNextWeaponRewardChoice(weaponIds[i]);
+                IdleAutoDefenseRewardDraftChoice choice = CreateNextWeaponRewardChoice(weaponIds[i], kind);
                 if (choice != null) candidates.Add(choice);
             }
         }
 
-        private IdleAutoDefenseRewardDraftChoice CreateNextWeaponRewardChoice(string weaponId)
+        private IdleAutoDefenseRewardDraftChoice CreateNextWeaponRewardChoice(string weaponId, IdleAutoDefenseRewardDraftKind kind)
         {
             string targetName = ResolveWeaponDisplayName(weaponId);
             int normalRank = GetRank(_weaponNormalUpgradeRanks, weaponId);
             if (normalRank < RewardDraftSettings.NormalInvestmentsForEpic)
             {
                 IdleAutoDefenseWeaponRewardDefinition reward = RewardDraftCatalog.GetNormalWeaponReward(weaponId, normalRank);
-                return reward == null ? null : CreateRewardChoice(weaponId, reward, targetName);
+                return reward == null || !reward.IsEligible(kind) || !reward.IsAvailableAt(normalRank, 0) || !RewardPrerequisitesMet(reward.PrerequisiteIds)
+                    ? null
+                    : CreateRewardChoice(weaponId, reward, targetName);
             }
 
             int epicRank = GetRank(_weaponEpicUpgradeRanks, weaponId);
             if (epicRank < RewardDraftSettings.EpicInvestmentsForLegendary)
             {
                 IdleAutoDefenseWeaponRewardDefinition reward = RewardDraftCatalog.GetEpicWeaponReward(weaponId, epicRank);
-                return reward == null ? null : CreateRewardChoice(weaponId, reward, targetName);
+                return reward == null || !reward.IsEligible(kind) || !reward.IsAvailableAt(normalRank, epicRank) || !RewardPrerequisitesMet(reward.PrerequisiteIds)
+                    ? null
+                    : CreateRewardChoice(weaponId, reward, targetName);
             }
 
             if (!_weaponLegendaryUnlocks.Contains(weaponId))
             {
                 IdleAutoDefenseWeaponRewardDefinition reward = RewardDraftCatalog.GetLegendaryWeaponReward(weaponId);
-                return reward == null ? null : CreateRewardChoice(weaponId, reward, targetName);
+                return reward == null || !reward.IsEligible(kind) || !reward.IsAvailableAt(normalRank, epicRank) || !RewardPrerequisitesMet(reward.PrerequisiteIds)
+                    ? null
+                    : CreateRewardChoice(weaponId, reward, targetName);
             }
 
             return null;
@@ -3100,7 +3341,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private IdleAutoDefenseRewardDraftChoice CreateRewardChoice(string weaponId, IdleAutoDefenseWeaponRewardDefinition reward, string targetName)
         {
             return new IdleAutoDefenseRewardDraftChoice(
-                "reward." + SanitizeRewardSegment(weaponId) + "." + reward.TierKey,
+                reward.Id,
                 reward.DisplayName,
                 reward.Rarity,
                 reward.TypeName,
@@ -3111,24 +3352,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 weaponId,
                 reward.EffectKind,
                 reward.Amount,
-                weaponId + "." + reward.TierKey);
+                weaponId + "." + reward.TierKey,
+                reward.Weight);
         }
 
-        private void AddBaseRewardCandidates(List<IdleAutoDefenseRewardDraftChoice> candidates)
+        private void AddBaseRewardCandidates(List<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseRewardDraftKind kind)
         {
             IReadOnlyList<IdleAutoDefenseBaseRewardDefinition> rewards = RewardDraftCatalog.BaseRewards;
             for (int i = 0; i < rewards.Count; i++)
-                AddBaseRewardCandidate(candidates, rewards[i]);
+                AddBaseRewardCandidate(candidates, rewards[i], kind);
         }
 
-        private void AddBaseRewardCandidate(List<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseBaseRewardDefinition reward)
+        private void AddBaseRewardCandidate(List<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseBaseRewardDefinition reward, IdleAutoDefenseRewardDraftKind kind)
         {
             if (reward == null) return;
+            if (!reward.IsEligible(kind) || !RewardPrerequisitesMet(reward.PrerequisiteIds)) return;
             string key = reward.Key;
             int rank = GetRank(_baseRewardRanks, key);
             if (rank >= reward.MaxRank) return;
             candidates.Add(new IdleAutoDefenseRewardDraftChoice(
-                "reward." + key + "." + rank.ToString(CultureInfo.InvariantCulture),
+                reward.Id,
                 reward.DisplayName,
                 reward.Rarity,
                 reward.TypeName,
@@ -3139,7 +3382,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 string.Empty,
                 reward.EffectKind,
                 reward.Amount,
-                key));
+                key,
+                reward.Weight));
         }
 
         private IdleAutoDefenseRewardDraftChoice[] SelectWeightedRewardChoices(List<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseRewardDraftKind kind)
@@ -3258,14 +3502,23 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 choice.TargetWeaponId,
                 choice.EffectKind,
                 choice.Amount,
-                choice.DedupeKey);
+                choice.DedupeKey,
+                choice.Weight);
         }
 
         private double CalculateRewardChoiceWeight(IdleAutoDefenseRewardDraftChoice choice, IdleAutoDefenseRewardDraftKind kind)
         {
             double rarityWeight = RewardDraftSettings.GetRarityWeight(kind, choice.Rarity);
             if (choice.IsUnlock) rarityWeight *= RewardDraftSettings.GetUnlockWeightMultiplier(kind);
-            return Math.Max(1d, rarityWeight);
+            return Math.Max(0.001d, rarityWeight * Math.Max(0.001d, choice.Weight));
+        }
+
+        private bool RewardPrerequisitesMet(IReadOnlyList<string> prerequisiteIds)
+        {
+            for (int i = 0; i < prerequisiteIds.Count; i++)
+                if (!_selectedRewardIds.Contains(prerequisiteIds[i]))
+                    return false;
+            return true;
         }
 
         private string ResolveWeaponDisplayName(string weaponId)
@@ -3289,14 +3542,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return ranks != null && !string.IsNullOrWhiteSpace(key) && ranks.TryGetValue(key, out int rank) ? rank : 0;
         }
 
-        private static bool IsEliteEnemy(AutoDefenseEnemySnapshot enemy)
+        private bool IsEliteEnemy(AutoDefenseEnemySnapshot enemy)
         {
-            return string.Equals(enemy.SpawnableId.Value, BasicIdleAutoDefenseGame.EliteEnemySpawnableId.Value, StringComparison.OrdinalIgnoreCase);
+            string eliteId = _activeGameRules == null || string.IsNullOrWhiteSpace(_activeGameRules.EliteEnemyId)
+                ? BasicIdleAutoDefenseGame.EliteEnemySpawnableId.Value
+                : _activeGameRules.EliteEnemyId;
+            return string.Equals(enemy.SpawnableId.Value, eliteId, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsBossEnemy(AutoDefenseEnemySnapshot enemy)
+        private bool IsBossEnemy(AutoDefenseEnemySnapshot enemy)
         {
-            return string.Equals(enemy.SpawnableId.Value, BasicIdleAutoDefenseGame.BossEnemySpawnableId.Value, StringComparison.OrdinalIgnoreCase);
+            string bossId = _activeGameRules == null || string.IsNullOrWhiteSpace(_activeGameRules.BossEnemyId)
+                ? BasicIdleAutoDefenseGame.BossEnemySpawnableId.Value
+                : _activeGameRules.BossEnemyId;
+            return string.Equals(enemy.SpawnableId.Value, bossId, StringComparison.OrdinalIgnoreCase);
         }
 
         private static string SanitizeRewardSegment(string value)
@@ -3571,7 +3830,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return true;
         }
 
-        private static void ConfigureBeamLineRenderer(GameObject instance, GameObject prefab, AttackDefinitionAsset attack)
+        private void ConfigureBeamLineRenderer(GameObject instance, GameObject prefab, AttackDefinitionAsset attack)
         {
             if (instance == null) return;
             LineRenderer lineRenderer = instance.GetComponentInChildren<LineRenderer>(true);
@@ -4315,11 +4574,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return prefab;
         }
 
-        private static int CalculateProjectileImpactDelayTicks(Vector3 origin, Vector3 destination, float speed)
+        private int CalculateProjectileImpactDelayTicks(Vector3 origin, Vector3 destination, float speed)
         {
             float safeSpeed = Mathf.Max(0.5f, speed);
-            int ticks = Mathf.CeilToInt(Vector3.Distance(origin, destination) / safeSpeed / 0.05f);
-            return Mathf.Clamp(ticks, MinimumProjectileImpactDelayTicks, MaximumProjectileImpactDelayTicks);
+            float secondsPerTick = _activeRunProfile == null ? 0.05f : _activeRunProfile.SecondsPerSimulationTick;
+            int ticks = Mathf.CeilToInt(Vector3.Distance(origin, destination) / safeSpeed / secondsPerTick);
+            int minimum = _activeGameRules == null ? MinimumProjectileImpactDelayTicks : _activeGameRules.MinimumProjectileImpactDelayTicks;
+            int maximum = _activeGameRules == null ? MaximumProjectileImpactDelayTicks : _activeGameRules.MaximumProjectileImpactDelayTicks;
+            return Mathf.Clamp(ticks, minimum, maximum);
         }
 
         private static float ResolveProjectileSpeed(AttackDefinitionAsset attack)
@@ -4329,11 +4591,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 : 8f;
         }
 
-        private static double ResolveAttackDamage(AttackDefinitionAsset attack)
+        private double ResolveAttackDamage(AttackDefinitionAsset attack)
         {
+            double threshold = _activeGameRules == null ? SampleProjectileFinishThreshold : _activeGameRules.ProjectileFinishDamageThreshold;
             return attack != null && attack.Mechanics != null
-                ? Math.Max(SampleProjectileFinishThreshold, attack.Mechanics.DamageAmount)
-                : SampleProjectileFinishThreshold;
+                ? Math.Max(threshold, attack.Mechanics.DamageAmount)
+                : threshold;
         }
 
         internal Vector3 ResolveTowerMuzzlePosition(AttackDefinitionAsset attack)
@@ -4469,10 +4732,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private double ResolvePresentationRange(AttackDefinitionAsset attack)
         {
             if (attack == null) return ManualTowerBaseRange;
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ShardAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveManualTowerRange();
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.PulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveModuleRange(PulseBeamModuleBaseRange);
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveModuleRange(ArcBurstModuleBaseRange);
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveModuleRange(HomingPulseModuleBaseRange);
+            IdleAutoDefenseModuleRule module = _activeGameRules == null ? null : _activeGameRules.GetModuleByAttackId(attack.Id);
+            if (module != null)
+            {
+                return module.Role == IdleAutoDefenseModuleRole.StartingProjectile
+                    ? ResolveManualTowerRange()
+                    : ResolveModuleRange(module.BaseRange);
+            }
+            if (_activeGameRules == null)
+            {
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ShardAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveManualTowerRange();
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.PulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveModuleRange(PulseBeamModuleBaseRange);
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveModuleRange(ArcBurstModuleBaseRange);
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return ResolveModuleRange(HomingPulseModuleBaseRange);
+            }
             return attack.Mechanics == null ? ManualTowerBaseRange : attack.Mechanics.Range;
         }
 
@@ -4524,13 +4797,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return requestedPosition;
         }
 
-        private static Color ResolveAttackColor(AttackDefinitionAsset attack)
+        private Color ResolveAttackColor(AttackDefinitionAsset attack)
         {
             if (attack == null) return Color.white;
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ShardAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(1f, 0.45f, 0.1f);
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.PulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(0.15f, 0.8f, 1f);
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(1f, 0.65f, 0.12f);
-            if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(0.68f, 0.38f, 1f);
+            IdleAutoDefenseModuleRule module = _activeGameRules == null ? null : _activeGameRules.GetModuleByAttackId(attack.Id);
+            if (module != null)
+            {
+                if (module.Role == IdleAutoDefenseModuleRole.StartingProjectile) return new Color(1f, 0.45f, 0.1f);
+                if (module.Role == IdleAutoDefenseModuleRole.PrecisionBeam) return new Color(0.15f, 0.8f, 1f);
+                if (module.Role == IdleAutoDefenseModuleRole.AreaBurst) return new Color(1f, 0.65f, 0.12f);
+                if (module.Role == IdleAutoDefenseModuleRole.HomingProjectile) return new Color(0.68f, 0.38f, 1f);
+            }
+            if (_activeGameRules == null)
+            {
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ShardAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(1f, 0.45f, 0.1f);
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.PulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(0.15f, 0.8f, 1f);
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.ArcBurstAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(1f, 0.65f, 0.12f);
+                if (string.Equals(attack.Id, BasicIdleAutoDefenseGame.HomingPulseAttackId.Value, StringComparison.OrdinalIgnoreCase)) return new Color(0.68f, 0.38f, 1f);
+            }
             return Color.white;
         }
 
@@ -4583,7 +4867,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void AwardRuntimeCurrencyForKills(int kills)
         {
             if (kills <= 0) return;
-            long earned = Math.Max(kills, (long)Math.Ceiling(kills * KillRewardCredits * (1d + RewardCreditMultiplierBonus)));
+            long authoredBase = _pendingAuthoredKillCredits > 0L ? _pendingAuthoredKillCredits : kills * KillRewardCredits;
+            _pendingAuthoredKillCredits = 0L;
+            long earned = Math.Max(kills, (long)Math.Ceiling(authoredBase * (1d + RewardCreditMultiplierBonus)));
             RuntimeCurrency += earned;
             EmitFloatingStatusText(CreateTowerMuzzlePosition(Vector3.zero), "+" + earned.ToString(CultureInfo.InvariantCulture) + " credits", new Color(1f, 0.86f, 0.2f));
         }
@@ -4591,10 +4877,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void GrantPassiveIncomeIfReady(int ticks)
         {
             _passiveIncomeTicks += Math.Max(1, ticks);
-            if (_passiveIncomeTicks < PassiveIncomeIntervalTicks) return;
-            int intervals = _passiveIncomeTicks / PassiveIncomeIntervalTicks;
-            _passiveIncomeTicks %= PassiveIncomeIntervalTicks;
-            RuntimeCurrency += intervals;
+            int intervalTicks = _activeEconomy == null ? PassiveIncomeIntervalTicks : Math.Max(1, _activeEconomy.PassiveIncomeIntervalTicks);
+            if (_passiveIncomeTicks < intervalTicks) return;
+            int intervals = _passiveIncomeTicks / intervalTicks;
+            _passiveIncomeTicks %= intervalTicks;
+            long amount = _activeEconomy == null ? 1L : Math.Max(0L, _activeEconomy.PassiveIncomeAmount);
+            RuntimeCurrency += intervals * amount;
         }
 
         private bool SpendRuntimeCurrency(int cost)
@@ -4614,10 +4902,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return baseCost + Math.Max(0, rank) * (baseCost / 2 + 6);
         }
 
-        private static long ResolveRuntimeStartingCredits(GameContentSetResolution resolution)
+        private int ResolveUpgradeCost(string costId, int rank, int fallbackBaseCost = 0)
         {
-            if (resolution != null && resolution.IsValid && resolution.ContentSet != null && resolution.ContentSet.StartingCredits > 0)
-                return resolution.ContentSet.StartingCredits;
+            IdleAutoDefenseCostCurve curve = _activeEconomy == null ? null : _activeEconomy.GetUpgradeCostCurve(costId);
+            return curve == null ? CalculateUpgradeCost(fallbackBaseCost, rank) : curve.Calculate(rank);
+        }
+
+        private int ResolveModuleBuildCost(IdleAutoDefenseModuleRole role, int fallbackCost)
+        {
+            IdleAutoDefenseModuleRule module = _activeGameRules == null ? null : _activeGameRules.GetModule(role);
+            return module == null ? fallbackCost : module.BuildCost;
+        }
+
+        private long ResolveRuntimeStartingCredits(GameContentSetResolution resolution)
+        {
+            if (resolution != null && resolution.IsValid && resolution.ContentSet != null && resolution.ContentSet.Economy != null)
+                return Math.Max(0L, resolution.ContentSet.Economy.StartingCredits);
+            if (_activeEconomy != null)
+                return Math.Max(0L, _activeEconomy.StartingCredits);
             return DefaultRuntimeStartingCredits;
         }
 
@@ -4654,29 +4956,80 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void ApplyEncounterRewardIfTerminal()
         {
             if (_completionRewardApplied || _progressionState == null || _runtime.State == AutoDefenseRuntimeState.Running) return;
-            ProgressionResult result = _progressionState.ApplyReward(_progressionCatalog, new ProgressionOperationId("idle-auto-defense.encounter.terminal.1"), BasicIdleAutoDefenseGame.CreateEncounterCompletionReward());
+            RewardBundle authoredReward = _activeProgression == null || _activeEconomy == null
+                ? BasicIdleAutoDefenseGame.CreateEncounterCompletionReward()
+                : _activeProgression.CreateEncounterCompletionReward(_activeEconomy);
+            ProgressionResult result = _progressionState.ApplyReward(
+                _progressionCatalog,
+                new ProgressionOperationId("idle-auto-defense.encounter.terminal.1"),
+                authoredReward);
             if (!result.Succeeded) return;
-            long bonusCredits = (long)Math.Ceiling(60d * RewardCreditMultiplierBonus);
+            long baseCredits = _activeEconomy == null ? 60L : Math.Max(0L, _activeEconomy.EncounterCompletionCredits);
+            long bonusCredits = (long)Math.Ceiling(baseCredits * RewardCreditMultiplierBonus);
             if (bonusCredits > 0)
             {
                 _progressionState.ApplyReward(
                     _progressionCatalog,
                     new ProgressionOperationId("idle-auto-defense.encounter.terminal.1.reward-bonus"),
-                    new RewardBundle(new[] { new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(bonusCredits), true) }));
+                    new RewardBundle(new[] { new CurrencyLine(RuntimeCredits, new ProgressionAmount(bonusCredits), true) }));
             }
 
             _completionRewardApplied = true;
-            EncounterRewardCredits = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Credits).Value;
-            EncounterRewardParts = _progressionState.GetBalance(BasicIdleAutoDefenseGame.Parts).Value;
+            EncounterRewardCredits = _progressionState.GetBalance(RuntimeCredits).Value;
+            EncounterRewardParts = _progressionState.GetBalance(RuntimeParts).Value;
+        }
+
+        private void BlockStrictStartup()
+        {
+            StartupBlocked = true;
+            FallbackModeActive = false;
+            string source = _contentPack != null
+                ? "content pack '" + _contentPack.name + "'"
+                : _contentSet != null
+                    ? "content set '" + _contentSet.name + "'"
+                    : "the generated scene assignment";
+            string details = !string.IsNullOrWhiteSpace(AssignedContentPackStatus)
+                ? AssignedContentPackStatus + " " + AssignedContentSetStatus
+                : AssignedContentSetStatus;
+            StartupError = "Strict authored startup blocked: " + source + " is missing or invalid. " + details;
+            Debug.LogError("[Idle Auto Defense Template] " + StartupError, this);
+        }
+
+        private void BindExplicitFallbackCore()
+        {
+            FallbackModeActive = true;
+            StartupBlocked = false;
+            StartupError = string.Empty;
+            _activeRewardCatalog = IdleAutoDefenseRewardCatalogAsset.CreateTransient(RewardDraftSettings, RewardDraftCatalog);
+            _activeEconomy = IdleAutoDefenseEconomyAsset.CreateTransient(DefaultRuntimeStartingCredits > int.MaxValue ? int.MaxValue : (int)DefaultRuntimeStartingCredits, 0);
+            _activeRunProfile = IdleAutoDefenseRunProfileAsset.CreateTransient(_resolvedWaveDefinitions);
+            _activeProgression = IdleAutoDefenseProgressionAsset.CreateTransient();
+            _activeOfflineProgression = IdleAutoDefenseOfflineProgressionAsset.CreateTransient();
+            _activeGameRules = IdleAutoDefenseGameRulesAsset.CreateTransient(_resolvedWeaponDefinitions, _resolvedEnemyDefinitions);
+            AssignedContentPackStatus = string.IsNullOrWhiteSpace(AssignedContentPackStatus)
+                ? "Explicit unbound fallback host."
+                : AssignedContentPackStatus;
+            AssignedContentSetStatus = string.IsNullOrWhiteSpace(AssignedContentSetStatus)
+                ? "Using documented transient fallback content for an unbound debug/test host."
+                : AssignedContentSetStatus;
         }
 
         private bool TryUseAssignedContentSet()
         {
             UsingAssignedContentPack = false;
             UsingAssignedContentSet = false;
+            StartupBlocked = false;
+            StartupError = string.Empty;
+            FallbackModeActive = false;
             InvalidAssignedContentPackIssueCount = 0;
             InvalidAssignedContentSetIssueCount = 0;
             _resolvedContentSet = null;
+            _activeRewardCatalog = null;
+            _activeEconomy = null;
+            _activeRunProfile = null;
+            _activeProgression = null;
+            _activeOfflineProgression = null;
+            _activeGameRules = null;
 
             if (_contentPack != null)
             {
@@ -4687,11 +5040,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
                 if (!packResolution.IsValid)
                 {
-                    AssignedContentPackStatus = "Assigned content pack is invalid; using direct assigned assets or built-in starter content.";
+                    AssignedContentPackStatus = _requireAuthoredContent
+                        ? "Assigned content pack is invalid; strict startup will block gameplay."
+                        : "Assigned content pack is invalid; explicit fallback mode may be used by this debug/test host.";
                     AssignedContentSetStatus = "Content pack could not resolve a playable content set.";
-                    Debug.LogWarning(
-                        "[Idle Auto Defense Template] Assigned GameContentPackAsset '" + _contentPack.name + "' is incomplete or invalid. Falling back safely. " + CreateContentPackIssueSummary(packResolution),
-                        this);
+                    if (!_requireAuthoredContent)
+                        Debug.LogWarning(
+                            "[Idle Auto Defense Template] Assigned GameContentPackAsset '" + _contentPack.name + "' is incomplete or invalid. Entering explicit fallback mode. " + CreateContentPackIssueSummary(packResolution),
+                            this);
                     return false;
                 }
 
@@ -4712,7 +5068,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (_contentSet == null)
             {
                 AssignedContentPackStatus = "No content pack assigned.";
-                AssignedContentSetStatus = "No content set assigned; using direct assigned assets or built-in starter content.";
+                AssignedContentSetStatus = _requireAuthoredContent
+                    ? "No content set assigned; strict startup will block gameplay."
+                    : "No content set assigned; this unbound debug/test host may use explicit fallback mode.";
                 return false;
             }
 
@@ -4721,10 +5079,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             InvalidAssignedContentSetIssueCount = resolution.Report.ErrorCount;
             if (!resolution.IsValid)
             {
-                AssignedContentSetStatus = "Assigned content set is invalid; using direct assigned assets or built-in starter content.";
-                Debug.LogWarning(
-                    "[Idle Auto Defense Template] Assigned GameContentSetAsset '" + _contentSet.name + "' is incomplete or invalid. Falling back safely. " + CreateContentSetIssueSummary(resolution.Report),
-                    this);
+                AssignedContentSetStatus = _requireAuthoredContent
+                    ? "Assigned content set is invalid; strict startup will block gameplay."
+                    : "Assigned content set is invalid; this debug/test host may use explicit fallback mode.";
+                if (!_requireAuthoredContent)
+                    Debug.LogWarning(
+                        "[Idle Auto Defense Template] Assigned GameContentSetAsset '" + _contentSet.name + "' is incomplete or invalid. Entering explicit fallback mode. " + CreateContentSetIssueSummary(resolution.Report),
+                        this);
                 return false;
             }
 
@@ -4748,7 +5109,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _resolvedWaveDefinitions = CopyResolved(resolution.Waves);
             _resolvedWeaponDefinitions = CopyResolved(resolution.Weapons);
             _resolvedUpgradeDefinitions = CopyResolved(resolution.Upgrades);
+            _activeRewardCatalog = resolution.ContentSet.RewardCatalog;
+            _activeEconomy = resolution.ContentSet.Economy;
+            _activeRunProfile = resolution.ContentSet.RunProfile;
+            _activeProgression = resolution.ContentSet.Progression;
+            _activeOfflineProgression = resolution.ContentSet.OfflineProgression;
+            _activeGameRules = resolution.ContentSet.GameRules;
             ApplyContentSetRuntimeSettings(resolution.ContentSet);
+            FallbackModeActive = false;
+            StartupBlocked = false;
+            StartupError = string.Empty;
             UsingAssignedContentSet = true;
         }
 
@@ -4756,8 +5126,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (contentSet == null || contentSet.RuntimeSettings == null) return;
             IdleAutoDefenseContentSetRuntimeSettings settings = contentSet.RuntimeSettings;
-            _rewardDraftSettings = settings.RewardDraftSettings.Clone();
-            _rewardDraftCatalog = settings.RewardDraftCatalog.Clone();
+            if (contentSet.RewardCatalog != null)
+            {
+                _rewardDraftSettings = contentSet.RewardCatalog.Settings.Clone();
+                _rewardDraftCatalog = contentSet.RewardCatalog.Catalog.Clone();
+            }
             IdleAutoDefensePresentationDebugSettings debug = settings.PresentationDebug;
             _showDebugAimLines = debug != null && debug.ShowDebugAimLines;
             _showDebugRanges = debug != null && debug.ShowDebugRanges;
@@ -4797,10 +5170,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (resolution == null || !resolution.IsValid || _progressionState == null || _progressionCatalog == null) return;
             var currencies = new List<CurrencyLine>();
-            if (resolution.ContentSet.StartingCredits > 0)
-                currencies.Add(new CurrencyLine(BasicIdleAutoDefenseGame.Credits, new ProgressionAmount(resolution.ContentSet.StartingCredits), true));
-            if (resolution.ContentSet.StartingParts > 0)
-                currencies.Add(new CurrencyLine(BasicIdleAutoDefenseGame.Parts, new ProgressionAmount(resolution.ContentSet.StartingParts), true));
+            if (_activeEconomy != null && _activeEconomy.StartingCredits > 0)
+                currencies.Add(new CurrencyLine(RuntimeCredits, new ProgressionAmount(_activeEconomy.StartingCredits), true));
+            if (_activeEconomy != null && _activeEconomy.StartingParts > 0)
+                currencies.Add(new CurrencyLine(RuntimeParts, new ProgressionAmount(_activeEconomy.StartingParts), true));
             if (currencies.Count == 0) return;
 
             _progressionState.ApplyReward(
@@ -4812,7 +5185,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void ApplyContentSetEconomyTuning(GameContentSetResolution resolution)
         {
             if (resolution == null || !resolution.IsValid) return;
-            RewardCreditMultiplierBonus = Math.Max(0d, resolution.ContentSet.RewardMultiplier - 1f);
+            RewardCreditMultiplierBonus = Math.Max(0d, (_activeRunProfile == null ? 1f : _activeRunProfile.RewardMultiplier) - 1f);
         }
 
         private static string CreateContentSetIssueSummary(GameContentSetValidationReport report)
@@ -5009,7 +5382,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             for (int i = 0; i < result.Reward.CurrencyLines.Count; i++)
             {
                 CurrencyLine line = result.Reward.CurrencyLines[i];
-                if (line.CurrencyId.Equals(BasicIdleAutoDefenseGame.Credits))
+                if (line.CurrencyId.Equals(RuntimeCredits))
                     return (long)Math.Ceiling(line.Amount.Value * OfflineRewardMultiplierBonus);
             }
 
@@ -5038,9 +5411,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
             DisableColliders(core);
 
+            IdleAutoDefenseModuleRule startingModule = ResolveModuleRule(IdleAutoDefenseModuleRole.StartingProjectile);
             CreateWeaponPresentation(
-                BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value,
-                BasicIdleAutoDefenseGame.ShardAttackId.Value,
+                startingModule == null ? BasicIdleAutoDefenseGame.ShardLauncherWeaponId.Value : startingModule.WeaponId,
+                startingModule == null ? BasicIdleAutoDefenseGame.ShardAttackId.Value : startingModule.AttackId,
                 true);
         }
 
@@ -5338,10 +5712,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 CreateModuleSlot(slots[i]);
             if (!_showDebugSpawnRing) return;
             Color warningStrip = new Color(0.95f, 0.68f, 0.18f, 0.95f);
-            CreateKenneyMarkerLine("Outer Spawn Zone North", new Vector3(0f, 0f, TemplateVisibleArenaRadius), Quaternion.identity, 6, warningStrip);
-            CreateKenneyMarkerLine("Outer Spawn Zone East", new Vector3(TemplateVisibleArenaRadius, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), 6, warningStrip);
-            CreateKenneyMarkerLine("Outer Spawn Zone South", new Vector3(0f, 0f, -TemplateVisibleArenaRadius), Quaternion.identity, 6, warningStrip);
-            CreateKenneyMarkerLine("Outer Spawn Zone West", new Vector3(-TemplateVisibleArenaRadius, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), 6, warningStrip);
+            float radius = _activeGameRules == null ? TemplateVisibleArenaRadius : _activeGameRules.VisibleArenaRadius;
+            CreateKenneyMarkerLine("Outer Spawn Zone North", new Vector3(0f, 0f, radius), Quaternion.identity, 6, warningStrip);
+            CreateKenneyMarkerLine("Outer Spawn Zone East", new Vector3(radius, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), 6, warningStrip);
+            CreateKenneyMarkerLine("Outer Spawn Zone South", new Vector3(0f, 0f, -radius), Quaternion.identity, 6, warningStrip);
+            CreateKenneyMarkerLine("Outer Spawn Zone West", new Vector3(-radius, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), 6, warningStrip);
         }
 
         private IReadOnlyList<IdleAutoDefenseModuleSlotPresentationBinding> ResolveModuleSlotPresentationBindings()
@@ -5689,6 +6064,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             OfflineRewardMultiplierBonus = 0d;
             RuntimeCurrency = 0;
             SurvivalSeconds = 0f;
+            _sessionElapsedTicks = 0;
+            _simulationTickAccumulator = 0f;
+            _endlessRestartPending = false;
+            RunProfileVictoryReached = false;
             DamageUpgradeRank = 0;
             AttackSpeedUpgradeRank = 0;
             RangeUpgradeRank = 0;
@@ -5718,6 +6097,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _weaponNormalUpgradeRanks.Clear();
             _weaponEpicUpgradeRanks.Clear();
             _weaponLegendaryUnlocks.Clear();
+            _selectedRewardIds.Clear();
             _baseRewardRanks.Clear();
             _lastProjectileAgentPositions.Clear();
             _rewardDraftChoices = Array.Empty<IdleAutoDefenseRewardDraftChoice>();
@@ -5728,6 +6108,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _arcBurstBonus = 0;
             _homingPulseBonus = 0;
             _rewardDamageMultiplierBonus = 0d;
+            _pendingAuthoredKillCredits = 0L;
             _starterRewardDraftOffered = false;
             _overdriveSecondsRemaining = 0f;
             _overdriveCooldownSecondsRemaining = 0f;

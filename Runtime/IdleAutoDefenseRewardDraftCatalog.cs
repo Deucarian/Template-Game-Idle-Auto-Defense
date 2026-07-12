@@ -1,9 +1,30 @@
 using System;
 using System.Collections.Generic;
+using Deucarian.WeaponSystems.Authoring;
 using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense
 {
+    [Flags]
+    public enum IdleAutoDefenseRewardSourceEligibility
+    {
+        None = 0,
+        LevelUp = 1 << 0,
+        WaveComplete = 1 << 1,
+        EliteDefeated = 1 << 2,
+        BossDefeated = 1 << 3,
+        All = LevelUp | WaveComplete | EliteDefeated | BossDefeated
+    }
+
+    public enum IdleAutoDefenseRewardTrack
+    {
+        Unlock = 0,
+        Normal = 1,
+        Epic = 2,
+        Legendary = 3,
+        Base = 4
+    }
+
     [Serializable]
     public sealed class IdleAutoDefenseRewardDraftCatalog
     {
@@ -62,11 +83,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             return new IdleAutoDefenseRewardDraftCatalog
             {
-                _weaponUnlocks = CopyRewards(_weaponUnlocks),
-                _normalWeaponRewards = CopyRewards(_normalWeaponRewards),
-                _epicWeaponRewards = CopyRewards(_epicWeaponRewards),
-                _legendaryWeaponRewards = CopyRewards(_legendaryWeaponRewards),
-                _baseRewards = CopyRewards(_baseRewards)
+                _weaponUnlocks = CloneRewards(_weaponUnlocks, reward => reward == null ? null : reward.Clone()),
+                _normalWeaponRewards = CloneRewards(_normalWeaponRewards, reward => reward == null ? null : reward.Clone()),
+                _epicWeaponRewards = CloneRewards(_epicWeaponRewards, reward => reward == null ? null : reward.Clone()),
+                _legendaryWeaponRewards = CloneRewards(_legendaryWeaponRewards, reward => reward == null ? null : reward.Clone()),
+                _baseRewards = CloneRewards(_baseRewards, reward => reward == null ? null : reward.Clone())
             };
         }
 
@@ -183,11 +204,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             return false;
         }
 
-        private static TReward[] CopyRewards<TReward>(IReadOnlyList<TReward> source)
+        private static TReward[] CloneRewards<TReward>(IReadOnlyList<TReward> source, Func<TReward, TReward> clone)
         {
             if (source == null || source.Count == 0) return Array.Empty<TReward>();
             var copy = new TReward[source.Count];
-            for (int i = 0; i < source.Count; i++) copy[i] = source[i];
+            for (int i = 0; i < source.Count; i++) copy[i] = clone(source[i]);
             return copy;
         }
     }
@@ -195,12 +216,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     [Serializable]
     public sealed class IdleAutoDefenseWeaponUnlockReward
     {
+        [SerializeField] private string _id;
+        [SerializeField] private WeaponDefinitionAsset _weapon;
         [SerializeField] private string _weaponId;
         [SerializeField] private string _displayName;
         [SerializeField] private string _effectDescription;
         [SerializeField] private IdleAutoDefenseRewardRarity _levelUpRarity;
         [SerializeField] private IdleAutoDefenseRewardRarity _eliteRarity;
         [SerializeField] private IdleAutoDefenseRewardRarity _bossRarity;
+        [SerializeField] private double _weight = 1d;
+        [SerializeField] private int _maxRank = 1;
+        [SerializeField] private string[] _prerequisiteIds = Array.Empty<string>();
+        [SerializeField] private IdleAutoDefenseRewardSourceEligibility _eligibleSources = IdleAutoDefenseRewardSourceEligibility.All;
 
         public IdleAutoDefenseWeaponUnlockReward()
         {
@@ -208,17 +235,28 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public IdleAutoDefenseWeaponUnlockReward(string weaponId, string displayName, string effectDescription, IdleAutoDefenseRewardRarity levelUpRarity, IdleAutoDefenseRewardRarity eliteRarity, IdleAutoDefenseRewardRarity bossRarity)
         {
+            _id = "reward.unlock." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(weaponId);
             _weaponId = weaponId ?? string.Empty;
             _displayName = displayName ?? string.Empty;
             _effectDescription = effectDescription ?? string.Empty;
             _levelUpRarity = levelUpRarity;
             _eliteRarity = eliteRarity;
             _bossRarity = bossRarity;
+            _weight = 1d;
+            _maxRank = 1;
+            _eligibleSources = IdleAutoDefenseRewardSourceEligibility.All;
         }
 
-        public string WeaponId => _weaponId ?? string.Empty;
+        public string Id => _id ?? string.Empty;
+        public WeaponDefinitionAsset Weapon => _weapon;
+        public string WeaponId => _weapon == null ? _weaponId ?? string.Empty : _weapon.Id;
         public string DisplayName => _displayName ?? string.Empty;
         public string EffectDescription => _effectDescription ?? string.Empty;
+        public double Weight => IsFinitePositive(_weight) ? _weight : 0d;
+        public int MaxRank => Math.Max(1, _maxRank);
+        public IReadOnlyList<string> PrerequisiteIds => _prerequisiteIds ?? Array.Empty<string>();
+        public IdleAutoDefenseRewardSourceEligibility EligibleSources => _eligibleSources;
+        public IdleAutoDefenseRewardTrack Track => IdleAutoDefenseRewardTrack.Unlock;
 
         public IdleAutoDefenseRewardRarity GetRarity(IdleAutoDefenseRewardDraftKind kind)
         {
@@ -226,19 +264,64 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (kind == IdleAutoDefenseRewardDraftKind.EliteDefeated) return _eliteRarity;
             return _levelUpRarity;
         }
+
+        public bool IsEligible(IdleAutoDefenseRewardDraftKind kind)
+        {
+            return (EligibleSources & IdleAutoDefenseRewardEligibility.For(kind)) != 0;
+        }
+
+        public IdleAutoDefenseWeaponUnlockReward Clone()
+        {
+            return new IdleAutoDefenseWeaponUnlockReward
+            {
+                _id = Id,
+                _weapon = _weapon,
+                _weaponId = _weaponId,
+                _displayName = DisplayName,
+                _effectDescription = EffectDescription,
+                _levelUpRarity = _levelUpRarity,
+                _eliteRarity = _eliteRarity,
+                _bossRarity = _bossRarity,
+                _weight = _weight,
+                _maxRank = _maxRank,
+                _prerequisiteIds = CopyStrings(PrerequisiteIds),
+                _eligibleSources = _eligibleSources
+            };
+        }
+
+        private static bool IsFinitePositive(double value)
+        {
+            return value > 0d && !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+
+        private static string[] CopyStrings(IReadOnlyList<string> source)
+        {
+            var copy = new string[source.Count];
+            for (int i = 0; i < copy.Length; i++) copy[i] = source[i] ?? string.Empty;
+            return copy;
+        }
     }
 
     [Serializable]
     public sealed class IdleAutoDefenseWeaponRewardDefinition
     {
+        [SerializeField] private string _id;
+        [SerializeField] private WeaponDefinitionAsset _weapon;
         [SerializeField] private string _weaponId;
         [SerializeField] private string _tierKey;
+        [SerializeField] private IdleAutoDefenseRewardTrack _track;
         [SerializeField] private string _displayName;
         [SerializeField] private IdleAutoDefenseRewardRarity _rarity;
+        [SerializeField] private double _weight = 1d;
         [SerializeField] private string _typeName;
         [SerializeField] private string _effectDescription;
         [SerializeField] private IdleAutoDefenseRewardEffectKind _effectKind;
         [SerializeField] private double _amount;
+        [SerializeField] private int _maxRank = 1;
+        [SerializeField] private int _requiredNormalRank;
+        [SerializeField] private int _requiredEpicRank;
+        [SerializeField] private string[] _prerequisiteIds = Array.Empty<string>();
+        [SerializeField] private IdleAutoDefenseRewardSourceEligibility _eligibleSources = IdleAutoDefenseRewardSourceEligibility.All;
 
         public IdleAutoDefenseWeaponRewardDefinition()
         {
@@ -246,38 +329,120 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public IdleAutoDefenseWeaponRewardDefinition(string weaponId, string tierKey, string displayName, IdleAutoDefenseRewardRarity rarity, string typeName, string effectDescription, IdleAutoDefenseRewardEffectKind effectKind, double amount)
         {
+            _id = "reward." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(weaponId) + "." + BasicIdleAutoDefenseGame.SanitizeContentSetOperationSegment(tierKey);
             _weaponId = weaponId ?? string.Empty;
             _tierKey = tierKey ?? string.Empty;
+            _track = rarity == IdleAutoDefenseRewardRarity.Legendary
+                ? IdleAutoDefenseRewardTrack.Legendary
+                : rarity == IdleAutoDefenseRewardRarity.Epic
+                    ? IdleAutoDefenseRewardTrack.Epic
+                    : IdleAutoDefenseRewardTrack.Normal;
             _displayName = displayName ?? string.Empty;
             _rarity = rarity;
+            _weight = 1d;
             _typeName = typeName ?? string.Empty;
             _effectDescription = effectDescription ?? string.Empty;
             _effectKind = effectKind;
             _amount = amount;
+            _maxRank = 1;
+            if (_track == IdleAutoDefenseRewardTrack.Epic) _requiredNormalRank = 3;
+            if (_track == IdleAutoDefenseRewardTrack.Legendary)
+            {
+                _requiredNormalRank = 3;
+                _requiredEpicRank = 3;
+            }
+            _eligibleSources = IdleAutoDefenseRewardSourceEligibility.All;
         }
 
-        public string WeaponId => _weaponId ?? string.Empty;
+        public string Id => _id ?? string.Empty;
+        public WeaponDefinitionAsset Weapon => _weapon;
+        public string WeaponId => _weapon == null ? _weaponId ?? string.Empty : _weapon.Id;
         public string TierKey => _tierKey ?? string.Empty;
+        public IdleAutoDefenseRewardTrack Track => _track;
         public string DisplayName => _displayName ?? string.Empty;
         public IdleAutoDefenseRewardRarity Rarity => _rarity;
+        public double Weight
+        {
+            get => IsFinitePositive(_weight) ? _weight : 0d;
+            set => _weight = value;
+        }
         public string TypeName => _typeName ?? string.Empty;
         public string EffectDescription => _effectDescription ?? string.Empty;
         public IdleAutoDefenseRewardEffectKind EffectKind => _effectKind;
-        public double Amount => _amount;
+        public double Amount
+        {
+            get => _amount;
+            set => _amount = value;
+        }
+        public int MaxRank => Math.Max(1, _maxRank);
+        public int RequiredNormalRank => Math.Max(0, _requiredNormalRank);
+        public int RequiredEpicRank => Math.Max(0, _requiredEpicRank);
+        public IReadOnlyList<string> PrerequisiteIds => _prerequisiteIds ?? Array.Empty<string>();
+        public IdleAutoDefenseRewardSourceEligibility EligibleSources => _eligibleSources;
+
+        public bool IsEligible(IdleAutoDefenseRewardDraftKind kind)
+        {
+            return (EligibleSources & IdleAutoDefenseRewardEligibility.For(kind)) != 0;
+        }
+
+        public bool IsAvailableAt(int normalRank, int epicRank)
+        {
+            return normalRank >= RequiredNormalRank && epicRank >= RequiredEpicRank;
+        }
+
+        public IdleAutoDefenseWeaponRewardDefinition Clone()
+        {
+            return new IdleAutoDefenseWeaponRewardDefinition
+            {
+                _id = Id,
+                _weapon = _weapon,
+                _weaponId = _weaponId,
+                _tierKey = TierKey,
+                _track = _track,
+                _displayName = DisplayName,
+                _rarity = _rarity,
+                _weight = _weight,
+                _typeName = TypeName,
+                _effectDescription = EffectDescription,
+                _effectKind = _effectKind,
+                _amount = _amount,
+                _maxRank = _maxRank,
+                _requiredNormalRank = _requiredNormalRank,
+                _requiredEpicRank = _requiredEpicRank,
+                _prerequisiteIds = CopyStrings(PrerequisiteIds),
+                _eligibleSources = _eligibleSources
+            };
+        }
+
+        private static bool IsFinitePositive(double value)
+        {
+            return value > 0d && !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+
+        private static string[] CopyStrings(IReadOnlyList<string> source)
+        {
+            var copy = new string[source.Count];
+            for (int i = 0; i < copy.Length; i++) copy[i] = source[i] ?? string.Empty;
+            return copy;
+        }
     }
 
     [Serializable]
     public sealed class IdleAutoDefenseBaseRewardDefinition
     {
-        [SerializeField] private string _key;
+        [SerializeField] private string _id;
         [SerializeField] private string _displayName;
         [SerializeField] private IdleAutoDefenseRewardRarity _rarity;
+        [SerializeField] private double _weight = 1d;
         [SerializeField] private string _typeName;
+        [SerializeField] private string _targetId;
         [SerializeField] private string _targetName;
         [SerializeField] private string _effectDescription;
         [SerializeField] private IdleAutoDefenseRewardEffectKind _effectKind;
         [SerializeField] private double _amount;
         [SerializeField] private int _maxRank;
+        [SerializeField] private string[] _prerequisiteIds = Array.Empty<string>();
+        [SerializeField] private IdleAutoDefenseRewardSourceEligibility _eligibleSources = IdleAutoDefenseRewardSourceEligibility.All;
 
         public IdleAutoDefenseBaseRewardDefinition()
         {
@@ -285,25 +450,90 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public IdleAutoDefenseBaseRewardDefinition(string key, string displayName, IdleAutoDefenseRewardRarity rarity, string typeName, string targetName, string effectDescription, IdleAutoDefenseRewardEffectKind effectKind, double amount, int maxRank)
         {
-            _key = key ?? string.Empty;
+            _id = key ?? string.Empty;
             _displayName = displayName ?? string.Empty;
             _rarity = rarity;
+            _weight = 1d;
             _typeName = typeName ?? string.Empty;
+            _targetId = "objective.idle-auto-defense.core";
             _targetName = targetName ?? string.Empty;
             _effectDescription = effectDescription ?? string.Empty;
             _effectKind = effectKind;
             _amount = amount;
             _maxRank = maxRank;
+            _eligibleSources = IdleAutoDefenseRewardSourceEligibility.All;
         }
 
-        public string Key => _key ?? string.Empty;
+        public string Id => _id ?? string.Empty;
+        public string Key => Id;
         public string DisplayName => _displayName ?? string.Empty;
         public IdleAutoDefenseRewardRarity Rarity => _rarity;
+        public double Weight
+        {
+            get => IsFinitePositive(_weight) ? _weight : 0d;
+            set => _weight = value;
+        }
         public string TypeName => _typeName ?? string.Empty;
+        public string TargetId => _targetId ?? string.Empty;
         public string TargetName => _targetName ?? string.Empty;
         public string EffectDescription => _effectDescription ?? string.Empty;
         public IdleAutoDefenseRewardEffectKind EffectKind => _effectKind;
-        public double Amount => _amount;
+        public double Amount
+        {
+            get => _amount;
+            set => _amount = value;
+        }
         public int MaxRank => Math.Max(1, _maxRank);
+        public IReadOnlyList<string> PrerequisiteIds => _prerequisiteIds ?? Array.Empty<string>();
+        public IdleAutoDefenseRewardSourceEligibility EligibleSources => _eligibleSources;
+        public IdleAutoDefenseRewardTrack Track => IdleAutoDefenseRewardTrack.Base;
+
+        public bool IsEligible(IdleAutoDefenseRewardDraftKind kind)
+        {
+            return (EligibleSources & IdleAutoDefenseRewardEligibility.For(kind)) != 0;
+        }
+
+        public IdleAutoDefenseBaseRewardDefinition Clone()
+        {
+            return new IdleAutoDefenseBaseRewardDefinition
+            {
+                _id = Id,
+                _displayName = DisplayName,
+                _rarity = _rarity,
+                _weight = _weight,
+                _typeName = TypeName,
+                _targetId = TargetId,
+                _targetName = TargetName,
+                _effectDescription = EffectDescription,
+                _effectKind = _effectKind,
+                _amount = _amount,
+                _maxRank = _maxRank,
+                _prerequisiteIds = CopyStrings(PrerequisiteIds),
+                _eligibleSources = _eligibleSources
+            };
+        }
+
+        private static bool IsFinitePositive(double value)
+        {
+            return value > 0d && !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+
+        private static string[] CopyStrings(IReadOnlyList<string> source)
+        {
+            var copy = new string[source.Count];
+            for (int i = 0; i < copy.Length; i++) copy[i] = source[i] ?? string.Empty;
+            return copy;
+        }
+    }
+
+    internal static class IdleAutoDefenseRewardEligibility
+    {
+        public static IdleAutoDefenseRewardSourceEligibility For(IdleAutoDefenseRewardDraftKind kind)
+        {
+            if (kind == IdleAutoDefenseRewardDraftKind.BossDefeated) return IdleAutoDefenseRewardSourceEligibility.BossDefeated;
+            if (kind == IdleAutoDefenseRewardDraftKind.EliteDefeated) return IdleAutoDefenseRewardSourceEligibility.EliteDefeated;
+            if (kind == IdleAutoDefenseRewardDraftKind.WaveComplete) return IdleAutoDefenseRewardSourceEligibility.WaveComplete;
+            return IdleAutoDefenseRewardSourceEligibility.LevelUp;
+        }
     }
 }
