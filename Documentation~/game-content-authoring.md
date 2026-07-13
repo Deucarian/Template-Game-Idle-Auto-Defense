@@ -7,14 +7,14 @@ Running the existing Idle Auto Defense setup wizard generates project-owned auth
 - Display name: `Basic Idle Auto Defense`
 - Pack ID: `contentpack.idle-auto-defense.playable`
 - Owner: `com.deucarian.template.game.idle-auto-defense`
-- Persistence: staged project-owned ScriptableObject scalar editing
+- Persistence: staged project-owned ScriptableObject field editing
 
 - Display name: `Scrap Frontier`
 - Pack ID: `contentpack.idle-auto-defense.scrap-frontier`
 - Owner: `com.deucarian.template.game.idle-auto-defense`
-- Persistence: staged project-owned ScriptableObject scalar editing
+- Persistence: staged project-owned ScriptableObject field editing
 
-The generated `GameContentPackAsset`, its default `GameContentSetAsset`, and the set's referenced ScriptableObjects form the source-of-truth graph. The authoring integration does not create a GCA manifest, JSON mirror, content copy, or second database. The provider ignores private `TemplateSource~` assets and discovers only generated project content with the expected serialized pack ID.
+The generated `GameContentPackAsset`, its default `GameContentSetAsset`, and the set's project-owned ScriptableObjects form the source-of-truth graph. The authoring integration does not create a GCA manifest, JSON mirror, content copy, or second database. The provider ignores private `TemplateSource~` assets and discovers only generated project content with the expected serialized pack ID. Persisted `AttackDefinitionAsset` roots are discovered from the selected pack's exact content root, independently of current weapon references, so an unreferenced former target remains a canonical authored Attack record.
 
 ## Lenses And Records
 
@@ -61,27 +61,29 @@ If setup has not run, each named pack remains visible in a missing/generated-con
 
 Browsing remains non-mutating. For a supported record, **Edit Existing** opens the shared GCA transaction workbench without dirtying the source asset.
 
-## Safe Scalar Editing
+## Safe Field Editing
 
-Editing is deliberately limited to one standalone scalar section asset per transaction:
+Editing is deliberately limited to one standalone section asset per transaction:
 
 | Record | Writable fields | Serialized owner |
 |---|---|---|
 | Attack | cooldown ticks, range, damage | `AttackMechanicsDefinitionAsset` |
 | Enemy | maximum health, move speed, reward value, contact damage, collision radius | `EnemyStatsDefinitionAsset` |
-| Weapon / Tower | cooldown ticks, range, burst count, volley count, spread degrees, build cost | `WeaponStatsDefinitionAsset` |
+| Weapon / Tower | cooldown ticks, range, burst count, volley count, spread degrees, build cost, Attack reference | `WeaponStatsDefinitionAsset` |
 | Run Upgrade | rarity, draft weight, maximum rank | `RunUpgradeEconomyDefinitionAsset` |
 
-The provider uses explicit field IDs and `SerializedProperty` paths; it never exposes an arbitrary serialized property tree. A missing path, mismatched property type, invalid scalar type, non-finite number, or out-of-range value disables or rejects that edit safely.
+The provider uses explicit field IDs and `SerializedProperty` paths; it never exposes an arbitrary serialized property tree or raw Unity object picker. A missing path, mismatched property type, invalid value type, non-finite number, or out-of-range value disables or rejects that edit safely.
 
-The workbench captures the asset GUID, `GlobalObjectId`, normalized path, exact file SHA-256, dependency hash, mapped values, selected pack, canonical record, and backend schema. Apply, in-session Undo/Redo, Preview, and Cancel only change staged memory. Preview substitutes in-memory clones into the complete selected pack and runs the existing strict validators. Errors block Commit and warnings require explicit confirmation.
+`Weapon / Tower -> Attack` is the only editable record reference. Its selector is populated from canonical Attack records in the directly selected named pack. A target must be a persistent exact-type `AttackDefinitionAsset` under that pack's exact content root, have one matching canonical record and one provider-owned source claim, pass Attack validation, and match the weapon's delivery domain: projectile weapons require Projectile attacks, while direct weapons require non-Projectile attacks. Null, transient, scene, foreign-root, cross-pack, ambiguous, broken, or incompatible targets are rejected rather than serialized.
 
-Commit rechecks the revision and source policy, writes only the whitelisted fields to the same object in one Unity Undo group, validates the actual graph, saves only that source asset, imports it, and reindexes GCA. Unity Undo/Redo keeps the GUID and references and triggers another reindex. Explicit Rollback uses a new named Undo group and restores the exact captured source bytes only when the current revision still equals the committed revision; a later Inspector edit, setup repair, regeneration, import, or dependency change makes the session stale and prevents overwrite.
+The workbench captures the asset GUID, `GlobalObjectId`, normalized path, exact file SHA-256, dependency hash, mapped values, selected pack, canonical record, and backend schema. Apply, in-session Undo/Redo, Preview, and Cancel only change staged memory. Preview resolves and revalidates staged reference targets, substitutes in-memory clones into the complete selected pack, and runs the existing strict validators. Errors block Commit and warnings require explicit confirmation.
+
+Commit rechecks the revision, source policy, canonical target, source claim, validation state, and delivery compatibility immediately before writing only the whitelisted fields to the same object in one Unity Undo group. It validates the actual graph, saves only that source asset, imports it, and reindexes GCA. Unity Undo/Redo keeps the GUID and references and triggers another reindex. Explicit Rollback uses a new named Undo group and restores the exact captured source bytes only when the current revision still equals the committed revision; a later Inspector edit, setup repair, regeneration, import, target removal, or dependency change makes the session stale and prevents overwrite.
 
 Only writable generated assets under `Assets` that are claimed exclusively by the directly selected named pack qualify. Template sources, installed packages, `PackageCache`, `Library`, `Temp`, traversal/reparse paths, missing/read-only sources, All Packs, and Project Content through this backend remain read-only. Basic and Scrap have distinct GUID-backed sources and locks, so editing one cannot mutate the other.
 
 ## Current Limits
 
-Stable IDs, record references, Unity object fields, tags, arrays/lists/maps, waves, reward choices, economy collections, progression nodes, offline resource links, presentation, themes, audio events, tutorials, UI settings, creation, duplication, deletion, bulk edits, and pack cloning remain read-only. Setup refresh or repair must finish before a new edit session begins.
+Stable IDs, every record reference except `WeaponStatsDefinitionAsset._attack`, other Unity object fields, tags, arrays/lists/maps, waves, reward choices, economy collections, progression nodes, offline resource links, presentation, themes, audio events, tutorials, UI settings, creation, duplication, deletion, bulk edits, and pack cloning remain read-only. Setup refresh or repair must finish before a new edit session begins.
 
 ScriptableObjects remain the source of truth. No JSON mirror, duplicate ScriptableObject, temporary asset, or second content database is created. JSON and complex nested editing are separate deferred milestones.

@@ -19,6 +19,7 @@ This template must always generate and open as a complete playable vertical slic
 - The setup wizard must generate every required asset and reference so pressing Play works immediately.
 - A duplicate JSON gameplay mirror is not permitted. ScriptableObjects are the single editable source of truth.
 - Asset-flip-critical UI, tutorial, theme, and audio values come from the generated `Presentation` ScriptableObjects.
+- Repointing a mounted weapon through Game Content Authoring must resolve to a canonical compatible Attack owned by the same generated named pack; no fallback, mirror, or foreign-pack reference may satisfy the normal path.
 
 ## Intentional Fallback
 

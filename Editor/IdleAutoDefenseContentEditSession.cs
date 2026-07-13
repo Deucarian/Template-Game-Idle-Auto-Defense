@@ -101,7 +101,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
     }
 
-    internal sealed class IdleAutoDefenseContentEditSession : IGameContentEditSession
+    internal sealed class IdleAutoDefenseContentEditSession :
+        IGameContentEditSession,
+        IGameContentRecordReferenceEditSession
     {
         private readonly GameContentPackAuthoringProvider _provider;
         private readonly GameContentEditRequest _request;
@@ -133,7 +135,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             _originalFileBytes = ReadSourceBytes(source.SourcePath);
             GameContentSourceRevision confirmedRevision = IdleAutoDefenseSourceRevision.Create(request, source);
             if (!confirmedRevision.Equals(originalRevision))
-                throw new InvalidOperationException("The scalar source changed while the edit snapshot was being captured. Reopen the record and try again.");
+                throw new InvalidOperationException("The editable source changed while the edit snapshot was being captured. Reopen the record and try again.");
             _fields = source.Mappings.Select(value => value.Descriptor).ToArray();
             _history.Add(CopyValues(originalValues));
             Snapshot = new GameContentEditSnapshot(
@@ -173,6 +175,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (mapping == null) return GameContentEditOperationResult.Failure("The field is not part of the provider-owned scalar whitelist.");
             if (!mapping.Descriptor.Accepts(value, out string reason))
                 return GameContentEditOperationResult.Failure(reason);
+            if (mapping.Descriptor.FieldType == GameContentFieldType.RecordReference)
+            {
+                GameContentReferenceEvaluation evaluation = EvaluateReferenceTargetCore(
+                    mapping.Descriptor.FieldId,
+                    value.RecordReferenceValue?.TargetKey);
+                if (!evaluation.IsValid) return GameContentEditOperationResult.Failure(evaluation.Reason);
+            }
             if (CurrentValues.TryGetValue(mapping.Descriptor.FieldId, out GameContentFieldValue current) && current.Equals(value))
                 return GameContentEditOperationResult.Success("The staged value is already current.");
 
@@ -191,15 +200,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (!CanUndo) return GameContentEditOperationResult.Failure("There is no staged change to undo.");
             _historyIndex--;
             UpdateMutableState();
-            return GameContentEditOperationResult.Success("Undid the last staged scalar change.");
+            return GameContentEditOperationResult.Success("Undid the last staged field change.");
         }
 
         public GameContentEditOperationResult Redo()
         {
             if (!CanRedo) return GameContentEditOperationResult.Failure("There is no staged change to redo.");
+            Dictionary<string, GameContentFieldValue> next = _history[_historyIndex + 1];
+            GameContentStaleCheckResult stale = CheckStale();
+            if (stale.IsStale) return GameContentEditOperationResult.Failure(stale.Message);
+            if (!TryValidateReferenceValues(next, out string reason))
+                return GameContentEditOperationResult.Failure(reason);
             _historyIndex++;
             UpdateMutableState();
-            return GameContentEditOperationResult.Success("Redid the staged scalar change.");
+            return GameContentEditOperationResult.Success("Redid the staged field change.");
         }
 
         public GameContentValidationPreview Preview()
@@ -209,7 +223,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 return GameContentValidationPreview.Error("Editing", "Validation is unavailable while committing.");
             GameContentStaleCheckResult stale = CheckStale();
             if (stale.IsStale) return GameContentValidationPreview.Error("Stale Source", stale.Message);
+            if (!TryValidateReferenceValues(CurrentValues, out string reason))
+                return GameContentValidationPreview.Error("Attack Reference", reason);
             return IdleAutoDefenseProposedPackValidator.Validate(_source, CurrentValues);
+        }
+
+        public GameContentReferenceEvaluation EvaluateReferenceTarget(
+            string fieldId,
+            GameContentRecordKey targetKey)
+        {
+            if (_disposed)
+                return GameContentReferenceEvaluation.Rejected(targetKey, "The edit session is closed.");
+            GameContentStaleCheckResult stale = CheckStale();
+            if (stale.IsStale)
+                return GameContentReferenceEvaluation.Rejected(targetKey, stale.Message);
+            return EvaluateReferenceTargetCore(fieldId, targetKey);
         }
 
         public GameContentStaleCheckResult CheckStale()
@@ -231,7 +259,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 _state = GameContentEditSessionState.Stale;
                 return GameContentStaleCheckResult.Stale(
-                    "The physical scalar source changed after editing began. Cancel and reopen the regenerated record.",
+                    "The physical editable source changed after editing began. Cancel and reopen the regenerated record.",
                     _committedRevision ?? _originalRevision);
             }
 
@@ -244,7 +272,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 _state = GameContentEditSessionState.Conflict;
                 return GameContentStaleCheckResult.Stale(
-                    "The scalar source revision could not be verified: " + exception.GetBaseException().Message,
+                    "The editable source revision could not be verified: " + exception.GetBaseException().Message,
                     _committedRevision ?? _originalRevision);
             }
 
@@ -253,7 +281,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 _state = GameContentEditSessionState.Stale;
                 return GameContentStaleCheckResult.Stale(
-                    "The scalar source changed after this session captured its revision. Cancel and reopen it before editing or rollback.",
+                    "The editable source changed after this session captured its revision. Cancel and reopen it before editing or rollback.",
                     currentRevision);
             }
 
@@ -268,7 +296,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             if (_disposed) return GameContentCommitResult.Failure("The edit session is closed.", _originalRevision);
             if (_state != GameContentEditSessionState.Dirty)
-                return GameContentCommitResult.Failure("Only staged scalar changes can be committed.", _originalRevision);
+                return GameContentCommitResult.Failure("Only staged field changes can be committed.", _originalRevision);
 
             GameContentStaleCheckResult stale = CheckStale();
             if (stale.IsStale) return GameContentCommitResult.Failure(stale.Message, _originalRevision);
@@ -279,15 +307,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 return GameContentCommitResult.Failure("Confirm the proposed validation warnings before committing.", _originalRevision);
             if (!_provider.TryResolveEditableSource(_request, out IdleAutoDefenseEditableSource currentSource, out string reason) ||
                 !currentSource.SourceTarget.Equals(_source.SourceTarget))
-                return GameContentCommitResult.Failure(string.IsNullOrWhiteSpace(reason) ? "The scalar source changed before commit." : reason, _originalRevision);
+                return GameContentCommitResult.Failure(string.IsNullOrWhiteSpace(reason) ? "The editable source changed before commit." : reason, _originalRevision);
             if (!IdleAutoDefenseWritableSourcePolicy.TryProbeWriteAccess(currentSource.SourcePath, out reason))
                 return GameContentCommitResult.Failure(reason, _originalRevision);
 
             _source = currentSource;
+            if (!TryValidateReferenceValues(CurrentValues, out reason))
+                return GameContentCommitResult.Failure(reason, _originalRevision);
             _state = GameContentEditSessionState.Committing;
             UnityEditor.Undo.IncrementCurrentGroup();
             int undoGroup = UnityEditor.Undo.GetCurrentGroup();
-            string undoName = "Edit " + _source.Record.DisplayName + " authored scalar values";
+            string undoName = "Edit " + _source.Record.DisplayName + " authored fields";
             UnityEditor.Undo.SetCurrentGroupName(undoName);
             try
             {
@@ -296,7 +326,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     _source.SourceAsset,
                     _source.Mappings,
                     CurrentValues,
-                    true);
+                    true,
+                    _source.Index);
                 GameContentValidationPreview actual = _provider.ValidateActualPack(_request.RecordKey.PackId);
                 if (!actual.CanCommit)
                     return RestoreFailedCommit(undoGroup, "Authoritative validation rejected the modified authored pack.");
@@ -325,7 +356,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 _state = GameContentEditSessionState.Committed;
                 return new GameContentCommitResult(
                     true,
-                    "Committed staged scalar values to " + _source.SourcePath + ".",
+                    "Committed staged field values to " + _source.SourcePath + ".",
                     _originalRevision,
                     committedRevision,
                     requiresRefresh: true);
@@ -344,7 +375,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (_committedRevision == null)
             {
                 _state = GameContentEditSessionState.RolledBack;
-                return new GameContentRollbackResult(true, "Cancelled staged scalar changes without touching the source asset.", _originalRevision);
+                return new GameContentRollbackResult(true, "Cancelled staged field changes without touching the source asset.", _originalRevision);
             }
 
             GameContentStaleCheckResult stale = CheckStale();
@@ -366,7 +397,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             _state = GameContentEditSessionState.Committing;
             UnityEditor.Undo.IncrementCurrentGroup();
             int undoGroup = UnityEditor.Undo.GetCurrentGroup();
-            string undoName = "Rollback " + _source.Record.DisplayName + " authored scalar values";
+            string undoName = "Rollback " + _source.Record.DisplayName + " authored fields";
             UnityEditor.Undo.SetCurrentGroupName(undoName);
             try
             {
@@ -375,7 +406,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     _source.SourceAsset,
                     _source.Mappings,
                     _originalValues,
-                    true);
+                    true,
+                    _source.Index);
                 GameContentValidationPreview actual = _provider.ValidateActualPack(_request.RecordKey.PackId);
                 if (!actual.CanCommit)
                     throw new InvalidOperationException("The restored authored pack did not pass authoritative validation.");
@@ -394,7 +426,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 _state = GameContentEditSessionState.RolledBack;
                 return new GameContentRollbackResult(
                     true,
-                    "Restored the original authored scalar values in a new Unity Undo group.",
+                    "Restored the original authored field values in a new Unity Undo group.",
                     restoredRevision);
             }
             catch (Exception exception)
@@ -512,7 +544,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             IReadOnlyDictionary<string, GameContentFieldValue> expected)
         {
             IReadOnlyDictionary<string, GameContentFieldValue> actual =
-                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings);
+                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings, source.Index);
             foreach (KeyValuePair<string, GameContentFieldValue> pair in expected)
             {
                 if (!actual.TryGetValue(pair.Key, out GameContentFieldValue value) || !pair.Value.Equals(value))
@@ -541,6 +573,42 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     mapping.Descriptor.Order));
             }
             return changes;
+        }
+
+        private bool TryValidateReferenceValues(
+            IReadOnlyDictionary<string, GameContentFieldValue> values,
+            out string reason)
+        {
+            foreach (IdleAutoDefenseSerializedFieldMapping mapping in _source.Mappings.Where(candidate =>
+                         candidate.Descriptor.FieldType == GameContentFieldType.RecordReference &&
+                         !candidate.Descriptor.IsReadOnly))
+            {
+                if (!values.TryGetValue(mapping.Descriptor.FieldId, out GameContentFieldValue value))
+                {
+                    reason = $"The staged value for '{mapping.Descriptor.DisplayName}' is missing.";
+                    return false;
+                }
+                if (!mapping.Descriptor.Accepts(value, out reason))
+                    return false;
+                GameContentReferenceEvaluation evaluation = EvaluateReferenceTargetCore(
+                    mapping.Descriptor.FieldId,
+                    value.RecordReferenceValue?.TargetKey);
+                if (!evaluation.IsValid)
+                {
+                    reason = evaluation.Reason;
+                    return false;
+                }
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        private GameContentReferenceEvaluation EvaluateReferenceTargetCore(
+            string fieldId,
+            GameContentRecordKey targetKey)
+        {
+            return _provider.EvaluateAttackReferenceTarget(_source, fieldId, targetKey);
         }
 
         private void UpdateMutableState()

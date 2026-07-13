@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+- Added canonical `Weapon / Tower -> Attack` reference editing for generated Basic Idle Auto Defense and Scrap Frontier named packs.
+- Added exact-root persisted Attack discovery, canonical same-pack selection, source-claim and delivery compatibility checks, target revalidation, and stale/disappeared-target coverage.
+- Proved reference Commit, Unity Undo/Redo, explicit Rollback, strict authored runtime consumption, and Basic/Scrap isolation without changing shipped authored content.
 - Added provider-owned staged scalar editing for claimed Basic Idle Auto Defense and Scrap Frontier attack, enemy, mounted-weapon, and run-upgrade ScriptableObjects.
 - Added cloned-pack validation, source revision checks, one-group Unity Undo/Redo, stale-aware exact rollback, pack isolation, and runtime-consumption coverage without changing shipped gameplay values.
-- Documented the narrow writable field set and kept IDs, references, collections, nested catalogs, presentation structures, and JSON editing deferred.
+- Documented the narrow writable field set and kept IDs, all references except the mounted-weapon Attack link, collections, nested catalogs, presentation structures, and JSON editing deferred.
 
 ## 0.1.1 - 2026-06-23
 
