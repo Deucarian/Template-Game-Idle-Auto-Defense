@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbb11a2021784ce7b1791e8823066da2, type: 3}
+  m_Name: weapon.idle-auto-defense.scrap-frontier.salvage-mortar_WeaponDefinition
+  m_EditorClassIdentifier: Deucarian.WeaponSystems.Authoring::Deucarian.WeaponSystems.Authoring.WeaponDefinitionAsset
+  _id: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+  _displayName: Salvage Mortar Module
+  _icon: {fileID: 21300000, guid: e6638c0dde104ee6a57e8aa8841e4b6a, type: 3}
+  _tags:
+  - idle-auto-defense.scrap-frontier
+  - homing
+  - starter
+  _upgradeGroupId: idle-auto-defense.scrap-frontier-salvage-mortar
+  _stats: {fileID: 11400000, guid: a4955184edbe49e2a94a9c4ac457b9ae, type: 2}
+  _presentation: {fileID: 11400000, guid: 0dcb072447f74cb6a90752d8f2c5b9e5, type: 2}
+  _balancingNotes: Readable starter vertical-slice weapon.

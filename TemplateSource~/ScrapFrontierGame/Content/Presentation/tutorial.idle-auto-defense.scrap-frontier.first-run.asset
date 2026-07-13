@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2d6a5f3e4c74829b0d1f2a3b4c5d6e7, type: 3}
+  m_Name: tutorial.idle-auto-defense.scrap-frontier.first-run
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseTutorialAsset
+  _id: tutorial.idle-auto-defense.scrap-frontier.first-run
+  _displayName: Scrap Crew Briefing
+  _steps:
+  - _id: tutorial.scrap-frontier.protect-recycler
+    _title: Protect the Recycler
+    _body: Keep the frontier recycler intact until the final authored incursion is cleared.
+    _focusTarget: objective-health
+  - _id: tutorial.scrap-frontier.authored-waves
+    _title: Read the Wave
+    _body: Foundry raiders arrive in authored waves. The timer and incursion display show how far the crew has progressed.
+    _focusTarget: run-timer
+  - _id: tutorial.scrap-frontier.automatic-defense
+    _title: Automatic Fire
+    _body: Mounted salvage rigs acquire targets and fire automatically.
+    _focusTarget: module-bar
+  - _id: tutorial.scrap-frontier.earn-scrap
+    _title: Recover Scrap
+    _body: Broken raiders and the recycler provide scrap for the current expedition.
+    _focusTarget: scrap
+  - _id: tutorial.scrap-frontier.modules
+    _title: Build the Mounts
+    _body: Unlock or improve all four mounted rigs from the controls along the bottom edge.
+    _focusTarget: module-bar
+  - _id: tutorial.scrap-frontier.reward-draft
+    _title: Choose One Reward
+    _body: When a draft opens, choose one of three eligible authored rewards. Combat waits for your decision.
+    _focusTarget: reward-draft
+  - _id: tutorial.scrap-frontier.rarity-paths
+    _title: Shape the Build
+    _body: Normal rewards build ranks; Epic and Legendary rewards create stronger authored paths.
+    _focusTarget: reward-progress
+  - _id: tutorial.scrap-frontier.overdrive
+    _title: Trigger Redline
+    _body: Spend the shown scrap to Redline every mounted rig for the authored duration. Press Space or tap the ability.
+    _focusTarget: redline
+  - _id: tutorial.scrap-frontier.major-threats
+    _title: Major Threats
+    _body: Foreman and Foundry Titan health bars appear at the top. A marker keeps major threats readable offscreen.
+    _focusTarget: threat-bar
+  - _id: tutorial.scrap-frontier.persistent-progress
+    _title: Return Stronger
+    _body: Run rewards and authored offline production support persistent progress between sessions.
+    _focusTarget: offline-claim

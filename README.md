@@ -6,15 +6,17 @@ Version: `0.1.1`
 
 This package creates a product-owned idle auto-defense game folder. It owns template glue, setup helpers, starter authored content, and smoke coverage. Reusable gameplay systems stay in lower Deucarian packages.
 
-No Unity Package Manager sample import is required. The private template source lives under `TemplateSource~/BasicIdleAutoDefenseGame` so the setup wizard can create product-owned files.
+No Unity Package Manager sample import is required. The private template sources live under `TemplateSource~/BasicIdleAutoDefenseGame` and `TemplateSource~/ScrapFrontierGame` so the setup wizard can create product-owned files. Scrap Frontier is a complete asset-flip proof, not runtime infrastructure.
 
 ## Quick Start
 
 1. Install the template package.
 2. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game`.
-3. Choose a target folder under `Assets`, a content folder under `Assets/GameContent`, a namespace, and a game prefix.
+3. Choose Basic only, Scrap Frontier only, or Both, plus a target folder under `Assets`, a content folder under `Assets/GameContent`, a namespace, and a game prefix.
 4. Open `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`.
 5. Press Play.
+
+Scrap Frontier launches from `Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity`. When Both is selected, Basic and Scrap content are generated into sibling `Basic` and `ScrapFrontier` folders and both scenes share the same generated bootstrap type and package runtime.
 
 The generated scene opens on a player-facing main menu. Start Run launches the assigned 4:40 authored profile; the run includes a responsive HUD, four mounted-module controls, Overdrive, three-card reward drafts, pause/build/settings, elite and boss bars, offscreen threat markers, victory/defeat summaries, persistent research, and one-time authored offline claims.
 
@@ -48,7 +50,7 @@ The authored gameplay data is created separately under `Assets/GameContent/IdleA
 
 The generated scene references the generated content pack and content set. Its bootstrap enables strict authored startup. A valid run reports `UsingAssignedContentSet == true`, `UsingAuthoredCore == true`, and `FallbackModeActive == false`; incomplete required content blocks startup instead of substituting hidden balance.
 
-The generated graph also appears in `Tools > Deucarian > Game Content Authoring` as the read-only named pack `Basic Idle Auto Defense`. Its 124 records include gameplay plus Player Experience, Themes, Audio Events, Tutorial Steps, and UI Settings. See [Game Content Authoring](Documentation~/game-content-authoring.md).
+The generated graphs also appear in `Tools > Deucarian > Game Content Authoring` as the read-only named packs `Basic Idle Auto Defense` and `Scrap Frontier`. Each exposes 124 records including gameplay, Player Experience, Themes, Audio Events, Tutorial Steps, and UI Settings. See [Game Content Authoring](Documentation~/game-content-authoring.md) and the [Scrap Frontier asset-flip proof](Documentation~/scrap-frontier-asset-flip.md).
 
 ## Template Source
 
@@ -83,6 +85,8 @@ TemplateSource~/BasicIdleAutoDefenseGame
 ```
 
 This source is not a public package sample. It is copied by the setup wizard with product-owned namespaces, assembly names, scene references, and remapped GUIDs.
+
+`TemplateSource~/ScrapFrontierGame` has the same authored ownership shape with independent IDs, content assets, presentation prefabs, themes, audio palette, tutorial, UI copy, economy, progression, and scene binding. It deliberately reuses the Basic thin bootstrap source and the package runtime instead of copying gameplay implementation.
 
 ## Editing Content
 

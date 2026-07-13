@@ -76,6 +76,72 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
         }
 
         [UnityTest]
+        public IEnumerator SharedControllerRunsScrapFrontierPackIdentityWithoutFallback()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            GameContentSetAsset contentSet = GameContentSetAsset.CreateTransient(
+                "contentset.idle-auto-defense.scrap-frontier.playmode",
+                "Scrap Frontier PlayMode",
+                weapons[0],
+                weapons,
+                enemies,
+                waves,
+                upgrades,
+                10,
+                0,
+                1f,
+                1f,
+                5600,
+                false,
+                "Shared-runtime Scrap Frontier strict binding fixture.",
+                new[] { "test", "scrap-frontier", "strict-authored" });
+            GameContentPackAsset pack = GameContentPackAsset.CreateTransient(
+                "contentpack.idle-auto-defense.scrap-frontier",
+                "Scrap Frontier",
+                new[] { contentSet },
+                contentSet,
+                description: "Asset-flip PlayMode binding proof.");
+
+            GameObject host = new GameObject("scrap-frontier-shared-runtime-playmode");
+            host.SetActive(false);
+            var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            typeof(IdleAutoDefenseTemplateController).GetField("_contentPack", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(controller, pack);
+            typeof(IdleAutoDefenseTemplateController).GetField("_contentSet", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(controller, contentSet);
+            controller.ConfigureStrictAuthoredStartup(true);
+            host.SetActive(true);
+            controller.enabled = false;
+            controller.RewardDraftPausesCombat = false;
+            yield return null;
+
+            for (int i = 0; i < 900; i++)
+            {
+                controller.Step(1, 0.05f);
+                if (controller.RewardDraftActive) controller.TryChooseRewardDraftChoice(0);
+                if (i % 60 == 0) yield return null;
+            }
+
+            Assert.That(controller.StartupBlocked, Is.False, controller.StartupError);
+            Assert.That(controller.FallbackModeActive, Is.False);
+            Assert.That(controller.UsingAuthoredCore, Is.True);
+            Assert.That(controller.ActiveContentPackId, Is.EqualTo("contentpack.idle-auto-defense.scrap-frontier"));
+            Assert.That(controller.ActiveContentPackDisplayName, Is.EqualTo("Scrap Frontier"));
+            Assert.That(controller.ActiveContentSetId, Is.EqualTo("contentset.idle-auto-defense.scrap-frontier.playmode"));
+            Assert.That(controller.SpawnedCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.ProjectileLaunchCount, Is.GreaterThan(0), controller.StatusSummary);
+            Assert.That(controller.RewardDraftOpenedCount, Is.GreaterThan(0), controller.StatusSummary);
+
+            UnityEngine.Object.Destroy(host);
+            UnityEngine.Object.Destroy(pack);
+            UnityEngine.Object.Destroy(contentSet);
+        }
+
+        [UnityTest]
         public IEnumerator BasicIdleAutoDefenseControllerRunsDeterministicSmoke()
         {
             GameObject host = new GameObject("idle-auto-defense-template-smoke");

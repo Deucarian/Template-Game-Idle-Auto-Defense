@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf48b13d48cd4a089e3b2a44e27504b2, type: 3}
+  m_Name: game-rules.idle-auto-defense.scrap-frontier.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseGameRulesAsset
+  _id: game-rules.idle-auto-defense.scrap-frontier.playable
+  _displayName: Scrap Frontier Game Rules
+  _objectiveId: objective.idle-auto-defense.scrap-frontier.recycler
+  _runRewardTargetId: reward.idle-auto-defense.scrap-frontier.run
+  _offlineRewardTargetId: offline.idle-auto-defense.scrap-frontier.scrap
+  _damageTypeId: damage.idle-auto-defense.scrap-frontier.basic
+  _objectiveMaximumHealth: 240
+  _objectiveContactRadius: 0.45
+  _objectiveLives: 60
+  _objectiveLifeRestoreAmount: 2
+  _spawnRingRadius: 18.5
+  _spawnChannels:
+  - _id: perimeter-north
+    _angleDegrees: 0
+  - _id: perimeter-northeast
+    _angleDegrees: 45
+  - _id: perimeter-east
+    _angleDegrees: 90
+  - _id: perimeter-southeast
+    _angleDegrees: 135
+  - _id: perimeter-south
+    _angleDegrees: 180
+  - _id: perimeter-southwest
+    _angleDegrees: 225
+  - _id: perimeter-west
+    _angleDegrees: 270
+  - _id: perimeter-northwest
+    _angleDegrees: 315
+  _eliteEnemy: {fileID: 11400000, guid: c56ba621a1bd48a7be9f205b5c66b47c, type: 2}
+  _bossEnemy: {fileID: 11400000, guid: e52df35bc7a7452a985f7afb59f5c9a4, type: 2}
+  _modules:
+  - _role: 0
+    _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+    _startsUnlocked: 1
+    _baseDamage: 3.2
+    _damagePerDamageRank: 0
+    _damagePerRangeRank: 0
+    _baseRange: 8.4
+    _minimumCooldownTicks: 18
+    _cooldownReductionPerFireRateRank: 3
+    _baseTargetCount: 1
+  - _role: 1
+    _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+    _startsUnlocked: 0
+    _baseDamage: 5
+    _damagePerDamageRank: 1.25
+    _damagePerRangeRank: 0.45
+    _baseRange: 7.4
+    _minimumCooldownTicks: 28
+    _cooldownReductionPerFireRateRank: 2
+    _baseTargetCount: 1
+  - _role: 2
+    _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+    _startsUnlocked: 0
+    _baseDamage: 8
+    _damagePerDamageRank: 1.55
+    _damagePerRangeRank: 0
+    _baseRange: 6.2
+    _minimumCooldownTicks: 52
+    _cooldownReductionPerFireRateRank: 3
+    _baseTargetCount: 2
+  - _role: 3
+    _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+    _startsUnlocked: 0
+    _baseDamage: 8
+    _damagePerDamageRank: 1.45
+    _damagePerRangeRank: 0.45
+    _baseRange: 8.8
+    _minimumCooldownTicks: 42
+    _cooldownReductionPerFireRateRank: 2
+    _baseTargetCount: 1
+  _manualDamageRankBonus: 1.6
+  _manualRangeRankDamageBonus: 0.4
+  _manualRangeRankBonus: 0.4
+  _moduleRangeRankBonus: 0.35
+  _manualMaximumRange: 10.6
+  _minimumProjectileImpactDelayTicks: 12
+  _maximumProjectileImpactDelayTicks: 52
+  _projectileFinishDamageThreshold: 3
+  _purchaseRangeDamageBonus: 0.5
+  _purchaseRepairMaximumHealth: 8
+  _purchaseRepairBaseHeal: 34
+  _purchaseRepairHealPerRank: 6
+  _draftRepairMaximumHealth: 8
+  _draftRepairBaseHeal: 28
+  _draftRepairHealPerRank: 4
+  _visibleArenaRadius: 14.75
+  _overdriveDurationSeconds: 7
+  _overdriveCooldownSeconds: 18
+  _overdriveCooldownBonusTicks: 10
+  _overdriveDamageMultiplier: 1.55

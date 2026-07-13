@@ -12,7 +12,7 @@ Test Game view at:
 - 844x390
 - 1024x768
 
-At every landscape size verify:
+Run every landscape size in both the Basic and Scrap Frontier generated scenes. They share one responsive layout implementation but use different copy, tokens, colors, and module names. At every size verify:
 
 - timer and major-threat bar do not overlap
 - four module cards and Overdrive remain tappable

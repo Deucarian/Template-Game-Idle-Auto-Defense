@@ -1678,6 +1678,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public bool UsingAuthoredCore => UsingAssignedContentSet && !FallbackModeActive &&
             _activeRewardCatalog != null && _activeEconomy != null && _activeRunProfile != null &&
             _activeProgression != null && _activeOfflineProgression != null && _activeGameRules != null;
+        public string ActiveContentPackId => _contentPack == null ? string.Empty : _contentPack.Id;
+        public string ActiveContentPackDisplayName => _contentPack == null ? string.Empty : _contentPack.DisplayName;
+        public string ActiveContentSetId => _resolvedContentSet != null && _resolvedContentSet.IsValid && _resolvedContentSet.ContentSet != null
+            ? _resolvedContentSet.ContentSet.Id
+            : string.Empty;
         public string ActiveRewardCatalogId => _activeRewardCatalog == null ? string.Empty : _activeRewardCatalog.Id;
         public string ActiveEconomyId => _activeEconomy == null ? string.Empty : _activeEconomy.Id;
         public string ActiveRunProfileId => _activeRunProfile == null ? string.Empty : _activeRunProfile.Id;
@@ -1747,17 +1752,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             ? "--"
             : ObjectiveHealth.ToString("0", CultureInfo.InvariantCulture) + "/" + ObjectiveMaximumHealth.ToString("0", CultureInfo.InvariantCulture);
         public string CurrentSpawnProfileName => ResolveCurrentSpawnProfileName();
-        public int DamageUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.DamageUpgradeCostId, DamageUpgradeRank);
-        public int AttackSpeedUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.FireRateUpgradeCostId, AttackSpeedUpgradeRank);
-        public int RangeUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.RangeUpgradeCostId, RangeUpgradeRank);
-        public int RepairUpgradeCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.RepairUpgradeCostId, RepairUpgradeRank);
+        public int DamageUpgradeCost => ResolveUpgradeCost(_activeEconomy == null ? IdleAutoDefenseEconomyAsset.DamageUpgradeCostId : _activeEconomy.DamageUpgradeCostCurveId, DamageUpgradeRank);
+        public int AttackSpeedUpgradeCost => ResolveUpgradeCost(_activeEconomy == null ? IdleAutoDefenseEconomyAsset.FireRateUpgradeCostId : _activeEconomy.FireRateUpgradeCostCurveId, AttackSpeedUpgradeRank);
+        public int RangeUpgradeCost => ResolveUpgradeCost(_activeEconomy == null ? IdleAutoDefenseEconomyAsset.RangeUpgradeCostId : _activeEconomy.RangeUpgradeCostCurveId, RangeUpgradeRank);
+        public int RepairUpgradeCost => ResolveUpgradeCost(_activeEconomy == null ? IdleAutoDefenseEconomyAsset.RepairUpgradeCostId : _activeEconomy.RepairUpgradeCostCurveId, RepairUpgradeRank);
         public bool PulseBeamUnlocked { get; private set; }
         public bool ArcBurstUnlocked { get; private set; }
         public bool HomingPulseUnlocked { get; private set; }
         public int PulseBeamUnlockCost => ResolveModuleBuildCost(IdleAutoDefenseModuleRole.PrecisionBeam, PulseBeamModuleUnlockCost);
         public int ArcBurstUnlockCost => ResolveModuleBuildCost(IdleAutoDefenseModuleRole.AreaBurst, ArcBurstModuleUnlockCost);
         public int HomingPulseUnlockCost => ResolveModuleBuildCost(IdleAutoDefenseModuleRole.HomingProjectile, HomingPulseModuleUnlockCost);
-        public int OverdriveCost => ResolveUpgradeCost(IdleAutoDefenseEconomyAsset.OverdriveCostId, 0, OverdriveCostCredits);
+        public int OverdriveCost => ResolveUpgradeCost(_activeEconomy == null ? IdleAutoDefenseEconomyAsset.OverdriveCostId : _activeEconomy.OverdriveCostCurveId, 0, OverdriveCostCredits);
         public bool OverdriveActive => _overdriveSecondsRemaining > 0f;
         public float OverdriveSecondsRemaining => Mathf.Max(0f, _overdriveSecondsRemaining);
         public float OverdriveCooldownSecondsRemaining => Mathf.Max(0f, _overdriveCooldownSecondsRemaining);

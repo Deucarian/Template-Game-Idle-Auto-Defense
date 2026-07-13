@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9d65aa2bcef4e58aca610cc8d2ac457, type: 3}
+  m_Name: run-profile.idle-auto-defense.scrap-frontier.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseRunProfileAsset
+  _id: run-profile.idle-auto-defense.scrap-frontier.playable
+  _displayName: Scrap Frontier Run
+  _timeUnit: 0
+  _tickSemantics: 0
+  _simulationTicksPerSecond: 20
+  _sessionLengthTicks: 5600
+  _waves:
+  - {fileID: 11400000, guid: 97ea9c2da8e645d0ad78f5650a274ca3, type: 2}
+  - {fileID: 11400000, guid: 76515275dc1442c1a6f8edc92ca38cae, type: 2}
+  - {fileID: 11400000, guid: 7069e572795a4a96b9364c3d5268ff63, type: 2}
+  - {fileID: 11400000, guid: 96d9a9793c8f415ab2aed0422cb00532, type: 2}
+  - {fileID: 11400000, guid: 649ebb5d5b8a491caa9b0e9fe2c98822, type: 2}
+  - {fileID: 11400000, guid: 3d3ce00091f94382b4426f1a20eca4a2, type: 2}
+  - {fileID: 11400000, guid: 0321d665d1f34e5fa83f89db12e48ffb, type: 2}
+  _difficultyMultiplier: 1
+  _endless: 0
+  _victoryRule: 0
+  _defeatRule: 0
+  _rewardMultiplier: 1
+  _preparationTicks: 0
+  _encounterSeed: 20260623

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c242515f24db449792eddec212c619fb, type: 3}
+  m_Name: enemy.idle-auto-defense.scrap-frontier.slag-caster_EnemyDefinition
+  m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.EnemyDefinitionAsset
+  _id: enemy.idle-auto-defense.scrap-frontier.slag-caster
+  _displayName: Slag Caster
+  _icon: {fileID: 21300000, guid: 57efc1fe430f414dbadb0b291c666b8f, type: 3}
+  _role: 0
+  _tags:
+  - idle-auto-defense.scrap-frontier
+  - shielded
+  _stats: {fileID: 11400000, guid: 734b90699d7249b9a30efc5912c50605, type: 2}
+  _presentation: {fileID: 11400000, guid: f48b2be8243c4bcbba0ffe8502a5864d, type: 2}
+  _balancingNotes:

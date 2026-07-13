@@ -1,6 +1,11 @@
 # Player Experience Playtesting
 
-Generate the game, open `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`, and press Play.
+Generate Both, then test these scenes independently:
+
+- Basic: `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`
+- Scrap Frontier: `Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity`
+
+Complete the checklist once per scene. For Scrap, confirm Recycler, Crew Rank, Redline, Salvage Ledger, foundry enemies/modules, Scrap Frontier/Molten Foundry themes, and Scrap-specific reward/tutorial copy appear; no Basic enemy, module, theme, or currency names should leak.
 
 ## Flow Checklist
 

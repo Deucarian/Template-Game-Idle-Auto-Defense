@@ -1,0 +1,150 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4271c0a9f9d4f2d9a7288adf9e82965, type: 3}
+  m_Name: contentset.idle-auto-defense.scrap-frontier.playable_GameContentSet
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.GameContentSetAsset
+  _id: contentset.idle-auto-defense.scrap-frontier.playable
+  _displayName: Scrap Frontier Content Set
+  _description: Independent Scrap Frontier asset-flip proof with four salvage weapons,
+    six foundry enemies, seven authored incursions, complete rewards, and rust-and-teal
+    presentation on the shared Idle Auto Defense runtime.
+  _icon: {fileID: 21300000, guid: b115a8d684c848eb95eb819abf72793c, type: 3}
+  _banner: {fileID: 2800000, guid: 98f1d30475064d639192c56db711ffcb, type: 3}
+  _startingWeapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+  _availableWeapons:
+  - {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+  - {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+  - {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+  - {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+  _enemyPool:
+  - {fileID: 11400000, guid: 32fb16ae770a4d6c9805049569256e53, type: 2}
+  - {fileID: 11400000, guid: 6c9792b3a2a842de83b8574ce3e79e09, type: 2}
+  - {fileID: 11400000, guid: a9f6db94ba884b57bf0b191c138824e2, type: 2}
+  - {fileID: 11400000, guid: 4effc808fd864b9ab01adc1c697fc3e4, type: 2}
+  - {fileID: 11400000, guid: c56ba621a1bd48a7be9f205b5c66b47c, type: 2}
+  - {fileID: 11400000, guid: e52df35bc7a7452a985f7afb59f5c9a4, type: 2}
+  _upgradePool:
+  - {fileID: 11400000, guid: f03f1e8078984f16b6502446a5c6f262, type: 2}
+  - {fileID: 11400000, guid: 7f7ef64a348b464f994e502079fecd63, type: 2}
+  - {fileID: 11400000, guid: 5c9a46f4c4b346138adae9b765e875b5, type: 2}
+  - {fileID: 11400000, guid: 258b6fb4dead4297b31a2eaaab58542e, type: 2}
+  - {fileID: 11400000, guid: 4aab6b4e2bc14436a7f75c74fdc7bdf7, type: 2}
+  - {fileID: 11400000, guid: 1791bf6cfccd4e42ae32c41d8eb32a84, type: 2}
+  _rewardCatalog: {fileID: 11400000, guid: 50a0d299468a404a84d4c7148383238a, type: 2}
+  _economy: {fileID: 11400000, guid: 099a4da3e4fe4e76ada76d0bce8a819c, type: 2}
+  _runProfile: {fileID: 11400000, guid: f8ebb3ed54de425ebd359a8848b9ee70, type: 2}
+  _progression: {fileID: 11400000, guid: ac35b9872a57431ca9e8dacffcf0e5ed, type: 2}
+  _offlineProgression: {fileID: 11400000, guid: 14c5cd7e149c4b80a340095494dd43c5, type: 2}
+  _gameRules: {fileID: 11400000, guid: 722e423aa0dd43dba44a050a9a7c37f0, type: 2}
+  _tags:
+  - idle-auto-defense.scrap-frontier
+  - starter
+  - playable-vertical-slice
+  - kenney-readable
+  _runtimeSettings:
+    _presentationDebug:
+      _showDebugAimLines: 0
+      _showDebugRanges: 0
+      _showDebugSpawnRing: 0
+    _objectivePresentation:
+      _contentId: objective.idle-auto-defense.scrap-frontier.recycler
+      _displayName: Scrap Recycler
+      _models:
+      - _modelName: tower-square-bottom-a
+        _localPosition: {x: 0, y: 0, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 1.35, y: 1.35, z: 1.35}
+        _tint: {r: 0.32, g: 0.22, b: 0.14, a: 1}
+      - _modelName: tower-square-middle-a
+        _localPosition: {x: 0, y: 0.46, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 1.12, y: 1.12, z: 1.12}
+        _tint: {r: 0.72, g: 0.34, b: 0.16, a: 1}
+      - _modelName: tower-square-top-a
+        _localPosition: {x: 0, y: 0.92, z: 0}
+        _localEulerAngles: {x: 0, y: 0, z: 0}
+        _localScale: {x: 0.92, y: 0.92, z: 0.92}
+        _tint: {r: 0.18, g: 0.86, b: 0.68, a: 1}
+    _moduleSlotPresentationBindings:
+    - _slotId: module-slot.scrap-frontier.rivet-repeater
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _displayName: Rivet Repeater Slot
+      _modelName: tile-dirt
+      _localPosition: {x: 0, y: -0.07, z: 0.9}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.86, g: 0.34, b: 0.16, a: 0.82}
+    - _slotId: module-slot.scrap-frontier.arc-furnace
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _displayName: Arc Furnace Locked Pad
+      _modelName: tile-crystal
+      _localPosition: {x: -0.9, y: -0.07, z: 0.35}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.16, g: 0.82, b: 0.66, a: 0.68}
+    - _slotId: module-slot.scrap-frontier.sawblade-relay
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _displayName: Sawblade Relay Locked Pad
+      _modelName: tile-crossing
+      _localPosition: {x: 0, y: -0.07, z: -0.9}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.94, g: 0.72, b: 0.18, a: 0.68}
+    - _slotId: module-slot.scrap-frontier.salvage-mortar
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _displayName: Salvage Mortar Locked Pad
+      _modelName: tile-straight
+      _localPosition: {x: 0.9, y: -0.07, z: 0.35}
+      _localEulerAngles: {x: 0, y: 0, z: 0}
+      _localScale: {x: 0.52, y: 0.52, z: 0.52}
+      _tint: {r: 0.9, g: 0.2, b: 0.12, a: 0.68}
+    _weaponPresentationBindings:
+    - _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _attackId: attack.idle-auto-defense.scrap-frontier.rivet-barrage
+      _displayName: Rivet Repeater
+      _mountLocalPosition: {x: 0, y: 0.06, z: 1.05}
+      _baseModelName: tower-square-bottom-a
+      _weaponModelName: weapon-turret
+      _tint: {r: 0.86, g: 0.34, b: 0.16, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.64, z: 0.66}
+      _turnSpeedDegrees: 340
+      _startsUnlocked: 1
+    - _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _attackId: attack.idle-auto-defense.scrap-frontier.arc-furnace
+      _displayName: Arc Furnace
+      _mountLocalPosition: {x: -1.02, y: 0.06, z: 0.36}
+      _baseModelName: tower-round-bottom-a
+      _weaponModelName: weapon-cannon
+      _tint: {r: 0.16, g: 0.82, b: 0.66, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.44, z: 0.72}
+      _turnSpeedDegrees: 420
+      _startsUnlocked: 0
+    - _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _attackId: attack.idle-auto-defense.scrap-frontier.sawblade-relay
+      _displayName: Sawblade Relay
+      _mountLocalPosition: {x: 0, y: 0.06, z: -1.05}
+      _baseModelName: tower-square-bottom-a
+      _weaponModelName: weapon-ballista
+      _tint: {r: 0.94, g: 0.72, b: 0.18, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.5, z: 0.82}
+      _turnSpeedDegrees: 240
+      _startsUnlocked: 0
+    - _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _attackId: attack.idle-auto-defense.scrap-frontier.salvage-mortar
+      _displayName: Salvage Mortar
+      _mountLocalPosition: {x: 1.02, y: 0.06, z: 0.36}
+      _baseModelName: tower-round-bottom-a
+      _weaponModelName: weapon-catapult
+      _tint: {r: 0.9, g: 0.2, b: 0.12, a: 1}
+      _muzzleLocalPosition: {x: 0, y: 0.42, z: 0.8}
+      _turnSpeedDegrees: 320
+      _startsUnlocked: 0

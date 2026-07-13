@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1c5f4e2d3b64718a9c0e1f2a3b4c5d6, type: 3}
+  m_Name: theme.idle-auto-defense.scrap-frontier.default
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseThemeAsset
+  _id: theme.idle-auto-defense.scrap-frontier.default
+  _displayName: Scrap Frontier
+  _background: {r: 0.026, g: 0.034, b: 0.031, a: 0.97}
+  _panel: {r: 0.072, g: 0.074, b: 0.061, a: 0.98}
+  _panelRaised: {r: 0.13, g: 0.105, b: 0.075, a: 0.99}
+  _primaryText: {r: 0.95, g: 0.92, b: 0.83, a: 1}
+  _secondaryText: {r: 0.7, g: 0.67, b: 0.58, a: 1}
+  _accent: {r: 0.18, g: 0.8, b: 0.67, a: 1}
+  _warning: {r: 0.96, g: 0.68, b: 0.18, a: 1}
+  _danger: {r: 0.9, g: 0.22, b: 0.12, a: 1}
+  _success: {r: 0.38, g: 0.8, b: 0.42, a: 1}
+  _currency: {r: 0.92, g: 0.52, b: 0.16, a: 1}
+  _common: {r: 0.7, g: 0.68, b: 0.62, a: 1}
+  _uncommon: {r: 0.36, g: 0.8, b: 0.46, a: 1}
+  _rare: {r: 0.18, g: 0.68, b: 0.76, a: 1}
+  _epic: {r: 0.82, g: 0.38, b: 0.24, a: 1}
+  _legendary: {r: 1, g: 0.72, b: 0.16, a: 1}
+  _fontStyleToken: salvage-grid

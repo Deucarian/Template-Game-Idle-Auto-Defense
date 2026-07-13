@@ -6,7 +6,9 @@ Use the setup wizard to create the product-owned starter:
 Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game
 ```
 
-The wizard creates the playable scene at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`, copies bootstrap code, prefabs, visuals, audio, resources, and docs into the chosen `Assets` folder, and copies authored gameplay data into `Assets/GameContent/IdleAutoDefense` by default so the content appears in Game Content Authoring. It does not copy Deucarian package source.
+The wizard can create Basic, Scrap Frontier, or both. Basic opens at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`; Scrap opens at `Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity`. Both scenes use one generated bootstrap and the same package runtime while their authored graphs and presentation remain independent.
+
+Scrap Frontier is the checked-in reference proof for this workflow. Compare its source under `TemplateSource~/ScrapFrontierGame` with Basic, and see [scrap-frontier-asset-flip.md](scrap-frontier-asset-flip.md) before creating a product variant.
 
 ## First Pass
 

@@ -33,6 +33,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] private string _gameDescription = "Command four mounted defenses through a short authored siege.";
         [SerializeField] private string _overdriveName = "Overdrive";
         [SerializeField] private string _overdriveDescription = "Temporarily boosts mounted defense damage and cadence.";
+        [SerializeField] private string _objectiveLabel = "CORE";
+        [SerializeField] private string _playerRankLabel = "Commander";
+        [SerializeField] private string _pauseMenuTitle = "Defense Command";
+        [SerializeField] private string _portraitMessage = "Bastion command is designed for landscape play.";
+        [SerializeField] private string _victoryTitle = "Defense Complete";
+        [SerializeField] private string _defeatTitle = "Core Lost";
         [SerializeField] private bool _respectSafeArea = true;
         [SerializeField] private float _minimumTouchTarget = 44f;
         [SerializeField] private float _compactWidthThreshold = 1000f;
@@ -45,6 +51,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public string GameDescription => _gameDescription ?? string.Empty;
         public string OverdriveName => _overdriveName ?? string.Empty;
         public string OverdriveDescription => _overdriveDescription ?? string.Empty;
+        public string ObjectiveLabel => _objectiveLabel ?? string.Empty;
+        public string PlayerRankLabel => _playerRankLabel ?? string.Empty;
+        public string PauseMenuTitle => _pauseMenuTitle ?? string.Empty;
+        public string PortraitMessage => _portraitMessage ?? string.Empty;
+        public string VictoryTitle => _victoryTitle ?? string.Empty;
+        public string DefeatTitle => _defeatTitle ?? string.Empty;
         public bool RespectSafeArea => _respectSafeArea;
         public float MinimumTouchTarget => Mathf.Max(36f, _minimumTouchTarget);
         public float CompactWidthThreshold => Mathf.Max(640f, _compactWidthThreshold);
@@ -62,7 +74,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public bool IsValid(out string message)
         {
-            if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(GameTitle) || string.IsNullOrWhiteSpace(GameDescription))
+            if (string.IsNullOrWhiteSpace(Id) || string.IsNullOrWhiteSpace(GameTitle) || string.IsNullOrWhiteSpace(GameDescription) ||
+                string.IsNullOrWhiteSpace(ObjectiveLabel) || string.IsNullOrWhiteSpace(PlayerRankLabel) ||
+                string.IsNullOrWhiteSpace(PauseMenuTitle) || string.IsNullOrWhiteSpace(PortraitMessage) ||
+                string.IsNullOrWhiteSpace(VictoryTitle) || string.IsNullOrWhiteSpace(DefeatTitle))
             {
                 message = "UI settings require stable identity and player-facing title copy.";
                 return false;

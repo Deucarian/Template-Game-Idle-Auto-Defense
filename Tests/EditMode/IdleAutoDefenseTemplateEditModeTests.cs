@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using Deucarian.Attacks.Authoring;
 using Deucarian.Attacks.Editor;
 using Deucarian.AutoDefense;
@@ -2079,6 +2080,325 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void BasicTemplateSourceBaselineAndScrapSourceReferencesStayIsolated()
+        {
+            string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
+            string basicRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame");
+            string scrapRoot = Path.Combine(packageRoot, "TemplateSource~", "ScrapFrontierGame");
+            Assert.That(Directory.GetFiles(basicRoot, "*", SearchOption.AllDirectories).Length, Is.EqualTo(494));
+            Assert.That(Directory.GetFiles(scrapRoot, "*", SearchOption.AllDirectories).Length, Is.EqualTo(369));
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "ContentPacks", "contentpack.idle-auto-defense.playable", "contentpack.idle-auto-defense.playable_ContentPack.asset"),
+                "40507e230897fb5a30b419ec4e0016d0fecf7560975e9e5d6eb1376023fac4c1");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "ContentSets", "contentset.idle-auto-defense.playable", "contentset.idle-auto-defense.playable_GameContentSet.asset"),
+                "3bfde7c23d88eb58ac6f760ca59475da40fa5bd34fab488add47436182e821ad");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "Rewards", "reward-catalog.idle-auto-defense.playable.asset"),
+                "b9e279a11492d4b351f8efc84c2860be44c3c7f373bdfdcaf05688d2e07c345f");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "Economy", "economy.idle-auto-defense.playable.asset"),
+                "6da54d4a6098f5cd52703d8f85e95b20d1a0a6587bb48b0ad0d277a5b7f80ab5");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "RunProfiles", "run-profile.idle-auto-defense.playable.asset"),
+                "a247605112ffa373d85d529025b1f786427ca4293e3b7277e4c691487dd3aa6f");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "Progression", "progression.idle-auto-defense.playable.asset"),
+                "549267e56cc3b5c25fe4928d0541c942285b0446e41c08b9c596334ad862f06f");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "OfflineProgression", "offline-progression.idle-auto-defense.playable.asset"),
+                "c100bb2e11ce440bb222c068e8e4e5e56b2a443c7fc68bb46d5a36a1b770870f");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "GameRules", "game-rules.idle-auto-defense.playable.asset"),
+                "993ff863fc0e9448acb221e1358e5cbe946890d4a1add82a10e32c9c72b6f8a9");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Content", "Presentation", "player-experience.idle-auto-defense.playable.asset"),
+                "2df262f9167a769adaa5ea0a41a583688a4b4314e36a2f5bbc4ca983e6196638");
+            AssertFileSha256(
+                Path.Combine(basicRoot, "Scenes", "OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity"),
+                "ac1ec2b38705e9d1710eedd51af30228db62f6e3b8b9726f350b55aa201ccfc0");
+
+            Dictionary<string, string> basicGuids = Directory.GetFiles(basicRoot, "*.meta", SearchOption.AllDirectories)
+                .Select(path => new { Path = path, Guid = ReadMetaGuid(path) })
+                .Where(value => !string.IsNullOrWhiteSpace(value.Guid))
+                .ToDictionary(value => value.Guid, value => value.Path, StringComparer.OrdinalIgnoreCase);
+            string sharedBootstrapGuid = ReadMetaGuid(Path.Combine(basicRoot, "Scripts", "BasicIdleAutoDefenseGameBootstrap.cs.meta"));
+            var leaked = new List<string>();
+            foreach (string scrapFile in Directory.GetFiles(scrapRoot, "*", SearchOption.AllDirectories)
+                         .Where(CanContainGuidReference))
+            {
+                string text = File.ReadAllText(scrapFile);
+                foreach (KeyValuePair<string, string> pair in basicGuids)
+                {
+                    if (!text.Contains(pair.Key) || string.Equals(pair.Key, sharedBootstrapGuid, StringComparison.OrdinalIgnoreCase)) continue;
+                    leaked.Add(scrapFile + " -> " + pair.Value);
+                }
+            }
+
+            Assert.That(leaked, Is.Empty, string.Join("\n", leaked));
+            Dictionary<string, string> scrapGuids = Directory.GetFiles(scrapRoot, "*.meta", SearchOption.AllDirectories)
+                .Select(path => new { Path = path, Guid = ReadMetaGuid(path) })
+                .Where(value => !string.IsNullOrWhiteSpace(value.Guid))
+                .ToDictionary(value => value.Guid, value => value.Path, StringComparer.OrdinalIgnoreCase);
+            var reverseLeaks = new List<string>();
+            foreach (string basicFile in Directory.GetFiles(basicRoot, "*", SearchOption.AllDirectories)
+                         .Where(CanContainGuidReference))
+            {
+                string text = File.ReadAllText(basicFile);
+                foreach (KeyValuePair<string, string> pair in scrapGuids)
+                    if (text.Contains(pair.Key)) reverseLeaks.Add(basicFile + " -> " + pair.Value);
+            }
+            Assert.That(reverseLeaks, Is.Empty, string.Join("\n", reverseLeaks));
+            string[] duplicateGuids = Directory.GetFiles(Path.Combine(packageRoot, "TemplateSource~"), "*.meta", SearchOption.AllDirectories)
+                .Select(ReadMetaGuid)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToArray();
+            Assert.That(duplicateGuids, Is.Empty, "Duplicate source GUIDs: " + string.Join(", ", duplicateGuids));
+        }
+
+        [Test]
+        public void SetupWizardGeneratesScrapFrontierOnlyWithDirectStrictPackWiring()
+        {
+            string targetRoot = "Assets/T/S" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            string contentRoot = "Assets/GameContent/S" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            const string sceneRoot = "Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame";
+            string backup = BackupAssetDirectory(sceneRoot);
+            var request = new IdleAutoDefenseTemplateSetupRequest
+            {
+                TargetRootAssetPath = targetRoot,
+                ContentRootAssetPath = contentRoot,
+                GameNamespace = "ScrapOnlySmoke.IdleAutoDefense",
+                GamePrefix = "Scrap Only Smoke",
+                PackSelection = IdleAutoDefenseTemplatePackSelection.ScrapFrontierOnly,
+                OpenCreatedScene = false,
+                RefreshAssetDatabase = false
+            };
+
+            try
+            {
+                IdleAutoDefenseTemplateSetupResult setup = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.That(setup.Succeeded, Is.True, setup.CreateSummary());
+                string scenePath = sceneRoot + "/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity";
+                Assert.That(setup.CreatedSceneAssetPaths, Is.EqualTo(new[] { scenePath }));
+                AssertFileExists(targetRoot + "/README.md");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/README.md"), "# Scrap Frontier");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/README.md"), "product-owned output");
+                Assert.That(Directory.Exists(AssetPathToFullPath(targetRoot + "/ScrapFrontier")), Is.False);
+                Assert.That(Directory.Exists(AssetPathToFullPath(contentRoot + "/ScrapFrontier")), Is.False);
+
+                string packPath = contentRoot + "/ContentPacks/contentpack.idle-auto-defense.scrap-frontier/contentpack.idle-auto-defense.scrap-frontier_ContentPack.asset";
+                string setPath = contentRoot + "/ContentSets/contentset.idle-auto-defense.scrap-frontier.playable/contentset.idle-auto-defense.scrap-frontier.playable_GameContentSet.asset";
+                string experiencePath = contentRoot + "/Presentation/player-experience.idle-auto-defense.scrap-frontier.playable.asset";
+                AssertFileExists(packPath);
+                AssertFileExists(setPath);
+                AssertFileExists(experiencePath);
+                Assert.That(File.Exists(AssetPathToFullPath(
+                    contentRoot + "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset")), Is.False);
+
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                GameContentPackAsset pack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(packPath);
+                GameContentSetAsset contentSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(setPath);
+                IdleAutoDefensePlayerExperienceAsset experience = AssetDatabase.LoadAssetAtPath<IdleAutoDefensePlayerExperienceAsset>(experiencePath);
+                Assert.That(pack, Is.Not.Null);
+                Assert.That(contentSet, Is.Not.Null);
+                Assert.That(experience, Is.Not.Null);
+                Assert.That(pack.Id, Is.EqualTo(IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId));
+                Assert.That(pack.DefaultContentSet, Is.SameAs(contentSet));
+                Assert.That(GameContentSetValidator.Validate(contentSet).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(contentSet)));
+                Assert.That(experience.Validate(), Is.Empty);
+                Assert.That(AssetDatabase.GetDependencies(scenePath, true), Does.Contain(packPath));
+                Assert.That(AssetDatabase.GetDependencies(scenePath, true), Does.Contain(setPath));
+                Assert.That(AssetDatabase.GetDependencies(scenePath, true), Does.Contain(experiencePath));
+
+                var provider = new GameContentPackAuthoringProvider(contentRoot);
+                GameContentPackDescriptor[] descriptors = provider.GetContentPacks().ToArray();
+                GameContentPackDescriptor scrap = descriptors.Single(value =>
+                    string.Equals(value.PackId, IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId, StringComparison.OrdinalIgnoreCase));
+                GameContentPackDescriptor basic = descriptors.Single(value =>
+                    string.Equals(value.PackId, IdleAutoDefenseNamedPackDefinition.Basic.PackId, StringComparison.OrdinalIgnoreCase));
+                Assert.That(scrap.SourceState, Is.EqualTo(GameContentPackSourceState.Available), FormatValidation(scrap.Validation));
+                Assert.That(basic.SourceState, Is.EqualTo(GameContentPackSourceState.MissingSource));
+                AssertNamedPackAuthoringSurface(provider, scrap, contentRoot, scenePath);
+                AssertGeneratedMetaGuidsAreUnique(targetRoot, contentRoot, sceneRoot);
+                AssertGeneratedPackMenuFirstStrictBoot(pack, contentSet, experience);
+                AssertResponsiveLayoutPolicy(experience.UiSettings);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(targetRoot);
+                AssetDatabase.DeleteAsset(contentRoot);
+                RestoreAssetDirectory(sceneRoot, backup);
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            }
+        }
+
+        [Test]
+        public void SetupWizardGeneratesBothIndependentPacksWithParityIsolationStrictBindingAndRepair()
+        {
+            string targetRoot = "Assets/T/A" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            string contentRoot = "Assets/GameContent/A" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            string[] sceneRoots =
+            {
+                "Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame",
+                "Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame"
+            };
+            string[] backups = sceneRoots.Select(BackupAssetDirectory).ToArray();
+            var request = new IdleAutoDefenseTemplateSetupRequest
+            {
+                TargetRootAssetPath = targetRoot,
+                ContentRootAssetPath = contentRoot,
+                GameNamespace = "AssetFlipSmoke.IdleAutoDefense",
+                GamePrefix = "Asset Flip Smoke",
+                PackSelection = IdleAutoDefenseTemplatePackSelection.Both,
+                AllowOverwrite = false,
+                OpenCreatedScene = false,
+                RefreshAssetDatabase = false
+            };
+
+            try
+            {
+                IdleAutoDefenseTemplateSetupResult setup = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.That(setup.Succeeded, Is.True, setup.CreateSummary());
+                Assert.That(setup.CreatedSceneAssetPaths.Count, Is.EqualTo(2));
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
+                string basicContentRoot = contentRoot + "/Basic";
+                string scrapContentRoot = contentRoot + "/ScrapFrontier";
+                string basicPackPath = basicContentRoot + "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset";
+                string scrapPackPath = scrapContentRoot + "/ContentPacks/contentpack.idle-auto-defense.scrap-frontier/contentpack.idle-auto-defense.scrap-frontier_ContentPack.asset";
+                string basicSetPath = basicContentRoot + "/ContentSets/contentset.idle-auto-defense.playable/contentset.idle-auto-defense.playable_GameContentSet.asset";
+                string scrapSetPath = scrapContentRoot + "/ContentSets/contentset.idle-auto-defense.scrap-frontier.playable/contentset.idle-auto-defense.scrap-frontier.playable_GameContentSet.asset";
+                string basicExperiencePath = basicContentRoot + "/Presentation/player-experience.idle-auto-defense.playable.asset";
+                string scrapExperiencePath = scrapContentRoot + "/Presentation/player-experience.idle-auto-defense.scrap-frontier.playable.asset";
+                GameContentPackAsset basicPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(basicPackPath);
+                GameContentPackAsset scrapPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(scrapPackPath);
+                GameContentSetAsset basicSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(basicSetPath);
+                GameContentSetAsset scrapSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(scrapSetPath);
+                Assert.That(basicPack, Is.Not.Null);
+                Assert.That(scrapPack, Is.Not.Null);
+                Assert.That(scrapPack, Is.Not.SameAs(basicPack));
+                Assert.That(basicPack.Id, Is.EqualTo(IdleAutoDefenseNamedPackDefinition.Basic.PackId));
+                Assert.That(scrapPack.Id, Is.EqualTo(IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId));
+                Assert.That(GameContentSetValidator.Validate(basicSet).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(basicSet)));
+                Assert.That(GameContentSetValidator.Validate(scrapSet).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(scrapSet)));
+
+                AssertPackNumericParity(basicSet, scrapSet);
+                Assert.That(scrapSet.AvailableWeapons.All(value => value.Id.Contains("scrap-frontier")), Is.True);
+                Assert.That(scrapSet.EnemyPool.All(value => value.Id.Contains("scrap-frontier")), Is.True);
+                Assert.That(scrapSet.WaveSet.All(value => value.Id.Contains("scrap-frontier")), Is.True);
+                Assert.That(scrapSet.UpgradePool.All(value => value.Id.Contains("scrap-frontier")), Is.True);
+
+                IdleAutoDefensePlayerExperienceAsset basicExperience = AssetDatabase.LoadAssetAtPath<IdleAutoDefensePlayerExperienceAsset>(
+                    basicExperiencePath);
+                IdleAutoDefensePlayerExperienceAsset scrapExperience = AssetDatabase.LoadAssetAtPath<IdleAutoDefensePlayerExperienceAsset>(
+                    scrapExperiencePath);
+                Assert.That(basicExperience.Validate(), Is.Empty);
+                Assert.That(scrapExperience.Validate(), Is.Empty);
+                Assert.That(scrapExperience.UiSettings.GameTitle, Is.EqualTo("Scrap Frontier"));
+                Assert.That(scrapExperience.UiSettings.OverdriveName, Is.EqualTo("Redline"));
+                Assert.That(scrapExperience.Themes.Count, Is.EqualTo(2));
+                Assert.That(scrapExperience.AudioPalette.Events.Count, Is.EqualTo(26));
+                Assert.That(scrapExperience.Tutorial.Steps.Count, Is.EqualTo(10));
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/Basic/README.md"), "# Basic Idle Auto Defense");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/ScrapFrontier/README.md"), "# Scrap Frontier");
+
+                string authoredValidation = IdleAutoDefenseAuthoredContentValidationMenu.BuildReport();
+                Assert.That(authoredValidation, Does.StartWith("Idle Auto Defense authored content validation: PASS"), authoredValidation);
+                Assert.That(authoredValidation, Does.Contain("PASS contentset.idle-auto-defense.playable"), authoredValidation);
+                Assert.That(authoredValidation, Does.Contain("PASS contentset.idle-auto-defense.scrap-frontier.playable"), authoredValidation);
+                Assert.That(authoredValidation, Does.Contain("PASS player-experience.idle-auto-defense.playable"), authoredValidation);
+                Assert.That(authoredValidation, Does.Contain("PASS player-experience.idle-auto-defense.scrap-frontier.playable"), authoredValidation);
+
+                var provider = new GameContentPackAuthoringProvider(contentRoot);
+                GameContentPackDescriptor[] descriptors = provider.GetContentPacks().ToArray();
+                Assert.That(descriptors.Length, Is.EqualTo(2));
+                Assert.That(descriptors.All(value => value.SourceState == GameContentPackSourceState.Available), Is.True,
+                    string.Join("\n", descriptors.Select(value => FormatValidation(value.Validation))));
+                foreach (GameContentPackDescriptor descriptor in descriptors)
+                {
+                    IReadOnlyList<GameContentRecordDescriptor> records = provider.GetRecords(descriptor.PackId);
+                    Assert.That(records.Count, Is.EqualTo(124), descriptor.DisplayName);
+                    Assert.That(records.All(value => value.CanonicalKey.PackId == descriptor.PackId), Is.True);
+                    Assert.That(provider.ValidatePack(descriptor.PackId).IsValid, Is.True, FormatValidation(provider.ValidatePack(descriptor.PackId)));
+                }
+
+                string basicScene = sceneRoots[0] + "/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity";
+                string scrapScene = sceneRoots[1] + "/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity";
+                GameContentPackDescriptor basicDescriptor = descriptors.Single(value =>
+                    string.Equals(value.PackId, IdleAutoDefenseNamedPackDefinition.Basic.PackId, StringComparison.OrdinalIgnoreCase));
+                GameContentPackDescriptor scrapDescriptor = descriptors.Single(value =>
+                    string.Equals(value.PackId, IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId, StringComparison.OrdinalIgnoreCase));
+                AssertNamedPackAuthoringSurface(provider, basicDescriptor, basicContentRoot, basicScene);
+                AssertNamedPackAuthoringSurface(provider, scrapDescriptor, scrapContentRoot, scrapScene);
+                GameContentRecordDescriptor basicHover = provider.GetRecords(basicDescriptor.PackId)
+                    .Single(value => value.IsInCategory("audio-events") && value.PlayerFacingMetadata.Any(metadata =>
+                        metadata.Label == "Event ID" && metadata.Value == "ui.hover"));
+                GameContentRecordDescriptor scrapHover = provider.GetRecords(scrapDescriptor.PackId)
+                    .Single(value => value.IsInCategory("audio-events") && value.PlayerFacingMetadata.Any(metadata =>
+                        metadata.Label == "Event ID" && metadata.Value == "ui.hover"));
+                Assert.That(scrapHover.CanonicalKey, Is.Not.EqualTo(basicHover.CanonicalKey));
+
+                var projectProvider = new GameContentLibraryProvider();
+                GameContentPackCatalog catalog = GameContentPackCatalog.Build(new IGameContentAuthoringProvider[] { projectProvider, provider });
+                Assert.That(catalog.SourceClaimConflicts, Is.Empty);
+                GameContentPackCatalogEntry projectEntry = catalog.Find(GameContentPackDescriptor.BuildStableKey(
+                    "com.deucarian.game-content-authoring.project", "project-content"));
+                Assert.That(projectEntry.Records.Any(value => IsPathUnderAssetRoot(value.SourcePath, contentRoot)), Is.False);
+
+                Assert.That(AssetDatabase.GetDependencies(basicScene, true), Does.Contain(basicPackPath));
+                Assert.That(AssetDatabase.GetDependencies(basicScene, true), Does.Not.Contain(scrapPackPath));
+                Assert.That(AssetDatabase.GetDependencies(scrapScene, true), Does.Contain(scrapPackPath));
+                Assert.That(AssetDatabase.GetDependencies(scrapScene, true), Does.Not.Contain(basicPackPath));
+                AssertGeneratedMetaGuidsAreUnique(targetRoot, contentRoot, sceneRoots[0], sceneRoots[1]);
+                AssertGeneratedPackMenuFirstStrictBoot(basicPack, basicSet, basicExperience);
+                AssertGeneratedPackMenuFirstStrictBoot(scrapPack, scrapSet, scrapExperience);
+                AssertResponsiveLayoutPolicy(basicExperience.UiSettings);
+                AssertResponsiveLayoutPolicy(scrapExperience.UiSettings);
+
+                AssertMutationIsolation(basicSet, scrapSet, basicExperience, scrapExperience);
+                AssertStrictMissingOwnerFailures(scrapSet, scrapExperience);
+
+                string missingRewardPath = scrapContentRoot + "/Rewards/reward-catalog.idle-auto-defense.scrap-frontier.playable.asset";
+                string missingRewardMetaPath = missingRewardPath + ".meta";
+                string rewardGuid = ReadMetaGuid(AssetPathToFullPath(missingRewardMetaPath));
+                string reportPath = AssetPathToFullPath(targetRoot + "/Docs/setup-report.md");
+                byte[] originalReport = File.ReadAllBytes(reportPath);
+                File.WriteAllText(reportPath, "repair conflict");
+                request.RepairMissingContent = true;
+                IdleAutoDefenseTemplateSetupResult conflict = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.That(conflict.Status, Is.EqualTo(IdleAutoDefenseTemplateSetupStatus.BlockedByExistingFiles));
+                Assert.That(conflict.BlockedFiles, Does.Contain(targetRoot + "/Docs/setup-report.md"));
+                Assert.That(File.ReadAllText(reportPath), Is.EqualTo("repair conflict"));
+                File.WriteAllBytes(reportPath, originalReport);
+
+                File.Delete(AssetPathToFullPath(missingRewardPath));
+                IdleAutoDefenseTemplateSetupResult repaired = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.That(repaired.Succeeded, Is.True, repaired.CreateSummary());
+                AssertFileExists(missingRewardPath);
+                Assert.That(ReadMetaGuid(AssetPathToFullPath(missingRewardMetaPath)), Is.EqualTo(rewardGuid));
+                Assert.That(repaired.BlockedFiles, Is.Empty);
+
+                IdleAutoDefenseTemplateSetupResult noOpRepair = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.That(noOpRepair.Succeeded, Is.True, noOpRepair.CreateSummary());
+                Assert.That(noOpRepair.CreatedFiles, Is.Empty, "A deterministic repair rerun should not rewrite valid output.");
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                Assert.That(AssetDatabase.FindAssets("t:GameContentPackAsset", new[] { contentRoot }).Length, Is.EqualTo(2));
+                Assert.That(File.Exists(AssetPathToFullPath(basicScene)), Is.True);
+                Assert.That(File.Exists(AssetPathToFullPath(scrapScene)), Is.True);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(targetRoot);
+                AssetDatabase.DeleteAsset(contentRoot);
+                for (int i = 0; i < sceneRoots.Length; i++) RestoreAssetDirectory(sceneRoots[i], backups[i]);
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            }
+        }
+
+        [Test]
         public void SetupWizardCopiesStarterToProjectOwnedFolderAndBlocksOverwrite()
         {
             string tempRoot = "Assets/T";
@@ -2095,6 +2415,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 ContentRootAssetPath = contentRoot,
                 GameNamespace = "WizardSmoke.IdleAutoDefense",
                 GamePrefix = "Wizard Smoke",
+                PackSelection = IdleAutoDefenseTemplatePackSelection.BasicOnly,
                 AllowOverwrite = false,
                 OpenCreatedScene = false,
                 RefreshAssetDatabase = false
@@ -2208,6 +2529,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), "Deucarian.TemplateGameIdleAutoDefense");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Docs/setup-report.md"), contentRoot);
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/README.md"), contentRoot);
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/README.md"), "# Wizard Smoke Idle Auto Defense");
+                AssertFileContains(AssetPathToFullPath(targetRoot + "/README.md"), "product-owned output");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "namespace WizardSmoke.IdleAutoDefense");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "WizardSmokeIdleAutoDefenseGameBootstrap");
                 AssertFileContains(AssetPathToFullPath(targetRoot + "/Scripts/WizardSmokeIdleAutoDefenseGameBootstrap.cs"), "IdleAutoDefensePlayerExperienceController");
@@ -2958,7 +3281,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             IdleAutoDefenseContentLensAdapters.EnsureRegistered();
             var idleProvider = new GameContentPackAuthoringProvider(contentRoot);
-            GameContentPackDescriptor pack = idleProvider.GetContentPacks().Single();
+            GameContentPackDescriptor pack = idleProvider.GetContentPacks().Single(value =>
+                string.Equals(value.PackId, IdleAutoDefenseContentPackIndex.PackId, StringComparison.OrdinalIgnoreCase));
             IReadOnlyList<GameContentRecordDescriptor> records = idleProvider.GetRecords(pack.PackId);
 
             Assert.That(pack.PackId, Is.EqualTo(IdleAutoDefenseContentPackIndex.PackId));
@@ -3125,6 +3449,470 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             return string.Join("\n", lines);
+        }
+
+        private static void AssertNamedPackAuthoringSurface(
+            GameContentPackAuthoringProvider provider,
+            GameContentPackDescriptor pack,
+            string expectedContentRoot,
+            string expectedScenePath)
+        {
+            IReadOnlyList<GameContentRecordDescriptor> records = provider.GetRecords(pack.PackId);
+            Assert.That(pack.SourceState, Is.EqualTo(GameContentPackSourceState.Available), FormatValidation(pack.Validation));
+            Assert.That(pack.Access.IsWritable, Is.False);
+            Assert.That(pack.PlayableScene, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(pack.PlayableScene), Is.EqualTo(expectedScenePath));
+            Assert.That(pack.Actions.Any(value => value.ActionId == IdleAutoDefenseContentPackIndex.ValidateActionId && value.Enabled), Is.True);
+            Assert.That(pack.Actions.Any(value => value.ActionId == IdleAutoDefenseContentPackIndex.RevealActionId && value.Enabled), Is.True);
+            Assert.That(pack.Actions.Any(value => value.ActionId == IdleAutoDefenseContentPackIndex.OpenSceneActionId && value.Enabled), Is.True);
+            Assert.That(records.Count, Is.EqualTo(124));
+            Assert.That(records.All(value => value.CanonicalKey.PackId == pack.PackId), Is.True);
+            Assert.That(records.All(value => IsPathUnderAssetRoot(value.SourcePath, expectedContentRoot)), Is.True);
+            Assert.That(records.Count(value => value.HasCapability(GameContentRecordCapabilities.Attack)), Is.EqualTo(4));
+            Assert.That(records.Count(value => value.HasCapability(GameContentRecordCapabilities.Enemy)), Is.EqualTo(6));
+            Assert.That(records.Count(value => value.HasCapability(GameContentRecordCapabilities.Wave)), Is.EqualTo(7));
+            Assert.That(records.Count(value => value.HasCapability(GameContentRecordCapabilities.Weapon)), Is.EqualTo(4));
+            Assert.That(records.Count(value => value.HasCapability(GameContentRecordCapabilities.Upgrade)), Is.EqualTo(6));
+            Assert.That(records.Count(value => value.IsInCategory("reward-choices")), Is.EqualTo(37));
+            Assert.That(records.Count(value => value.IsInCategory("normal-upgrades")), Is.EqualTo(12));
+            Assert.That(records.Count(value => value.IsInCategory("epic-upgrades")), Is.EqualTo(12));
+            Assert.That(records.Count(value => value.IsInCategory("legendary-upgrades")), Is.EqualTo(4));
+            Assert.That(records.Count(value => value.IsInCategory("themes")), Is.EqualTo(2));
+            Assert.That(records.Count(value => value.IsInCategory("audio-events")), Is.EqualTo(26));
+            Assert.That(records.Count(value => value.IsInCategory("tutorials")), Is.EqualTo(10));
+            Assert.That(records.Select(value => value.CanonicalKey).Distinct().Count(), Is.EqualTo(124));
+            Assert.That(records.SelectMany(value => value.OutboundReferences)
+                .Where(value => !string.IsNullOrWhiteSpace(value.TargetPackId))
+                .All(value => string.Equals(value.TargetPackId, pack.PackId, StringComparison.OrdinalIgnoreCase)), Is.True);
+
+            GameContentPackCatalog catalog = GameContentPackCatalog.Build(new IGameContentAuthoringProvider[] { provider });
+            GameContentPackContext context = new GameContentPackSelectionState().Select(catalog, pack.StableKey);
+            foreach (GameContentRecordDescriptor record in context.Records)
+            {
+                foreach (GameContentRecordReferenceDescriptor reference in record.OutboundReferences.Where(value => value.TargetRecordKey != null))
+                    Assert.That(context.ResolveReference(record, reference), Is.Not.Null, record.SourceRecordId + " -> " + reference.TargetRecordId);
+            }
+
+            UnityEngine.Object[] sourceAssets = records.Select(value => value.SourceAsset)
+                .Where(value => value != null)
+                .Distinct()
+                .ToArray();
+            Assert.That(sourceAssets.Any(EditorUtility.IsDirty), Is.False);
+            Assert.That(provider.GetSourceClaims(pack.PackId).Count, Is.GreaterThanOrEqualTo(35));
+            Assert.That(provider.ExecuteAction(pack.PackId, IdleAutoDefenseContentPackIndex.ValidateActionId).Succeeded, Is.True);
+            UnityEngine.Object previousSelection = Selection.activeObject;
+            try
+            {
+                Assert.That(provider.ExecuteAction(pack.PackId, IdleAutoDefenseContentPackIndex.RevealActionId).Succeeded, Is.True);
+            }
+            finally
+            {
+                Selection.activeObject = previousSelection;
+            }
+            Assert.That(sourceAssets.Any(EditorUtility.IsDirty), Is.False);
+        }
+
+        private static void AssertGeneratedMetaGuidsAreUnique(params string[] assetRoots)
+        {
+            var metaPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assetRoots.Length; i++)
+            {
+                string fullRoot = AssetPathToFullPath(assetRoots[i]);
+                if (Directory.Exists(fullRoot))
+                {
+                    foreach (string path in Directory.GetFiles(fullRoot, "*.meta", SearchOption.AllDirectories))
+                        metaPaths.Add(path);
+                }
+                if (File.Exists(fullRoot + ".meta")) metaPaths.Add(fullRoot + ".meta");
+            }
+
+            string[] duplicates = metaPaths
+                .Select(ReadMetaGuid)
+                .GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .Where(value => value.Count() > 1)
+                .Select(value => value.Key)
+                .ToArray();
+            Assert.That(duplicates, Is.Empty, "Duplicate generated GUIDs: " + string.Join(", ", duplicates));
+        }
+
+        private static void AssertResponsiveLayoutPolicy(IdleAutoDefenseUiSettingsAsset settings)
+        {
+            Assert.That(settings, Is.Not.Null);
+            Assert.That(settings.RespectSafeArea, Is.True);
+            Assert.That(settings.MinimumTouchTarget, Is.GreaterThanOrEqualTo(44f));
+            var targets = new[]
+            {
+                new { Width = 1920, Height = 1080, Compact = false },
+                new { Width = 1280, Height = 720, Compact = false },
+                new { Width = 960, Height = 540, Compact = true },
+                new { Width = 844, Height = 390, Compact = true },
+                new { Width = 1024, Height = 768, Compact = false }
+            };
+            foreach (var target in targets)
+            {
+                Assert.That(IdleAutoDefensePlayerExperienceController.ShouldUseCompactLayout(target.Width, target.Height, settings),
+                    Is.EqualTo(target.Compact), target.Width + "x" + target.Height);
+                Assert.That(IdleAutoDefensePlayerExperienceController.ShouldShowPortraitMessage(target.Width, target.Height, settings),
+                    Is.False, target.Width + "x" + target.Height);
+                Vector4 insets = IdleAutoDefensePlayerExperienceController.CalculateSafeAreaInsets(
+                    new Rect(0, 0, target.Width, target.Height),
+                    new Rect(24, 10, target.Width - 48, target.Height - 20));
+                Assert.That(insets, Is.EqualTo(new Vector4(24, 10, 24, 10)));
+            }
+        }
+
+        private static void AssertGeneratedPackMenuFirstStrictBoot(
+            GameContentPackAsset pack,
+            GameContentSetAsset contentSet,
+            IdleAutoDefensePlayerExperienceAsset experience)
+        {
+            string persistenceRoot = Path.Combine(Path.GetTempPath(), "IdleGeneratedPackBoot", Guid.NewGuid().ToString("N"));
+            GameObject host = new GameObject("generated-pack-menu-first-smoke");
+            host.SetActive(false);
+            try
+            {
+                var controller = host.AddComponent<GeneratedPackBootProbeController>();
+                controller.Pack = pack;
+                controller.ContentSet = contentSet;
+                controller.Experience = experience;
+                controller.ConfigurePersistenceRoot(persistenceRoot);
+                controller.InitializeForEditMode();
+                Assert.That(controller.StartupBlocked, Is.False, controller.StartupError);
+                Assert.That(controller.UsingAssignedContentPack, Is.True);
+                Assert.That(controller.UsingAssignedContentSet, Is.True);
+                Assert.That(controller.UsingAuthoredCore, Is.True);
+                Assert.That(controller.FallbackModeActive, Is.False);
+                Assert.That(controller.PlayerExperienceValid, Is.True, controller.PlayerFacingError);
+                Assert.That(controller.ActiveContentPackId, Is.EqualTo(pack.Id));
+                Assert.That(controller.ActiveContentSetId, Is.EqualTo(contentSet.Id));
+                Assert.That(controller.PersistenceScopeId, Is.EqualTo(pack.Id));
+                Assert.That(controller.PersistenceDocumentName, Is.EqualTo(IdleAutoDefensePlayerProfileStore.BuildDocumentName(pack.Id)));
+                Assert.That(controller.ActiveThemeId, Is.EqualTo(experience.DefaultThemeId));
+                Assert.That(controller.MainMenuVisible, Is.True);
+                Assert.That(controller.RunActive, Is.False);
+                Assert.That(controller.NormalHudVisible, Is.False);
+                Assert.That(controller.SurvivalSeconds, Is.Zero);
+                Assert.That(controller.PlayerUiButtonCount, Is.GreaterThanOrEqualTo(16));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
+        private sealed class GeneratedPackBootProbeController : IdleAutoDefensePlayerExperienceController
+        {
+            public GameContentPackAsset Pack { get; set; }
+            public GameContentSetAsset ContentSet { get; set; }
+            public IdleAutoDefensePlayerExperienceAsset Experience { get; set; }
+
+            protected override void ConfigurePlayerExperienceBeforeBuild()
+            {
+                RequireAuthoredContentOnStartup();
+                ConfigureContentPack(Pack, ContentSet);
+                ConfigurePlayerExperience(Experience);
+            }
+
+            public void InitializeForEditMode()
+            {
+                base.Awake();
+            }
+        }
+
+        private static void AssertPackNumericParity(GameContentSetAsset basic, GameContentSetAsset scrap)
+        {
+            Assert.That(scrap.AvailableWeapons.Count, Is.EqualTo(basic.AvailableWeapons.Count));
+            for (int i = 0; i < basic.AvailableWeapons.Count; i++)
+            {
+                WeaponStatsDefinitionAsset left = basic.AvailableWeapons[i].Stats;
+                WeaponStatsDefinitionAsset right = scrap.AvailableWeapons[i].Stats;
+                Assert.That(right, Is.Not.SameAs(left));
+                Assert.That(right.FireMode, Is.EqualTo(left.FireMode));
+                Assert.That(right.CooldownTicks, Is.EqualTo(left.CooldownTicks));
+                Assert.That(right.Range, Is.EqualTo(left.Range));
+                Assert.That(right.BuildCost, Is.EqualTo(left.BuildCost));
+                Assert.That(right.Attack.Mechanics.DamageAmount, Is.EqualTo(left.Attack.Mechanics.DamageAmount));
+                Assert.That(right.Attack.Mechanics.CooldownTicks, Is.EqualTo(left.Attack.Mechanics.CooldownTicks));
+                Assert.That(right.Attack.Mechanics.Range, Is.EqualTo(left.Attack.Mechanics.Range));
+                Assert.That(right.Attack.Delivery.Mode, Is.EqualTo(left.Attack.Delivery.Mode));
+                Assert.That(right.Attack.Delivery.ProjectileSpeed, Is.EqualTo(left.Attack.Delivery.ProjectileSpeed));
+                Assert.That(right.Attack.Delivery.Radius, Is.EqualTo(left.Attack.Delivery.Radius));
+            }
+
+            Assert.That(scrap.EnemyPool.Count, Is.EqualTo(basic.EnemyPool.Count));
+            for (int i = 0; i < basic.EnemyPool.Count; i++)
+            {
+                EnemyStatsDefinitionAsset left = basic.EnemyPool[i].Stats;
+                EnemyStatsDefinitionAsset right = scrap.EnemyPool[i].Stats;
+                Assert.That(right, Is.Not.SameAs(left));
+                Assert.That(right.MaximumHealth, Is.EqualTo(left.MaximumHealth));
+                Assert.That(right.MoveSpeed, Is.EqualTo(left.MoveSpeed));
+                Assert.That(right.RewardValue, Is.EqualTo(left.RewardValue));
+                Assert.That(right.ContactDamage, Is.EqualTo(left.ContactDamage));
+                Assert.That(right.CollisionRadius, Is.EqualTo(left.CollisionRadius));
+            }
+
+            Assert.That(scrap.WaveSet.Count, Is.EqualTo(basic.WaveSet.Count));
+            for (int i = 0; i < basic.WaveSet.Count; i++)
+            {
+                Assert.That(scrap.WaveSet[i], Is.Not.SameAs(basic.WaveSet[i]));
+                Assert.That(scrap.WaveSet[i].Schedule.StartTick, Is.EqualTo(basic.WaveSet[i].Schedule.StartTick));
+                Assert.That(scrap.WaveSet[i].Entries.Entries.Count, Is.EqualTo(basic.WaveSet[i].Entries.Entries.Count));
+                for (int j = 0; j < basic.WaveSet[i].Entries.Entries.Count; j++)
+                {
+                    WaveEntryRecipe left = basic.WaveSet[i].Entries.Entries[j];
+                    WaveEntryRecipe right = scrap.WaveSet[i].Entries.Entries[j];
+                    Assert.That(right.Count, Is.EqualTo(left.Count));
+                    Assert.That(right.BatchSize, Is.EqualTo(left.BatchSize));
+                    Assert.That(right.InitialDelayTicks, Is.EqualTo(left.InitialDelayTicks));
+                    Assert.That(right.IntervalTicks, Is.EqualTo(left.IntervalTicks));
+                    Assert.That(right.ScalingTier, Is.EqualTo(left.ScalingTier));
+                }
+            }
+
+            Assert.That(scrap.RewardCatalog.FirstDraftSeconds, Is.EqualTo(basic.RewardCatalog.FirstDraftSeconds));
+            Assert.That(scrap.RewardCatalog.Settings.NormalEnemyExperience, Is.EqualTo(basic.RewardCatalog.Settings.NormalEnemyExperience));
+            Assert.That(scrap.RewardCatalog.Settings.BaseExperienceToNextLevel, Is.EqualTo(basic.RewardCatalog.Settings.BaseExperienceToNextLevel));
+            Assert.That(scrap.RewardCatalog.Catalog.WeaponUnlocks.Count, Is.EqualTo(basic.RewardCatalog.Catalog.WeaponUnlocks.Count));
+            Assert.That(scrap.RewardCatalog.Catalog.NormalWeaponRewards.Count, Is.EqualTo(basic.RewardCatalog.Catalog.NormalWeaponRewards.Count));
+            Assert.That(scrap.RewardCatalog.Catalog.EpicWeaponRewards.Count, Is.EqualTo(basic.RewardCatalog.Catalog.EpicWeaponRewards.Count));
+            Assert.That(scrap.RewardCatalog.Catalog.LegendaryWeaponRewards.Count, Is.EqualTo(basic.RewardCatalog.Catalog.LegendaryWeaponRewards.Count));
+            Assert.That(scrap.RewardCatalog.Catalog.BaseRewards.Count, Is.EqualTo(basic.RewardCatalog.Catalog.BaseRewards.Count));
+            Assert.That(scrap.Economy.StartingCredits, Is.EqualTo(basic.Economy.StartingCredits));
+            Assert.That(scrap.Economy.StartingParts, Is.EqualTo(basic.Economy.StartingParts));
+            Assert.That(scrap.Economy.PassiveIncomeAmount, Is.EqualTo(basic.Economy.PassiveIncomeAmount));
+            Assert.That(scrap.Economy.PassiveIncomeIntervalTicks, Is.EqualTo(basic.Economy.PassiveIncomeIntervalTicks));
+            Assert.That(scrap.RunProfile.SessionLengthTicks, Is.EqualTo(basic.RunProfile.SessionLengthTicks));
+            Assert.That(scrap.RunProfile.SimulationTicksPerSecond, Is.EqualTo(basic.RunProfile.SimulationTicksPerSecond));
+            Assert.That(scrap.RunProfile.RewardMultiplier, Is.EqualTo(basic.RunProfile.RewardMultiplier));
+            Assert.That(scrap.OfflineProgression.MaximumOfflineSeconds, Is.EqualTo(basic.OfflineProgression.MaximumOfflineSeconds));
+            Assert.That(scrap.OfflineProgression.ProductionAmountPerSecond, Is.EqualTo(basic.OfflineProgression.ProductionAmountPerSecond));
+            Assert.That(scrap.GameRules.ObjectiveMaximumHealth, Is.EqualTo(basic.GameRules.ObjectiveMaximumHealth));
+            Assert.That(scrap.GameRules.SpawnRingRadius, Is.EqualTo(basic.GameRules.SpawnRingRadius));
+            Assert.That(scrap.Progression.Tracks.Count, Is.EqualTo(basic.Progression.Tracks.Count));
+            Assert.That(scrap.Progression.ResearchNodes.Count, Is.EqualTo(basic.Progression.ResearchNodes.Count));
+        }
+
+        private static void AssertMutationIsolation(
+            GameContentSetAsset basic,
+            GameContentSetAsset scrap,
+            IdleAutoDefensePlayerExperienceAsset basicExperience,
+            IdleAutoDefensePlayerExperienceAsset scrapExperience)
+        {
+            float basicDamage = basic.StartingWeapon.Stats.Attack.Mechanics.DamageAmount;
+            float scrapDamage = scrap.StartingWeapon.Stats.Attack.Mechanics.DamageAmount;
+            AssertSerializedFloatMutation(scrap.StartingWeapon.Stats.Attack.Mechanics, "_damageAmount", scrapDamage + 7f,
+                () => Assert.That(basic.StartingWeapon.Stats.Attack.Mechanics.DamageAmount, Is.EqualTo(basicDamage)));
+
+            float basicHealth = basic.EnemyPool[0].Stats.MaximumHealth;
+            float scrapHealth = scrap.EnemyPool[0].Stats.MaximumHealth;
+            AssertSerializedFloatMutation(scrap.EnemyPool[0].Stats, "_maximumHealth", scrapHealth + 11f,
+                () => Assert.That(basic.EnemyPool[0].Stats.MaximumHealth, Is.EqualTo(basicHealth)));
+
+            int basicWaveCount = basic.WaveSet[0].Entries.Entries[0].Count;
+            int scrapWaveCount = scrap.WaveSet[0].Entries.Entries[0].Count;
+            AssertSerializedIntMutation(scrap.WaveSet[0].Entries, "_entries.Array.data[0]._count", scrapWaveCount + 2,
+                () => Assert.That(basic.WaveSet[0].Entries.Entries[0].Count, Is.EqualTo(basicWaveCount)));
+
+            int basicCost = basic.StartingWeapon.Stats.BuildCost;
+            int scrapCost = scrap.StartingWeapon.Stats.BuildCost;
+            AssertSerializedIntMutation(scrap.StartingWeapon.Stats, "_buildCost", scrapCost + 9,
+                () => Assert.That(basic.StartingWeapon.Stats.BuildCost, Is.EqualTo(basicCost)));
+
+            double basicReward = basic.RewardCatalog.Catalog.BaseRewards[0].Amount;
+            double scrapReward = scrap.RewardCatalog.Catalog.BaseRewards[0].Amount;
+            AssertSerializedDoubleMutation(scrap.RewardCatalog, "_catalog._baseRewards.Array.data[0]._amount", scrapReward + 0.5d,
+                () => Assert.That(basic.RewardCatalog.Catalog.BaseRewards[0].Amount, Is.EqualTo(basicReward)));
+
+            Color basicAccent = basicExperience.Themes[0].Accent;
+            AssertSerializedColorMutation(scrapExperience.Themes[0], "_accent", Color.magenta,
+                () => Assert.That(basicExperience.Themes[0].Accent, Is.EqualTo(basicAccent)));
+
+            string basicTutorialTitle = basicExperience.Tutorial.Steps[0].Title;
+            AssertSerializedStringMutation(scrapExperience.Tutorial, "_steps.Array.data[0]._title", "Scrap mutation proof",
+                () => Assert.That(basicExperience.Tutorial.Steps[0].Title, Is.EqualTo(basicTutorialTitle)));
+
+            float basicAudioVolume = basicExperience.AudioPalette.Events[0].Volume;
+            float scrapAudioVolume = scrapExperience.AudioPalette.Events[0].Volume;
+            AssertSerializedFloatMutation(scrapExperience.AudioPalette, "_events.Array.data[0]._volume", Mathf.Clamp01(scrapAudioVolume * 0.5f),
+                () => Assert.That(basicExperience.AudioPalette.Events[0].Volume, Is.EqualTo(basicAudioVolume)));
+        }
+
+        private static void AssertStrictMissingOwnerFailures(
+            GameContentSetAsset scrap,
+            IdleAutoDefensePlayerExperienceAsset experience)
+        {
+            AssertMissingObjectReferenceFails(scrap.StartingWeapon.Stats, "_attack", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(scrap, "_enemyPool.Array.data[0]", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(scrap.RunProfile, "_waves.Array.data[0]", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(scrap, "_rewardCatalog", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(scrap, "_economy", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(scrap, "_runProfile", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(scrap, "_progression", () => !GameContentSetValidator.Validate(scrap).IsValid);
+            AssertMissingObjectReferenceFails(experience, "_uiSettings", () => experience.Validate().Count > 0);
+            AssertMissingObjectReferenceFails(experience, "_themes.Array.data[0]", () => experience.Validate().Count > 0);
+            Assert.That(GameContentSetValidator.Validate(scrap).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(scrap)));
+            Assert.That(experience.Validate(), Is.Empty);
+        }
+
+        private static void AssertMissingObjectReferenceFails(UnityEngine.Object owner, string propertyPath, Func<bool> validation)
+        {
+            var serialized = new SerializedObject(owner);
+            SerializedProperty property = serialized.FindProperty(propertyPath);
+            Assert.That(property, Is.Not.Null, propertyPath);
+            UnityEngine.Object original = property.objectReferenceValue;
+            property.objectReferenceValue = null;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            try
+            {
+                Assert.That(validation(), Is.True, propertyPath + " should be required.");
+            }
+            finally
+            {
+                serialized.Update();
+                property = serialized.FindProperty(propertyPath);
+                property.objectReferenceValue = original;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        private static void AssertSerializedFloatMutation(UnityEngine.Object owner, string propertyPath, float value, Action assertBasic)
+        {
+            var serialized = new SerializedObject(owner);
+            SerializedProperty property = serialized.FindProperty(propertyPath);
+            Assert.That(property, Is.Not.Null, propertyPath);
+            float original = property.floatValue;
+            property.floatValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            try { assertBasic(); }
+            finally
+            {
+                serialized.Update();
+                property = serialized.FindProperty(propertyPath);
+                property.floatValue = original;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        private static void AssertSerializedIntMutation(UnityEngine.Object owner, string propertyPath, int value, Action assertBasic)
+        {
+            var serialized = new SerializedObject(owner);
+            SerializedProperty property = serialized.FindProperty(propertyPath);
+            Assert.That(property, Is.Not.Null, propertyPath);
+            int original = property.intValue;
+            property.intValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            try { assertBasic(); }
+            finally
+            {
+                serialized.Update();
+                property = serialized.FindProperty(propertyPath);
+                property.intValue = original;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        private static void AssertSerializedDoubleMutation(UnityEngine.Object owner, string propertyPath, double value, Action assertBasic)
+        {
+            var serialized = new SerializedObject(owner);
+            SerializedProperty property = serialized.FindProperty(propertyPath);
+            Assert.That(property, Is.Not.Null, propertyPath);
+            double original = property.doubleValue;
+            property.doubleValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            try { assertBasic(); }
+            finally
+            {
+                serialized.Update();
+                property = serialized.FindProperty(propertyPath);
+                property.doubleValue = original;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        private static void AssertSerializedColorMutation(UnityEngine.Object owner, string propertyPath, Color value, Action assertBasic)
+        {
+            var serialized = new SerializedObject(owner);
+            SerializedProperty property = serialized.FindProperty(propertyPath);
+            Assert.That(property, Is.Not.Null, propertyPath);
+            Color original = property.colorValue;
+            property.colorValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            try { assertBasic(); }
+            finally
+            {
+                serialized.Update();
+                property = serialized.FindProperty(propertyPath);
+                property.colorValue = original;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        private static void AssertSerializedStringMutation(UnityEngine.Object owner, string propertyPath, string value, Action assertBasic)
+        {
+            var serialized = new SerializedObject(owner);
+            SerializedProperty property = serialized.FindProperty(propertyPath);
+            Assert.That(property, Is.Not.Null, propertyPath);
+            string original = property.stringValue;
+            property.stringValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            try { assertBasic(); }
+            finally
+            {
+                serialized.Update();
+                property = serialized.FindProperty(propertyPath);
+                property.stringValue = original;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        private static bool CanContainGuidReference(string path)
+        {
+            string extension = Path.GetExtension(path);
+            return extension.Equals(".asset", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".prefab", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".unity", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".mat", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".asmdef", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void AssertFileSha256(string path, string expected)
+        {
+            using (SHA256 sha = SHA256.Create())
+            {
+                string actual = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(path))).Replace("-", string.Empty).ToLowerInvariant();
+                Assert.That(actual, Is.EqualTo(expected), path);
+            }
+        }
+
+        private static string BackupAssetDirectory(string assetRoot)
+        {
+            string fullPath = AssetPathToFullPath(assetRoot);
+            bool hasDirectory = Directory.Exists(fullPath);
+            bool hasMeta = File.Exists(fullPath + ".meta");
+            if (!hasDirectory && !hasMeta) return string.Empty;
+            string backup = Path.Combine(Path.GetTempPath(), "IdleAssetFlipBackup_" + Guid.NewGuid().ToString("N"));
+            if (hasDirectory) CopyDirectory(fullPath, Path.Combine(backup, "Root"));
+            if (hasMeta)
+            {
+                Directory.CreateDirectory(backup);
+                File.Copy(fullPath + ".meta", Path.Combine(backup, "Root.meta"), true);
+            }
+            DeleteDirectoryIfExists(fullPath);
+            return backup;
+        }
+
+        private static void RestoreAssetDirectory(string assetRoot, string backup)
+        {
+            string fullPath = AssetPathToFullPath(assetRoot);
+            DeleteDirectoryIfExists(fullPath);
+            if (string.IsNullOrWhiteSpace(backup)) return;
+            string directory = Path.Combine(backup, "Root");
+            string meta = Path.Combine(backup, "Root.meta");
+            if (Directory.Exists(directory)) CopyDirectory(directory, fullPath);
+            if (File.Exists(meta)) File.Copy(meta, fullPath + ".meta", true);
+            DeleteDirectoryIfExists(backup);
         }
 
         private static void AssertCreatedPathsStayUnderAllowedRoots(IdleAutoDefenseTemplateSetupResult result, string targetRoot, string contentRoot)

@@ -43,7 +43,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             return record != null &&
                    string.Equals(record.CanonicalKey.OwningPackageId, IdleAutoDefenseContentPackIndex.OwningPackageId, StringComparison.OrdinalIgnoreCase) &&
-                   string.Equals(record.CanonicalKey.PackId, IdleAutoDefenseContentPackIndex.PackId, StringComparison.OrdinalIgnoreCase) &&
+                   IdleAutoDefenseNamedPackDefinition.All.Any(definition =>
+                       string.Equals(record.CanonicalKey.PackId, definition.PackId, StringComparison.OrdinalIgnoreCase)) &&
                    record.HasCapability(capability);
         }
 

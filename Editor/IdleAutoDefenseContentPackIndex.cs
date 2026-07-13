@@ -12,6 +12,41 @@ using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 {
+    internal sealed class IdleAutoDefenseNamedPackDefinition
+    {
+        public static readonly IdleAutoDefenseNamedPackDefinition Basic = new IdleAutoDefenseNamedPackDefinition(
+            "contentpack.idle-auto-defense.playable",
+            "Basic Idle Auto Defense",
+            "OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity",
+            "Basic Idle Auto Defense");
+
+        public static readonly IdleAutoDefenseNamedPackDefinition ScrapFrontier = new IdleAutoDefenseNamedPackDefinition(
+            "contentpack.idle-auto-defense.scrap-frontier",
+            "Scrap Frontier",
+            "OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity",
+            "Scrap Frontier asset-flip proof");
+
+        public static readonly IReadOnlyList<IdleAutoDefenseNamedPackDefinition> All =
+            new[] { Basic, ScrapFrontier };
+
+        private IdleAutoDefenseNamedPackDefinition(
+            string packId,
+            string displayName,
+            string playableSceneFileName,
+            string setupLabel)
+        {
+            PackId = packId;
+            DisplayName = displayName;
+            PlayableSceneFileName = playableSceneFileName;
+            SetupLabel = setupLabel;
+        }
+
+        public string PackId { get; }
+        public string DisplayName { get; }
+        public string PlayableSceneFileName { get; }
+        public string SetupLabel { get; }
+    }
+
     internal sealed class IdleAutoDefenseContentPackIndex
     {
         public const string PackId = "contentpack.idle-auto-defense.playable";
@@ -26,6 +61,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private const string GeneratedContentSearchRoot = "Assets/GameContent";
 
         private IdleAutoDefenseContentPackIndex(
+            IdleAutoDefenseNamedPackDefinition definition,
             GameContentPackAsset packAsset,
             GameContentSetAsset contentSetAsset,
             SceneAsset playableScene,
@@ -37,6 +73,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             IReadOnlyList<GameContentSourceClaim> sourceClaims,
             GameContentAuthoringValidationResult validation)
         {
+            Definition = definition ?? IdleAutoDefenseNamedPackDefinition.Basic;
             PackAsset = packAsset;
             ContentSetAsset = contentSetAsset;
             PlayableScene = playableScene;
@@ -49,6 +86,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             Validation = validation ?? GameContentAuthoringValidationResult.Valid;
         }
 
+        public IdleAutoDefenseNamedPackDefinition Definition { get; }
         public GameContentPackAsset PackAsset { get; }
         public GameContentSetAsset ContentSetAsset { get; }
         public SceneAsset PlayableScene { get; }
@@ -63,49 +101,59 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public static IdleAutoDefenseContentPackIndex Discover()
         {
-            return Discover(GeneratedContentSearchRoot);
+            return Discover(IdleAutoDefenseNamedPackDefinition.Basic, GeneratedContentSearchRoot);
         }
 
         internal static IdleAutoDefenseContentPackIndex Discover(string generatedContentSearchRoot)
         {
+            return Discover(IdleAutoDefenseNamedPackDefinition.Basic, generatedContentSearchRoot);
+        }
+
+        internal static IdleAutoDefenseContentPackIndex Discover(
+            IdleAutoDefenseNamedPackDefinition definition,
+            string generatedContentSearchRoot)
+        {
+            definition ??= IdleAutoDefenseNamedPackDefinition.Basic;
             var issues = new List<GameContentAuthoringValidationIssue>();
             string searchRoot = string.IsNullOrWhiteSpace(generatedContentSearchRoot)
                 ? GeneratedContentSearchRoot
                 : NormalizePath(generatedContentSearchRoot).TrimEnd('/');
-            GameContentPackAsset[] candidates = FindGeneratedPackCandidates(searchRoot);
+            GameContentPackAsset[] candidates = FindGeneratedPackCandidates(definition, searchRoot);
             if (candidates.Length == 0)
             {
                 issues.Add(GameContentAuthoringValidationIssue.Error(
                     "Generated Content",
-                    "Basic Idle Auto Defense has not been generated under Assets/GameContent. Run the existing template setup wizard."));
-                return Empty(GameContentPackSourceState.MissingSource, searchRoot, issues);
+                    definition.DisplayName + " has not been generated under Assets/GameContent. Run the Idle Auto Defense setup wizard."));
+                return Empty(definition, GameContentPackSourceState.MissingSource, searchRoot, issues);
             }
 
             if (candidates.Length > 1)
             {
                 issues.Add(GameContentAuthoringValidationIssue.Error(
                     "Generated Content",
-                    "Multiple generated GameContentPackAsset instances use stable ID '" + PackId + "': " +
+                    "Multiple generated GameContentPackAsset instances use stable ID '" + definition.PackId + "': " +
                     string.Join(", ", candidates.Select(AssetDatabase.GetAssetPath).OrderBy(value => value, StringComparer.OrdinalIgnoreCase)) + "."));
-                return Empty(GameContentPackSourceState.DuplicateConflict, searchRoot, issues);
+                return Empty(definition, GameContentPackSourceState.DuplicateConflict, searchRoot, issues);
             }
 
             GameContentPackAsset pack = candidates[0];
             string packPath = NormalizePath(AssetDatabase.GetAssetPath(pack));
             string contentRoot = ResolveContentRoot(packPath);
             GameContentSetAsset contentSet = pack.DefaultContentSet;
-            SceneAsset scene = FindPlayableScene(packPath, out string scenePath, out string sceneIssue);
+            SceneAsset scene = FindPlayableScene(definition, packPath, out string scenePath, out string sceneIssue);
             if (!string.IsNullOrWhiteSpace(sceneIssue))
                 issues.Add(GameContentAuthoringValidationIssue.Error("Playable Scene", sceneIssue));
 
             AddPackValidation(pack, issues);
-            IReadOnlyList<GameContentRecordDescriptor> records = BuildRecords(pack, contentSet, contentRoot, issues);
+            IReadOnlyList<GameContentRecordDescriptor> records = BuildRecords(definition, pack, contentSet, contentRoot, issues);
+            AddCrossPackReferenceIssues(definition, packPath, searchRoot, issues);
             AddExpectedCountIssues(records, issues);
             IReadOnlyList<GameContentSourceClaim> claims = BuildSourceClaims(pack, contentRoot);
             GameContentPackSourceState state = issues.Any(value => value.Severity == GameContentAuthoringValidationSeverity.Error)
                 ? GameContentPackSourceState.ValidationFailed
                 : GameContentPackSourceState.Available;
             return new IdleAutoDefenseContentPackIndex(
+                definition,
                 pack,
                 contentSet,
                 scene,
@@ -131,9 +179,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 new GameContentActionDescriptor(
                     ValidateActionId,
                     "Validate",
-                    "Validate the generated Idle content pack and content-set graph.",
+                    "Validate the generated " + Definition.DisplayName + " content pack and content-set graph.",
                     PackAsset != null,
-                    "Generate Basic Idle Auto Defense first.",
+                    "Generate " + Definition.DisplayName + " first.",
                     GameContentActionKind.Validate),
                 new GameContentActionDescriptor(
                     RevealActionId,
@@ -145,7 +193,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 new GameContentActionDescriptor(
                     OpenSceneActionId,
                     "Open Playable Scene",
-                    "Open the generated Idle Auto Defense playable scene.",
+                    "Open the generated " + Definition.DisplayName + " playable scene.",
                     PlayableScene != null,
                     "The generated playable scene could not be resolved.",
                     GameContentActionKind.OpenScene)
@@ -162,12 +210,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             return new GameContentPackDescriptor(
-                PackId,
+                Definition.PackId,
                 OwningPackageId,
                 providerId,
-                DisplayName,
+                Definition.DisplayName,
                 PackAsset == null
-                    ? "Generate the project-owned Idle Auto Defense content graph to make this pack available."
+                    ? "Generate the project-owned " + Definition.SetupLabel + " content graph to make this pack available."
                     : PackAsset.Description,
                 PackAsset == null ? "1" : PackAsset.Version,
                 PackAsset == null ? new[] { "idle-auto-defense", "generated" } : PackAsset.Tags,
@@ -225,11 +273,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
 
         private static IdleAutoDefenseContentPackIndex Empty(
+            IdleAutoDefenseNamedPackDefinition definition,
             GameContentPackSourceState state,
             string searchRoot,
             IReadOnlyList<GameContentAuthoringValidationIssue> issues)
         {
             return new IdleAutoDefenseContentPackIndex(
+                definition,
                 null,
                 null,
                 null,
@@ -242,27 +292,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 new GameContentAuthoringValidationResult(issues));
         }
 
-        private static GameContentPackAsset[] FindGeneratedPackCandidates(string searchRoot)
+        private static GameContentPackAsset[] FindGeneratedPackCandidates(
+            IdleAutoDefenseNamedPackDefinition definition,
+            string searchRoot)
         {
             if (!AssetDatabase.IsValidFolder(searchRoot)) return Array.Empty<GameContentPackAsset>();
             return AssetDatabase.FindAssets("t:GameContentPackAsset", new[] { searchRoot })
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Where(path => NormalizePath(path).StartsWith(searchRoot + "/", StringComparison.OrdinalIgnoreCase))
                 .Select(AssetDatabase.LoadAssetAtPath<GameContentPackAsset>)
-                .Where(asset => asset != null && string.Equals(asset.Id, PackId, StringComparison.OrdinalIgnoreCase))
+                .Where(asset => asset != null && string.Equals(asset.Id, definition.PackId, StringComparison.OrdinalIgnoreCase))
                 .Distinct()
                 .OrderBy(AssetDatabase.GetAssetPath, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
 
-        private static SceneAsset FindPlayableScene(string packPath, out string scenePath, out string issue)
+        private static SceneAsset FindPlayableScene(
+            IdleAutoDefenseNamedPackDefinition definition,
+            string packPath,
+            out string scenePath,
+            out string issue)
         {
             scenePath = string.Empty;
             issue = string.Empty;
             string[] candidates = AssetDatabase.FindAssets("t:Scene", new[] { "Assets" })
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Select(NormalizePath)
-                .Where(path => string.Equals(Path.GetFileName(path), PlayableSceneFileName, StringComparison.OrdinalIgnoreCase))
+                .Where(path => string.Equals(Path.GetFileName(path), definition.PlayableSceneFileName, StringComparison.OrdinalIgnoreCase))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
@@ -272,7 +328,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             string[] resolved = referencingPack.Length > 0 ? referencingPack : candidates;
             if (resolved.Length == 0)
             {
-                issue = "Generated scene '" + PlayableSceneFileName + "' was not found under Assets.";
+                issue = "Generated scene '" + definition.PlayableSceneFileName + "' was not found under Assets.";
                 return null;
             }
 
@@ -287,6 +343,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
 
         private static IReadOnlyList<GameContentRecordDescriptor> BuildRecords(
+            IdleAutoDefenseNamedPackDefinition definition,
             GameContentPackAsset pack,
             GameContentSetAsset contentSet,
             string contentRoot,
@@ -322,9 +379,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             AddIdentityIssues(drafts, packIssues);
             Dictionary<RecordDraft, GameContentRecordKey> keys = drafts.ToDictionary(
                 draft => draft,
-                draft => BuildKey(draft, packIssues));
+                draft => BuildKey(definition, draft, packIssues));
             AddReferences(drafts, keys);
-            return BuildDescriptors(drafts, keys);
+            return BuildDescriptors(definition, drafts, keys);
         }
 
         private static void AddPlayerExperienceDrafts(
@@ -1157,6 +1214,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
 
         private static IReadOnlyList<GameContentRecordDescriptor> BuildDescriptors(
+            IdleAutoDefenseNamedPackDefinition definition,
             IReadOnlyList<RecordDraft> drafts,
             IReadOnlyDictionary<RecordDraft, GameContentRecordKey> keys)
         {
@@ -1181,7 +1239,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             return drafts.Select(draft => new GameContentRecordDescriptor(
-                PackId + "::" + draft.CategoryId + "::" + draft.Id,
+                definition.PackId + "::" + draft.CategoryId + "::" + draft.Id,
                 draft.Id,
                 draft.CategoryId,
                 draft.CategoryIds,
@@ -1195,7 +1253,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 draft.References.Select(reference => new GameContentRecordReferenceDescriptor(
                     reference.TargetRecordId,
                     reference.TargetCategoryId,
-                    PackId,
+                    definition.PackId,
                     reference.RelationshipLabel,
                     reference.Required,
                     reference.Valid,
@@ -1211,6 +1269,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
 
         private static GameContentRecordKey BuildKey(
+            IdleAutoDefenseNamedPackDefinition definition,
             RecordDraft draft,
             ICollection<GameContentAuthoringValidationIssue> issues)
         {
@@ -1220,10 +1279,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 issues.Add(GameContentAuthoringValidationIssue.Error(
                     draft.CategoryId + "/" + draft.Id,
                     "Record source is not a persisted Unity asset and has no stable asset GUID."));
-                return new GameContentRecordKey(OwningPackageId, PackId, draft.Id, "missing-source", path);
+                return new GameContentRecordKey(OwningPackageId, definition.PackId, draft.Id, "missing-source", path);
             }
 
-            return new GameContentRecordKey(OwningPackageId, PackId, draft.Id, identity.StableKey, path);
+            return new GameContentRecordKey(OwningPackageId, definition.PackId, draft.Id, identity.StableKey, path);
         }
 
         private static void AddIdentityIssues(
@@ -1345,6 +1404,40 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                         ? GameContentAuthoringValidationSeverity.Warning
                         : GameContentAuthoringValidationSeverity.Info;
                 issues.Add(new GameContentAuthoringValidationIssue(severity, issue.Path, issue.Message));
+            }
+        }
+
+        private static void AddCrossPackReferenceIssues(
+            IdleAutoDefenseNamedPackDefinition definition,
+            string packPath,
+            string searchRoot,
+            ICollection<GameContentAuthoringValidationIssue> issues)
+        {
+            if (string.IsNullOrWhiteSpace(packPath)) return;
+            var selectedDependencies = new HashSet<string>(
+                AssetDatabase.GetDependencies(packPath, true).Select(NormalizePath),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (IdleAutoDefenseNamedPackDefinition other in IdleAutoDefenseNamedPackDefinition.All)
+            {
+                if (ReferenceEquals(other, definition)) continue;
+                GameContentPackAsset[] otherPacks = FindGeneratedPackCandidates(other, searchRoot);
+                for (int i = 0; i < otherPacks.Length; i++)
+                {
+                    string otherPackPath = NormalizePath(AssetDatabase.GetAssetPath(otherPacks[i]));
+                    string otherContentRoot = ResolveContentRoot(otherPackPath).TrimEnd('/');
+                    string[] leaked = AssetDatabase.GetDependencies(otherPackPath, true)
+                        .Select(NormalizePath)
+                        .Where(path => path.StartsWith(otherContentRoot + "/", StringComparison.OrdinalIgnoreCase))
+                        .Where(selectedDependencies.Contains)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                    if (leaked.Length == 0) continue;
+                    issues.Add(GameContentAuthoringValidationIssue.Error(
+                        "Cross-Pack References",
+                        definition.DisplayName + " references concrete " + other.DisplayName + " content: " +
+                        string.Join(", ", leaked) + "."));
+                }
             }
         }
 

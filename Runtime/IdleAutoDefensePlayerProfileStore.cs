@@ -42,7 +42,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public List<IdleAutoDefensePersistentIntValue> ResearchRanks { get; set; } = new List<IdleAutoDefensePersistentIntValue>();
         public List<string> UnlockIds { get; set; } = new List<string>();
 
-        public bool HasData => Balances.Count > 0 || Tracks.Count > 0 || ResearchRanks.Count > 0 || UnlockIds.Count > 0;
+        public bool HasData => Balances != null && Balances.Count > 0 ||
+            Tracks != null && Tracks.Count > 0 ||
+            ResearchRanks != null && ResearchRanks.Count > 0 ||
+            UnlockIds != null && UnlockIds.Count > 0;
     }
 
     [Serializable]
@@ -62,18 +65,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     public sealed class IdleAutoDefensePlayerProfileStore : IDisposable
     {
         public const string DocumentName = "idle-auto-defense-player-profile";
-        private static readonly DocumentId ProfileDocumentId = new DocumentId(DocumentName);
+        public const string DefaultProfileScopeId = "contentpack.idle-auto-defense.playable";
         private readonly PersistenceService _service;
         private readonly DocumentDefinition<IdleAutoDefensePlayerProfile> _definition;
+        private readonly DocumentId _profileDocumentId;
 
-        public IdleAutoDefensePlayerProfileStore(string rootPath = null)
+        public IdleAutoDefensePlayerProfileStore(string rootPath = null, string profileScopeId = null)
         {
             string resolvedRoot = string.IsNullOrWhiteSpace(rootPath)
                 ? Path.Combine(Application.persistentDataPath, "Deucarian", "IdleAutoDefense")
                 : rootPath;
+            ProfileScopeId = string.IsNullOrWhiteSpace(profileScopeId) ? DefaultProfileScopeId : profileScopeId.Trim();
+            ProfileDocumentName = BuildDocumentName(ProfileScopeId);
+            _profileDocumentId = new DocumentId(ProfileDocumentName);
             _service = new PersistenceService(new FileTextStorage(new FixedPathProvider(resolvedRoot)));
             _definition = new DocumentDefinition<IdleAutoDefensePlayerProfile>(
-                ProfileDocumentId,
+                _profileDocumentId,
                 new SchemaVersion(1),
                 IdleAutoDefensePlayerProfile.CreateDefault,
                 new DelegateDocumentValidator<IdleAutoDefensePlayerProfile>(Validate),
@@ -82,6 +89,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public string LastStatus { get; private set; } = string.Empty;
         public bool RecoveredFromBackup { get; private set; }
+        public string ProfileScopeId { get; }
+        public string ProfileDocumentName { get; }
 
         public IdleAutoDefensePlayerProfile Load()
         {
@@ -129,7 +138,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             try
             {
                 WriteResult result = _service
-                    .DeleteAsync(new DocumentLocation(ProfileDocumentId, SaveSlotId.Default))
+                    .DeleteAsync(new DocumentLocation(_profileDocumentId, SaveSlotId.Default))
                     .GetAwaiter()
                     .GetResult();
                 if (!result.Succeeded)
@@ -181,6 +190,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private static bool VolumeValid(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f && value <= 1f;
+        }
+
+        public static string BuildDocumentName(string profileScopeId)
+        {
+            if (string.IsNullOrWhiteSpace(profileScopeId) ||
+                string.Equals(profileScopeId.Trim(), DefaultProfileScopeId, StringComparison.OrdinalIgnoreCase))
+                return DocumentName;
+
+            string scope = profileScopeId.Trim();
+            var builder = new System.Text.StringBuilder(scope.Length);
+            bool separator = false;
+            for (int i = 0; i < scope.Length; i++)
+            {
+                char value = char.ToLowerInvariant(scope[i]);
+                if (char.IsLetterOrDigit(value))
+                {
+                    builder.Append(value);
+                    separator = false;
+                }
+                else if (!separator && builder.Length > 0)
+                {
+                    builder.Append('-');
+                    separator = true;
+                }
+            }
+            while (builder.Length > 0 && builder[builder.Length - 1] == '-') builder.Length--;
+            return DocumentName + "__" + (builder.Length == 0 ? "pack" : builder.ToString());
         }
     }
 }
