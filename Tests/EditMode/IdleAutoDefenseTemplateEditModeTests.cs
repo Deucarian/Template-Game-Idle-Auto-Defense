@@ -3395,8 +3395,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.That(pack.OwningPackageId, Is.EqualTo(IdleAutoDefenseContentPackIndex.OwningPackageId));
             Assert.That(pack.DisplayName, Is.EqualTo(IdleAutoDefenseContentPackIndex.DisplayName));
             Assert.That(pack.SourceState, Is.EqualTo(GameContentPackSourceState.Available), FormatValidation(pack.Validation));
-            Assert.That(pack.Access.IsWritable, Is.False);
-            Assert.That(pack.Access.PersistenceLabel, Is.EqualTo("Read-only ScriptableObject graph"));
+            Assert.That(pack.Access.CanEditExisting, Is.True);
+            Assert.That(pack.Access.PersistenceLabel, Is.EqualTo("Staged project-owned ScriptableObject scalar editing"));
             Assert.That(pack.Manifest, Is.Null);
             Assert.That(pack.PlayableScene, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(pack.PlayableScene), Is.EqualTo(generatedSceneAssetPath));
@@ -3565,7 +3565,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             IReadOnlyList<GameContentRecordDescriptor> records = provider.GetRecords(pack.PackId);
             Assert.That(pack.SourceState, Is.EqualTo(GameContentPackSourceState.Available), FormatValidation(pack.Validation));
-            Assert.That(pack.Access.IsWritable, Is.False);
+            Assert.That(pack.Access.CanEditExisting, Is.True);
             Assert.That(pack.PlayableScene, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(pack.PlayableScene), Is.EqualTo(expectedScenePath));
             Assert.That(pack.Actions.Any(value => value.ActionId == IdleAutoDefenseContentPackIndex.ValidateActionId && value.Enabled), Is.True);

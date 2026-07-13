@@ -16,6 +16,73 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
     public sealed class IdleAutoDefenseTemplatePlayModeTests
     {
         [UnityTest]
+        public IEnumerator AuthoredScalarValueFlowsIntoStrictRuntimeWithoutFallback()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            AttackDefinitionAsset authoredAttack = weapons[0].Stats.Attack;
+            int authoredAttackIndex = Array.IndexOf(attacks, authoredAttack);
+            const float authoredDamage = 37.5f;
+            authoredAttack.Mechanics.Configure(
+                authoredAttack.Mechanics.CooldownTicks,
+                authoredAttack.Mechanics.Range,
+                authoredDamage,
+                authoredAttack.Mechanics.DamageTypeId);
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            GameContentSetAsset contentSet = GameContentSetAsset.CreateTransient(
+                "contentset.test.playmode.authored-scalar",
+                "Authored Scalar PlayMode",
+                weapons[0],
+                weapons,
+                enemies,
+                waves,
+                upgrades,
+                10,
+                0,
+                1f,
+                1f,
+                5600,
+                false,
+                "Runtime consumption proof for a provider-editable scalar.",
+                new[] { "test", "authored-scalar" });
+            GameContentPackAsset pack = GameContentPackAsset.CreateTransient(
+                "contentpack.test.playmode.authored-scalar",
+                "Authored Scalar PlayMode",
+                new[] { contentSet },
+                contentSet);
+
+            Assert.That(authoredAttackIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(authoredAttack.ToRuntimeDefinition().BaseDamage, Is.EqualTo(authoredDamage));
+            Assert.That(
+                BasicIdleAutoDefenseGame.CreateAttackDefinitions(attacks)[authoredAttackIndex].BaseDamage,
+                Is.EqualTo(authoredDamage));
+
+            GameObject host = new GameObject("idle-auto-defense-authored-scalar-playmode");
+            host.SetActive(false);
+            var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            typeof(IdleAutoDefenseTemplateController).GetField("_contentPack", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(controller, pack);
+            typeof(IdleAutoDefenseTemplateController).GetField("_contentSet", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(controller, contentSet);
+            controller.ConfigureStrictAuthoredStartup(true);
+            host.SetActive(true);
+            controller.enabled = false;
+            yield return null;
+
+            Assert.That(controller.StartupBlocked, Is.False, controller.StartupError);
+            Assert.That(controller.FallbackModeActive, Is.False);
+            Assert.That(controller.UsingAuthoredCore, Is.True);
+            Assert.That(controller.ActiveContentPackId, Is.EqualTo(pack.Id));
+            Assert.That(contentSet.StartingWeapon.Stats.Attack.ToRuntimeDefinition().BaseDamage, Is.EqualTo(authoredDamage));
+
+            UnityEngine.Object.Destroy(host);
+            UnityEngine.Object.Destroy(pack);
+            UnityEngine.Object.Destroy(contentSet);
+        }
+
+        [UnityTest]
         public IEnumerator StrictAuthoredControllerBindsCoreAndRunsGameplayWithoutFallback()
         {
             AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();

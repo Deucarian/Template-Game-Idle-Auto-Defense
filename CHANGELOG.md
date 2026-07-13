@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added provider-owned staged scalar editing for claimed Basic Idle Auto Defense and Scrap Frontier attack, enemy, mounted-weapon, and run-upgrade ScriptableObjects.
+- Added cloned-pack validation, source revision checks, one-group Unity Undo/Redo, stale-aware exact rollback, pack isolation, and runtime-consumption coverage without changing shipped gameplay values.
+- Documented the narrow writable field set and kept IDs, references, collections, nested catalogs, presentation structures, and JSON editing deferred.
+
 ## 0.1.1 - 2026-06-23
 
 - Removed the public UPM sample path; generated product-owned games are now the single onboarding path.
