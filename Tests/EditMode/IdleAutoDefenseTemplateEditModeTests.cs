@@ -1449,17 +1449,28 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             IdleAutoDefenseTemplateController controller = CreateController();
             try
             {
+                controller.Build();
                 controller.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
 
                 Assert.IsTrue(controller.RewardDraftActive);
                 Assert.AreEqual(3, controller.RewardDraftChoiceCount);
+                CollectionAssert.AreEqual(
+                    new[]
+                    {
+                        "reward.unlock.weapon.idle-auto-defense.pulse-beam",
+                        "base.damage",
+                        "base.fire-rate"
+                    },
+                    RewardChoiceIds(controller));
                 var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var dedupeGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 bool offeredUnlock = false;
                 bool offeredExcitingChoice = false;
                 for (int i = 0; i < controller.RewardDraftChoices.Count; i++)
                 {
                     IdleAutoDefenseRewardDraftChoice choice = controller.RewardDraftChoices[i];
                     Assert.IsTrue(ids.Add(choice.Id), "Duplicate reward choice: " + choice.Id);
+                    Assert.IsTrue(dedupeGroups.Add(GetRewardChoiceDedupeKey(choice)), "Duplicate reward dedupe group: " + GetRewardChoiceDedupeKey(choice));
                     Assert.IsFalse(string.IsNullOrWhiteSpace(choice.DisplayName));
                     Assert.IsFalse(string.IsNullOrWhiteSpace(choice.RarityName));
                     Assert.IsFalse(string.IsNullOrWhiteSpace(choice.TypeName));
@@ -1472,8 +1483,103 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
                 Assert.IsTrue(offeredUnlock, "The first level-up draft should offer at least one module unlock.");
                 Assert.IsTrue(offeredExcitingChoice, "Every draft should try to include a visible behavior-changing or high-rarity option.");
+                float pausedSurvivalSeconds = controller.SurvivalSeconds;
+                controller.Step(1, 0.05f);
+                Assert.AreEqual(pausedSurvivalSeconds, controller.SurvivalSeconds, "An active reward draft should continue to pause combat.");
+                Assert.IsFalse(controller.PulseBeamUnlocked);
                 Assert.IsTrue(controller.TryChooseRewardDraftHotkey(1));
                 Assert.AreEqual(1, controller.RewardDraftSelectionCount);
+                Assert.IsTrue(controller.PulseBeamUnlocked, "The preferred authored unlock should apply its existing effect.");
+                controller.Step(1, 0.05f);
+                Assert.That(controller.SurvivalSeconds, Is.GreaterThan(pausedSurvivalSeconds), "Combat should resume after the draft closes.");
+            }
+            finally
+            {
+                DestroyController(controller);
+            }
+        }
+
+        [Test]
+        public void RewardDraftSelectionAndQueueAreDeterministicAndAdvanceSeedWhenOpened()
+        {
+            IdleAutoDefenseTemplateController first = CreateController();
+            IdleAutoDefenseTemplateController second = CreateController();
+            try
+            {
+                Assert.AreEqual(0, GetRewardDraftSeed(first));
+                Assert.AreEqual(0, GetRewardDraftSeed(second));
+
+                first.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+                second.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+                CollectionAssert.AreEqual(RewardChoiceIds(first), RewardChoiceIds(second));
+                Assert.AreEqual(1, GetRewardDraftSeed(first));
+                Assert.AreEqual(1, GetRewardDraftSeed(second));
+
+                first.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+                second.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+                Assert.AreEqual(1, GetRewardDraftSeed(first), "Queued drafts must not consume a seed before opening.");
+                Assert.AreEqual(1, GetRewardDraftSeed(second), "Queued drafts must not consume a seed before opening.");
+
+                Assert.IsTrue(first.TryChooseRewardDraftChoice(0));
+                Assert.IsTrue(second.TryChooseRewardDraftChoice(0));
+                Assert.AreEqual(2, GetRewardDraftSeed(first));
+                Assert.AreEqual(2, GetRewardDraftSeed(second));
+                Assert.AreEqual(IdleAutoDefenseRewardDraftKind.LevelUp.ToString(), first.ActiveRewardDraftKindName);
+                CollectionAssert.AreEqual(
+                    new[]
+                    {
+                        "reward.unlock.weapon.idle-auto-defense.arc-burst",
+                        "reward.unlock.weapon.idle-auto-defense.homing-pulse",
+                        "reward.weapon.idle-auto-defense.shard-launcher.normal.0"
+                    },
+                    RewardChoiceIds(first));
+                CollectionAssert.AreEqual(RewardChoiceIds(first), RewardChoiceIds(second));
+            }
+            finally
+            {
+                DestroyController(first);
+                DestroyController(second);
+            }
+        }
+
+        [Test]
+        public void PreferredUnlockExcludesCaseInsensitiveDedupeGroupConflict()
+        {
+            IdleAutoDefenseRewardDraftCatalog catalog = IdleAutoDefenseRewardDraftCatalog.CreateDefault();
+            IdleAutoDefenseWeaponUnlockReward preferredUnlock = catalog.WeaponUnlocks[0];
+            FieldInfo weaponIdField = typeof(IdleAutoDefenseWeaponUnlockReward).GetField("_weaponId", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(weaponIdField);
+            weaponIdField.SetValue(preferredUnlock, BasicIdleAutoDefenseGame.PulseCannonWeaponId.Value.ToUpperInvariant());
+
+            var conflictingReward = new IdleAutoDefenseBaseRewardDefinition(
+                "unlock.weapon.idle-auto-defense.pulse-beam",
+                "Conflicting Pulse Reward",
+                IdleAutoDefenseRewardRarity.Legendary,
+                "Base Upgrade",
+                "Tower",
+                "Must remain excluded by the preferred unlock group.",
+                IdleAutoDefenseRewardEffectKind.GlobalDamageMultiplier,
+                5d,
+                1)
+            {
+                Weight = 1_000_000_000d
+            };
+            IdleAutoDefenseBaseRewardDefinition[] baseRewards = catalog.BaseRewards.Concat(new[] { conflictingReward }).ToArray();
+            FieldInfo baseRewardsField = typeof(IdleAutoDefenseRewardDraftCatalog).GetField("_baseRewards", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(baseRewardsField);
+            baseRewardsField.SetValue(catalog, baseRewards);
+
+            IdleAutoDefenseTemplateController controller = CreateController();
+            try
+            {
+                controller.ConfigureRewardDraftCatalog(catalog);
+                controller.RequestRewardDraft(IdleAutoDefenseRewardDraftKind.LevelUp);
+
+                Assert.AreEqual("reward.unlock.weapon.idle-auto-defense.pulse-beam", controller.RewardDraftChoices[0].Id);
+                Assert.IsFalse(controller.RewardDraftChoices.Any(choice => choice.Id == conflictingReward.Id));
+                Assert.AreEqual(
+                    controller.RewardDraftChoiceCount,
+                    controller.RewardDraftChoices.Select(GetRewardChoiceDedupeKey).Distinct(StringComparer.OrdinalIgnoreCase).Count());
             }
             finally
             {
@@ -3975,6 +4081,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             GameObject host = new GameObject("idle-auto-defense-template-editmode");
             return host.AddComponent<IdleAutoDefenseTemplateController>();
+        }
+
+        private static string[] RewardChoiceIds(IdleAutoDefenseTemplateController controller)
+        {
+            return controller.RewardDraftChoices.Select(choice => choice.Id).ToArray();
+        }
+
+        private static string GetRewardChoiceDedupeKey(IdleAutoDefenseRewardDraftChoice choice)
+        {
+            PropertyInfo property = typeof(IdleAutoDefenseRewardDraftChoice).GetProperty("DedupeKey", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(property);
+            return (string)property.GetValue(choice);
+        }
+
+        private static int GetRewardDraftSeed(IdleAutoDefenseTemplateController controller)
+        {
+            FieldInfo field = typeof(IdleAutoDefenseTemplateController).GetField("_rewardDraftSeed", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field);
+            return (int)field.GetValue(controller);
         }
 
         private static EncounterDefinition CreateFailCapablePressureEncounterDefinition()

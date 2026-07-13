@@ -3570,74 +3570,74 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             if (candidates == null || candidates.Count == 0) return Array.Empty<IdleAutoDefenseRewardDraftChoice>();
             int choiceCount = RewardDraftSettings.ChoiceCount;
-            var selected = new List<IdleAutoDefenseRewardDraftChoice>(choiceCount);
-            var random = new System.Random(20260623 + CommanderLevel * 17 + (int)kind * 1009 + _rewardDraftSeed++ * 97);
-            var remaining = new List<IdleAutoDefenseRewardDraftChoice>(candidates);
-            TrySelectPreferredEarlyUnlock(remaining, selected, kind);
-            TrySelectExcitingReward(remaining, selected);
-            while (selected.Count < choiceCount && remaining.Count > 0)
+            int seed = 20260623 + CommanderLevel * 17 + (int)kind * 1009 + _rewardDraftSeed++ * 97;
+            var preferredChoices = new List<IdleAutoDefenseRewardDraftChoice>(2);
+            IdleAutoDefenseRewardDraftChoice earlyUnlock = FindPreferredEarlyUnlock(candidates, kind);
+            if (earlyUnlock != null) preferredChoices.Add(earlyUnlock);
+            IdleAutoDefenseRewardDraftChoice excitingChoice = FindExcitingReward(candidates, preferredChoices);
+            if (excitingChoice != null) preferredChoices.Add(excitingChoice);
+
+            var options = new RunUpgradeDraftOption[candidates.Count];
+            var choicesById = new Dictionary<RunUpgradeId, IdleAutoDefenseRewardDraftChoice>();
+            for (int i = 0; i < candidates.Count; i++)
             {
-                double totalWeight = 0d;
-                for (int i = 0; i < remaining.Count; i++)
-                    totalWeight += CalculateRewardChoiceWeight(remaining[i], kind);
-
-                double roll = random.NextDouble() * Math.Max(0.001d, totalWeight);
-                int selectedIndex = 0;
-                for (int i = 0; i < remaining.Count; i++)
-                {
-                    roll -= CalculateRewardChoiceWeight(remaining[i], kind);
-                    if (roll > 0d) continue;
-                    selectedIndex = i;
-                    break;
-                }
-
-                IdleAutoDefenseRewardDraftChoice choice = remaining[selectedIndex];
-                selected.Add(WithRewardHotkey(choice, selected.Count + 1));
-                RemoveRewardChoicesWithDedupeKey(remaining, choice.DedupeKey);
+                IdleAutoDefenseRewardDraftChoice choice = candidates[i];
+                var id = new RunUpgradeId(choice.Id);
+                choicesById.Add(id, choice);
+                options[i] = new RunUpgradeDraftOption(
+                    id,
+                    CalculateRewardChoiceWeight(choice, kind),
+                    new RunUpgradeDraftGroupId(NormalizeRewardDedupeKey(choice)));
             }
 
-            return selected.ToArray();
+            var lockedIds = new RunUpgradeId[preferredChoices.Count];
+            for (int i = 0; i < preferredChoices.Count; i++)
+                lockedIds[i] = new RunUpgradeId(preferredChoices[i].Id);
+
+            RunUpgradeDraftSelection selection = RunUpgradeDraftSelector.Select(
+                options,
+                new RunUpgradeDraftRequest(choiceCount, seed, 0, lockedIds));
+            var selected = new IdleAutoDefenseRewardDraftChoice[selection.ChoiceIds.Count];
+            for (int i = 0; i < selection.ChoiceIds.Count; i++)
+                selected[i] = WithRewardHotkey(choicesById[selection.ChoiceIds[i]], i + 1);
+            return selected;
         }
 
-        private bool TrySelectPreferredEarlyUnlock(List<IdleAutoDefenseRewardDraftChoice> remaining, List<IdleAutoDefenseRewardDraftChoice> selected, IdleAutoDefenseRewardDraftKind kind)
+        private IdleAutoDefenseRewardDraftChoice FindPreferredEarlyUnlock(IReadOnlyList<IdleAutoDefenseRewardDraftChoice> candidates, IdleAutoDefenseRewardDraftKind kind)
         {
-            if (remaining == null || selected == null || selected.Count > 0) return false;
-            if (kind != IdleAutoDefenseRewardDraftKind.LevelUp || CommanderLevel > 2) return false;
-            for (int i = 0; i < remaining.Count; i++)
+            if (candidates == null || kind != IdleAutoDefenseRewardDraftKind.LevelUp || CommanderLevel > 2) return null;
+            for (int i = 0; i < candidates.Count; i++)
             {
-                IdleAutoDefenseRewardDraftChoice choice = remaining[i];
+                IdleAutoDefenseRewardDraftChoice choice = candidates[i];
                 if (choice == null || !choice.IsUnlock) continue;
-                selected.Add(WithRewardHotkey(choice, selected.Count + 1));
-                RemoveRewardChoicesWithDedupeKey(remaining, choice.DedupeKey);
-                return true;
+                return choice;
             }
 
-            return false;
+            return null;
         }
 
-        private static bool TrySelectExcitingReward(List<IdleAutoDefenseRewardDraftChoice> remaining, List<IdleAutoDefenseRewardDraftChoice> selected)
+        private static IdleAutoDefenseRewardDraftChoice FindExcitingReward(
+            IReadOnlyList<IdleAutoDefenseRewardDraftChoice> candidates,
+            IReadOnlyList<IdleAutoDefenseRewardDraftChoice> preferredChoices)
         {
-            if (remaining == null || selected == null || selected.Count >= 3) return false;
-            for (int i = 0; i < selected.Count; i++)
-                if (IsExcitingRewardChoice(selected[i]))
-                    return false;
+            if (candidates == null || preferredChoices == null || preferredChoices.Count >= 3) return null;
+            for (int i = 0; i < preferredChoices.Count; i++)
+                if (IsExcitingRewardChoice(preferredChoices[i]))
+                    return null;
 
             int bestIndex = -1;
             IdleAutoDefenseRewardRarity bestRarity = IdleAutoDefenseRewardRarity.Common;
-            for (int i = 0; i < remaining.Count; i++)
+            for (int i = 0; i < candidates.Count; i++)
             {
-                IdleAutoDefenseRewardDraftChoice choice = remaining[i];
+                IdleAutoDefenseRewardDraftChoice choice = candidates[i];
                 if (!IsExcitingRewardChoice(choice)) continue;
+                if (ConflictsWithPreferredDedupeGroup(choice, preferredChoices)) continue;
                 if (bestIndex >= 0 && choice.Rarity < bestRarity) continue;
                 bestIndex = i;
                 bestRarity = choice.Rarity;
             }
 
-            if (bestIndex < 0) return false;
-            IdleAutoDefenseRewardDraftChoice selectedChoice = remaining[bestIndex];
-            selected.Add(WithRewardHotkey(selectedChoice, selected.Count + 1));
-            RemoveRewardChoicesWithDedupeKey(remaining, selectedChoice.DedupeKey);
-            return true;
+            return bestIndex < 0 ? null : candidates[bestIndex];
         }
 
         private static bool IsExcitingRewardChoice(IdleAutoDefenseRewardDraftChoice choice)
@@ -3660,12 +3660,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
-        private static void RemoveRewardChoicesWithDedupeKey(List<IdleAutoDefenseRewardDraftChoice> choices, string dedupeKey)
+        private static bool ConflictsWithPreferredDedupeGroup(
+            IdleAutoDefenseRewardDraftChoice candidate,
+            IReadOnlyList<IdleAutoDefenseRewardDraftChoice> preferredChoices)
         {
-            if (choices == null) return;
-            for (int i = choices.Count - 1; i >= 0; i--)
-                if (choices[i] != null && string.Equals(choices[i].DedupeKey, dedupeKey, StringComparison.OrdinalIgnoreCase))
-                    choices.RemoveAt(i);
+            string candidateGroup = NormalizeRewardDedupeKey(candidate);
+            for (int i = 0; i < preferredChoices.Count; i++)
+                if (string.Equals(candidateGroup, NormalizeRewardDedupeKey(preferredChoices[i]), StringComparison.Ordinal))
+                    return true;
+            return false;
+        }
+
+        private static string NormalizeRewardDedupeKey(IdleAutoDefenseRewardDraftChoice choice)
+        {
+            return choice.DedupeKey.Trim().ToLowerInvariant();
         }
 
         private static IdleAutoDefenseRewardDraftChoice WithRewardHotkey(IdleAutoDefenseRewardDraftChoice choice, int hotkey)
