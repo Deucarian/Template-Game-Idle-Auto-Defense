@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aaf2b621876344ef814eb57794522f31, type: 3}
+  m_Name: weapon.idle-auto-defense.scrap-frontier.salvage-mortar_Presentation
+  m_EditorClassIdentifier: Deucarian.WeaponSystems.Authoring::Deucarian.WeaponSystems.Authoring.WeaponPresentationDefinitionAsset
+  _prefab: {fileID: 9215038829866595029, guid: 59420c12969649339141804c68ad653d, type: 3}
+  _placementAudio: {fileID: 8300000, guid: 699b6c427230415188f97e58b5df9798, type: 3}
+  _placementVfxPrefab: {fileID: 5703739830888076867, guid: ceaa271ae55d4ee1a8c8378671d0fa53, type: 3}

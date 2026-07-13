@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b13c7e381e9749df98db17e92868760a, type: 3}
+  m_Name: attack.idle-auto-defense.scrap-frontier.salvage-mortar_Delivery
+  m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.AttackDeliveryDefinitionAsset
+  _mode: 0
+  _projectileDefinitionId: projectile.idle-auto-defense.scrap-frontier.salvage-shell
+  _projectileSpawnableId: projectile.idle-auto-defense.scrap-frontier.salvage-shell
+  _projectilePrefab: {fileID: 7966618697552162373, guid: b576e7b56a56406eb6cdbbc2fd405780, type: 3}
+  _projectileSpeed: 4.4
+  _projectileLifetimeTicks: 150
+  _homing: 1
+  _homingTurnRate: 180
+  _pierceCount: 1
+  _radius: 0
+  _beamVfxPrefab: {fileID: 0}
+  _impactVfxPrefab: {fileID: 3798696826337731743, guid: e5c35ce3de784249917954a0e4ed1a62, type: 3}
+  _maxHits: 1
+  _tickIntervalSeconds: 0.5

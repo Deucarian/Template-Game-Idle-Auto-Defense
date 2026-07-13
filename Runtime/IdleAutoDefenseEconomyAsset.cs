@@ -23,6 +23,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         [SerializeField] private long _passiveIncomeAmount = 1;
         [SerializeField] private int _passiveIncomeIntervalTicks = 60;
         [SerializeField] private IdleAutoDefenseCostCurve[] _upgradeCosts = CreateDefaultUpgradeCosts();
+        [SerializeField] private string _damageUpgradeCostId = DamageUpgradeCostId;
+        [SerializeField] private string _fireRateUpgradeCostId = FireRateUpgradeCostId;
+        [SerializeField] private string _rangeUpgradeCostId = RangeUpgradeCostId;
+        [SerializeField] private string _repairUpgradeCostId = RepairUpgradeCostId;
+        [SerializeField] private string _overdriveCostId = OverdriveCostId;
         [SerializeField] private long _encounterCompletionCredits = 60;
         [SerializeField] private long _encounterCompletionParts = 3;
         [SerializeField] private long _encounterCompletionAccountXp = 35;
@@ -38,6 +43,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public long PassiveIncomeAmount => _passiveIncomeAmount;
         public int PassiveIncomeIntervalTicks => _passiveIncomeIntervalTicks;
         public IReadOnlyList<IdleAutoDefenseCostCurve> UpgradeCosts => _upgradeCosts ?? Array.Empty<IdleAutoDefenseCostCurve>();
+        public string DamageUpgradeCostCurveId => string.IsNullOrWhiteSpace(_damageUpgradeCostId) ? DamageUpgradeCostId : _damageUpgradeCostId;
+        public string FireRateUpgradeCostCurveId => string.IsNullOrWhiteSpace(_fireRateUpgradeCostId) ? FireRateUpgradeCostId : _fireRateUpgradeCostId;
+        public string RangeUpgradeCostCurveId => string.IsNullOrWhiteSpace(_rangeUpgradeCostId) ? RangeUpgradeCostId : _rangeUpgradeCostId;
+        public string RepairUpgradeCostCurveId => string.IsNullOrWhiteSpace(_repairUpgradeCostId) ? RepairUpgradeCostId : _repairUpgradeCostId;
+        public string OverdriveCostCurveId => string.IsNullOrWhiteSpace(_overdriveCostId) ? OverdriveCostId : _overdriveCostId;
         public long EncounterCompletionCredits => _encounterCompletionCredits;
         public long EncounterCompletionParts => _encounterCompletionParts;
         public long EncounterCompletionAccountXp => _encounterCompletionAccountXp;
@@ -122,6 +132,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             currencies[1].StartingAmount = startingParts;
             asset._currencies = currencies;
             return asset;
+        }
+
+        public void ConfigureCostCurveIds(string damage, string fireRate, string range, string repair, string overdrive)
+        {
+            _damageUpgradeCostId = damage ?? string.Empty;
+            _fireRateUpgradeCostId = fireRate ?? string.Empty;
+            _rangeUpgradeCostId = range ?? string.Empty;
+            _repairUpgradeCostId = repair ?? string.Empty;
+            _overdriveCostId = overdrive ?? string.Empty;
         }
 
         private static IdleAutoDefenseCurrencyRecord[] CreateDefaultCurrencies()

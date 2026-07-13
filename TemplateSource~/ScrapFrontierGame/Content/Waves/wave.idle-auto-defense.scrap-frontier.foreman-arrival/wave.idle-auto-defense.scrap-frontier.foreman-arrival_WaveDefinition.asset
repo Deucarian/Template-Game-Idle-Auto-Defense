@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fa87710cdb441ed8533723f70869576, type: 3}
+  m_Name: wave.idle-auto-defense.scrap-frontier.foreman-arrival_WaveDefinition
+  m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveDefinitionAsset
+  _id: wave.idle-auto-defense.scrap-frontier.foreman-arrival
+  _displayName: Foreman Arrival
+  _tags:
+  - idle-auto-defense.scrap-frontier
+  - starter
+  - elite
+  _schedule: {fileID: 11400000, guid: f3c0421e6cf944eabb395d4f2ebada4c, type: 2}
+  _entries: {fileID: 11400000, guid: 5cadc59012ed4a3284c49cd4df12ae15, type: 2}
+  _balancingNotes: First authored elite reward trigger.

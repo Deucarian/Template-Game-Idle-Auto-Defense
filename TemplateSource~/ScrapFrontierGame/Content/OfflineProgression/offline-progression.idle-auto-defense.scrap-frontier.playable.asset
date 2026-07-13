@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 204c72eb9c1f481998090e8c79fb7e11, type: 3}
+  m_Name: offline-progression.idle-auto-defense.scrap-frontier.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseOfflineProgressionAsset
+  _id: offline-progression.idle-auto-defense.scrap-frontier.playable
+  _displayName: Scrap Frontier Offline Progression
+  _enabled: 1
+  _maximumOfflineSeconds: 28800
+  _minimumEligibleSeconds: 0
+  _productionCurrencyId: currency.idle-auto-defense.scrap-frontier.scrap
+  _productionAmountPerSecond: 0.35
+  _cycleCurrencyId: currency.idle-auto-defense.scrap-frontier.cogs
+  _cycleRewardAmount: 1
+  _cycleDurationSeconds: 240
+  _claimMultiplier: 2
+  _rounding: 0
+  _saveTimestampKey: idle-auto-defense.scrap-frontier.last-seen-utc

@@ -262,11 +262,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (cost.BaseCost < 0 || cost.CostPerRank < 0) issues.Add(GameContentSetValidationIssue.Error(path, "Upgrade costs cannot be negative."));
             }
 
-            RequireCost(economy, IdleAutoDefenseEconomyAsset.DamageUpgradeCostId, root, issues);
-            RequireCost(economy, IdleAutoDefenseEconomyAsset.FireRateUpgradeCostId, root, issues);
-            RequireCost(economy, IdleAutoDefenseEconomyAsset.RangeUpgradeCostId, root, issues);
-            RequireCost(economy, IdleAutoDefenseEconomyAsset.RepairUpgradeCostId, root, issues);
-            RequireCost(economy, IdleAutoDefenseEconomyAsset.OverdriveCostId, root, issues);
+            RequireCost(economy, economy.DamageUpgradeCostCurveId, root, issues);
+            RequireCost(economy, economy.FireRateUpgradeCostCurveId, root, issues);
+            RequireCost(economy, economy.RangeUpgradeCostCurveId, root, issues);
+            RequireCost(economy, economy.RepairUpgradeCostCurveId, root, issues);
+            RequireCost(economy, economy.OverdriveCostCurveId, root, issues);
             if (economy.EncounterCompletionCredits < 0L || economy.EncounterCompletionParts < 0L || economy.EncounterCompletionAccountXp < 0L)
                 issues.Add(GameContentSetValidationIssue.Error(root + ".EncounterReward", "Encounter reward values cannot be negative."));
             if (!IsFinite(economy.RunRewardClaimMultiplier) || economy.RunRewardClaimMultiplier < 1d)

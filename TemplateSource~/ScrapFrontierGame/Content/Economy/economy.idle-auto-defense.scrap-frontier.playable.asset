@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b4c58e06d334fb6adb691abda70f480, type: 3}
+  m_Name: economy.idle-auto-defense.scrap-frontier.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseEconomyAsset
+  _id: economy.idle-auto-defense.scrap-frontier.playable
+  _displayName: Scrap Frontier Economy
+  _currencies:
+  - _id: currency.idle-auto-defense.scrap-frontier.scrap
+    _displayName: Scrap
+    _capacity: 250000
+    _startingAmount: 10
+  - _id: currency.idle-auto-defense.scrap-frontier.cogs
+    _displayName: Cogs
+    _capacity: 25000
+    _startingAmount: 0
+  _primaryCurrencyId: currency.idle-auto-defense.scrap-frontier.scrap
+  _secondaryCurrencyId: currency.idle-auto-defense.scrap-frontier.cogs
+  _passiveIncomeCurrencyId: currency.idle-auto-defense.scrap-frontier.scrap
+  _passiveIncomeAmount: 1
+  _passiveIncomeIntervalTicks: 60
+  _upgradeCosts:
+  - _id: cost.idle-auto-defense.scrap-frontier.rivet-pressure
+    _displayName: Rivet Calibration
+    _currencyId: currency.idle-auto-defense.scrap-frontier.scrap
+    _baseCost: 20
+    _costPerRank: 16
+  - _id: cost.idle-auto-defense.scrap-frontier.belt-speed
+    _displayName: Belt Tension
+    _currencyId: currency.idle-auto-defense.scrap-frontier.scrap
+    _baseCost: 18
+    _costPerRank: 15
+  - _id: cost.idle-auto-defense.scrap-frontier.spotter-optics
+    _displayName: Spotter Optics
+    _currencyId: currency.idle-auto-defense.scrap-frontier.scrap
+    _baseCost: 18
+    _costPerRank: 15
+  - _id: cost.idle-auto-defense.scrap-frontier.field-repair
+    _displayName: Field Repair
+    _currencyId: currency.idle-auto-defense.scrap-frontier.scrap
+    _baseCost: 16
+    _costPerRank: 14
+  - _id: cost.idle-auto-defense.scrap-frontier.redline
+    _displayName: Redline
+    _currencyId: currency.idle-auto-defense.scrap-frontier.scrap
+    _baseCost: 22
+    _costPerRank: 0
+  _damageUpgradeCostId: cost.idle-auto-defense.scrap-frontier.rivet-pressure
+  _fireRateUpgradeCostId: cost.idle-auto-defense.scrap-frontier.belt-speed
+  _rangeUpgradeCostId: cost.idle-auto-defense.scrap-frontier.spotter-optics
+  _repairUpgradeCostId: cost.idle-auto-defense.scrap-frontier.field-repair
+  _overdriveCostId: cost.idle-auto-defense.scrap-frontier.redline
+  _encounterCompletionCredits: 60
+  _encounterCompletionParts: 3
+  _encounterCompletionAccountXp: 35
+  _smallCurrencyBonus: 5
+  _runRewardClaimMultiplier: 2

@@ -67,6 +67,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int TutorialStepIndex => _tutorialStepIndex;
         public int PlayerUiButtonCount => _playerUiRoot == null ? 0 : _playerUiRoot.Query<Button>().ToList().Count;
         public bool RunActive => _runActive;
+        public string PersistenceScopeId => _profileStore == null ? string.Empty : _profileStore.ProfileScopeId;
+        public string PersistenceDocumentName => _profileStore == null ? string.Empty : _profileStore.ProfileDocumentName;
 
         protected virtual void ConfigurePlayerExperienceBeforeBuild() { }
 
@@ -137,7 +139,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     : "Player experience content is invalid. Open the named content pack validation for details.";
             }
 
-            _profileStore = new IdleAutoDefensePlayerProfileStore(_persistenceRootOverride);
+            _profileStore = new IdleAutoDefensePlayerProfileStore(_persistenceRootOverride, ActiveContentPackId);
             _profile = _profileStore.Load() ?? IdleAutoDefensePlayerProfile.CreateDefault();
             if (_profile.Progression != null && _profile.Progression.HasData && !RestorePersistentProgression(_profile.Progression))
                 _playerFacingError = "Persistent progression could not be restored. Defaults remain active; reset progress or inspect storage diagnostics.";
@@ -353,7 +355,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public bool TryActivateOverdriveFromUi()
         {
             bool succeeded = TryPurchaseOverdrive();
-            ShowToast(succeeded ? "Overdrive engaged." : ResolveOverdriveUnavailableReason(), !succeeded);
+            ShowToast(succeeded ? _effectiveExperience.UiSettings.OverdriveName + " engaged." : ResolveOverdriveUnavailableReason(), !succeeded);
             PlayAudioEvent(succeeded ? "gameplay.overdrive-activate" : "ui.insufficient-funds");
             return succeeded;
         }
@@ -580,11 +582,24 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private string ResolveOverdriveUnavailableReason()
         {
-            if (!EncounterRunning) return "Overdrive is available during an active run.";
-            if (OverdriveActive) return "Overdrive is already active.";
-            if (OverdriveCooldownSecondsRemaining > 0f) return "Overdrive is cooling down.";
-            return "Not enough credits for Overdrive.";
+            string ability = _effectiveExperience == null ? "Overdrive" : _effectiveExperience.UiSettings.OverdriveName;
+            if (!EncounterRunning) return ability + " is available during an active run.";
+            if (OverdriveActive) return ability + " is already active.";
+            if (OverdriveCooldownSecondsRemaining > 0f) return ability + " is cooling down.";
+            return "Not enough " + PrimaryCurrencyDisplayName.ToLowerInvariant() + " for " + ability + ".";
         }
+
+        private string PrimaryCurrencyDisplayName => ActiveEconomy == null || ActiveEconomy.GetCurrency(ActiveEconomy.PrimaryCurrencyId) == null
+            ? "Credits"
+            : ActiveEconomy.GetCurrency(ActiveEconomy.PrimaryCurrencyId).DisplayName;
+
+        private string PrimaryCurrencyToken => string.IsNullOrWhiteSpace(PrimaryCurrencyDisplayName)
+            ? "C"
+            : char.ToUpperInvariant(PrimaryCurrencyDisplayName[0]).ToString();
+
+        private string SecondaryCurrencyDisplayName => ActiveEconomy == null || ActiveEconomy.GetCurrency(ActiveEconomy.SecondaryCurrencyId) == null
+            ? "Parts"
+            : ActiveEconomy.GetCurrency(ActiveEconomy.SecondaryCurrencyId).DisplayName;
 
         private void ShowToast(string text, bool error)
         {

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3e7b6a4f5d84930c1e2a3b4c5d6e7f8, type: 3}
+  m_Name: ui-settings.idle-auto-defense.scrap-frontier.mobile-landscape
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseUiSettingsAsset
+  _id: ui-settings.idle-auto-defense.scrap-frontier.mobile-landscape
+  _gameTitle: 'Scrap Frontier'
+  _gameDescription: Hold the frontier recycler while four salvage rigs strip value from an advancing foundry horde.
+  _overdriveName: Redline
+  _overdriveDescription: Burn reserve scrap to push every mounted rig beyond its safe operating limit.
+  _objectiveLabel: RECYCLER
+  _playerRankLabel: Crew Rank
+  _pauseMenuTitle: Salvage Ledger
+  _portraitMessage: Scrap Frontier is designed for landscape play.
+  _victoryTitle: Frontier Secured
+  _defeatTitle: Recycler Overrun
+  _respectSafeArea: 1
+  _minimumTouchTarget: 44
+  _compactWidthThreshold: 1000
+  _compactHeightThreshold: 560
+  _portraitAspectThreshold: 0.95
+  _moduleTokens:
+  - _role: 0
+    _iconToken: RIVET
+    _playerDescription: Rapid rivet rig with dependable pressure and range.
+  - _role: 1
+    _iconToken: HEAT
+    _playerDescription: Focused furnace lance for durable priority targets.
+  - _role: 2
+    _iconToken: SAW
+    _playerDescription: Sawblade relay for clustered salvage-yard pressure.
+  - _role: 3
+    _iconToken: MORTAR
+    _playerDescription: Tracking mortar shells that finish distant stragglers.

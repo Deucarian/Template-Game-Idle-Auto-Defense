@@ -2,10 +2,15 @@
 
 ## Named Pack
 
-Running the existing Idle Auto Defense setup wizard generates the project-owned authored graph under `Assets/GameContent/IdleAutoDefense`. In `Tools > Deucarian > Game Content Authoring`, that graph appears as one named pack:
+Running the existing Idle Auto Defense setup wizard generates project-owned authored graphs under `Assets/GameContent/IdleAutoDefense`. In `Tools > Deucarian > Game Content Authoring`, two named pack identities are available:
 
 - Display name: `Basic Idle Auto Defense`
 - Pack ID: `contentpack.idle-auto-defense.playable`
+- Owner: `com.deucarian.template.game.idle-auto-defense`
+- Persistence: read-only ScriptableObject graph
+
+- Display name: `Scrap Frontier`
+- Pack ID: `contentpack.idle-auto-defense.scrap-frontier`
 - Owner: `com.deucarian.template.game.idle-auto-defense`
 - Persistence: read-only ScriptableObject graph
 
@@ -37,7 +42,7 @@ The pack exposes exactly the current authored gameplay graph:
 | Tutorial Step | 10 | Stable IDs, player copy, and optional focus targets |
 | UI Settings | 1 | Title/ability copy, module tokens, safe-area policy, touch size, and breakpoints |
 
-All Content shows 124 canonical records: 82 gameplay/core records plus 42 presentation records. Nested records share their owning ScriptableObject source but retain distinct stable IDs and canonical record keys. Gameplay links and player-experience-to-presentation links resolve through pack references.
+Each generated pack shows 124 canonical records: 82 gameplay/core records plus 42 presentation records. Canonical keys include the selected pack ID, so Basic and Scrap records remain independent even when both are generated. Nested records share their owning ScriptableObject source but retain distinct stable IDs and canonical record keys. Gameplay links and player-experience-to-presentation links resolve inside the selected pack.
 
 Raw cooldown and schedule ticks remain visible as ticks. The authored Run Profile declares fixed-rate semantics and 20 ticks per second, so its dashboard shows both 5,600 ticks and 280 seconds. No raw tick value is presented as seconds without that profile conversion.
 
@@ -45,7 +50,7 @@ Raw cooldown and schedule ticks remain visible as ticks. The authored Run Profil
 
 The Idle provider claims the generated pack, content set, six authored-core owners, presentation owners, root records, and companion assets by Unity asset GUID. Claimed records are omitted from synthetic Project Content, so they do not appear twice or remain writable through an unrelated backend.
 
-If setup has not run, the named pack remains visible in a missing/generated-content state and offers the existing setup wizard. If multiple generated packs use the expected stable ID, discovery reports ambiguity and does not select one.
+If setup has not run, each named pack remains visible in a missing/generated-content state and offers the existing setup wizard. If multiple generated packs use the same expected stable ID, discovery reports ambiguity and does not select one. Cross-pack validation rejects concrete dependencies on another generated named-pack content root.
 
 ## Dashboard Actions
 
@@ -58,4 +63,4 @@ Browsing is read-only and must not dirty assets, prefabs, metadata, or scenes. T
 
 ## Current Limits
 
-The named pack remains intentionally read-only; this milestone does not add transactional GCA editing, generic presentation lenses, or a second gameplay content pack. Presentation records are browsed through Pack Dashboard, All Content, and the pack-specific categories above.
+Named packs remain intentionally read-only; this milestone does not add transactional GCA editing or generic presentation lenses. Presentation records are browsed through Pack Dashboard, All Content, and the pack-specific categories above.

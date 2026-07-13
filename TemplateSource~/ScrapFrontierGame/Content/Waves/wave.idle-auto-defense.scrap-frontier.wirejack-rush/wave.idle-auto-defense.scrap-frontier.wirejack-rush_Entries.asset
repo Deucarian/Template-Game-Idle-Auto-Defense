@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eff7702b508e4a80a220fcb4f548ef2e, type: 3}
+  m_Name: wave.idle-auto-defense.scrap-frontier.wirejack-rush_Entries
+  m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
+  _entries:
+  - _enemy: {fileID: 11400000, guid: 6c9792b3a2a842de83b8574ce3e79e09, type: 2}
+    _count: 6
+    _batchSize: 1
+    _initialDelayTicks: 0
+    _intervalTicks: 58
+    _spawnChannelId: perimeter-southeast
+    _scalingTier: 1
+  - _enemy: {fileID: 11400000, guid: 32fb16ae770a4d6c9805049569256e53, type: 2}
+    _count: 7
+    _batchSize: 1
+    _initialDelayTicks: 90
+    _intervalTicks: 55
+    _spawnChannelId: perimeter-northeast
+    _scalingTier: 1

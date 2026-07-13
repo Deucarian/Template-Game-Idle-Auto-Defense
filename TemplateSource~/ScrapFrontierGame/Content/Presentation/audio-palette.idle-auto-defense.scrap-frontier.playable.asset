@@ -1,0 +1,147 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4f8c7b5a6e94041d2f3a4b5c6d7e8f9, type: 3}
+  m_Name: audio-palette.idle-auto-defense.scrap-frontier.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseAudioPaletteAsset
+  _id: audio-palette.idle-auto-defense.scrap-frontier.playable
+  _displayName: Frontier Salvage Palette
+  _events:
+  - _id: ui.hover
+    _category: 0
+    _clip: {fileID: 8300000, guid: 699b6c427230415188f97e58b5df9798, type: 3}
+    _volume: 0.35
+    _minimumIntervalSeconds: 0.08
+  - _id: ui.select
+    _category: 0
+    _clip: {fileID: 8300000, guid: 478a166b39a94dfdbad8c77fb358e66a, type: 3}
+    _volume: 0.65
+    _minimumIntervalSeconds: 0.08
+  - _id: ui.back
+    _category: 0
+    _clip: {fileID: 8300000, guid: 699b6c427230415188f97e58b5df9798, type: 3}
+    _volume: 0.5
+    _minimumIntervalSeconds: 0.08
+  - _id: ui.error
+    _category: 0
+    _clip: {fileID: 8300000, guid: e1f2f60bbe5447bda3b646fb159618d6, type: 3}
+    _volume: 0.55
+    _minimumIntervalSeconds: 0.2
+  - _id: ui.purchase
+    _category: 0
+    _clip: {fileID: 8300000, guid: 699b6c427230415188f97e58b5df9798, type: 3}
+    _volume: 0.75
+    _minimumIntervalSeconds: 0.1
+  - _id: ui.insufficient-funds
+    _category: 0
+    _clip: {fileID: 8300000, guid: e1f2f60bbe5447bda3b646fb159618d6, type: 3}
+    _volume: 0.48
+    _minimumIntervalSeconds: 0.25
+  - _id: gameplay.attack-impact
+    _category: 1
+    _clip: {fileID: 8300000, guid: d0e04911613f45b18ce4ce9f2fc251a5, type: 3}
+    _volume: 0.4
+    _minimumIntervalSeconds: 0.08
+  - _id: gameplay.enemy-death
+    _category: 1
+    _clip: {fileID: 8300000, guid: 99345ed0f378429bbc0c7d673c2df1d2, type: 3}
+    _volume: 0.42
+    _minimumIntervalSeconds: 0.08
+  - _id: gameplay.elite-warning
+    _category: 2
+    _clip: {fileID: 8300000, guid: a0385c5585ba4e038996386ebf6d209c, type: 3}
+    _volume: 0.85
+    _minimumIntervalSeconds: 1
+  - _id: gameplay.boss-warning
+    _category: 2
+    _clip: {fileID: 8300000, guid: 84d57f5b0ba74ff6bb53b26e9af13646, type: 3}
+    _volume: 0.9
+    _minimumIntervalSeconds: 1
+  - _id: gameplay.base-damage
+    _category: 2
+    _clip: {fileID: 8300000, guid: e1f2f60bbe5447bda3b646fb159618d6, type: 3}
+    _volume: 0.55
+    _minimumIntervalSeconds: 0.25
+  - _id: gameplay.low-base-health
+    _category: 2
+    _clip: {fileID: 8300000, guid: 84d57f5b0ba74ff6bb53b26e9af13646, type: 3}
+    _volume: 0.7
+    _minimumIntervalSeconds: 3
+  - _id: gameplay.wave-start
+    _category: 2
+    _clip: {fileID: 8300000, guid: a0385c5585ba4e038996386ebf6d209c, type: 3}
+    _volume: 0.55
+    _minimumIntervalSeconds: 0.8
+  - _id: gameplay.wave-complete
+    _category: 2
+    _clip: {fileID: 8300000, guid: 478a166b39a94dfdbad8c77fb358e66a, type: 3}
+    _volume: 0.65
+    _minimumIntervalSeconds: 0.8
+  - _id: gameplay.overdrive-ready
+    _category: 2
+    _clip: {fileID: 8300000, guid: b05e3510f2214a9eb721ddea6e65203f, type: 3}
+    _volume: 0.65
+    _minimumIntervalSeconds: 1
+  - _id: gameplay.overdrive-activate
+    _category: 2
+    _clip: {fileID: 8300000, guid: b05e3510f2214a9eb721ddea6e65203f, type: 3}
+    _volume: 0.9
+    _minimumIntervalSeconds: 0.5
+  - _id: gameplay.overdrive-end
+    _category: 2
+    _clip: {fileID: 8300000, guid: 84d57f5b0ba74ff6bb53b26e9af13646, type: 3}
+    _volume: 0.45
+    _minimumIntervalSeconds: 0.5
+  - _id: reward.draft-open
+    _category: 2
+    _clip: {fileID: 8300000, guid: b05e3510f2214a9eb721ddea6e65203f, type: 3}
+    _volume: 0.72
+    _minimumIntervalSeconds: 0.5
+  - _id: reward.card-select
+    _category: 2
+    _clip: {fileID: 8300000, guid: 478a166b39a94dfdbad8c77fb358e66a, type: 3}
+    _volume: 0.85
+    _minimumIntervalSeconds: 0.1
+  - _id: reward.rarity-reveal
+    _category: 2
+    _clip: {fileID: 8300000, guid: b05e3510f2214a9eb721ddea6e65203f, type: 3}
+    _volume: 0.65
+    _minimumIntervalSeconds: 0.25
+  - _id: reward.epic
+    _category: 2
+    _clip: {fileID: 8300000, guid: 84d57f5b0ba74ff6bb53b26e9af13646, type: 3}
+    _volume: 0.85
+    _minimumIntervalSeconds: 0.5
+  - _id: reward.legendary
+    _category: 2
+    _clip: {fileID: 8300000, guid: 84d57f5b0ba74ff6bb53b26e9af13646, type: 3}
+    _volume: 0.9
+    _minimumIntervalSeconds: 0.5
+  - _id: flow.victory
+    _category: 2
+    _clip: {fileID: 8300000, guid: 478a166b39a94dfdbad8c77fb358e66a, type: 3}
+    _volume: 0.95
+    _minimumIntervalSeconds: 1
+  - _id: flow.defeat
+    _category: 2
+    _clip: {fileID: 8300000, guid: 84d57f5b0ba74ff6bb53b26e9af13646, type: 3}
+    _volume: 0.82
+    _minimumIntervalSeconds: 1
+  - _id: flow.run-summary
+    _category: 2
+    _clip: {fileID: 8300000, guid: 699b6c427230415188f97e58b5df9798, type: 3}
+    _volume: 0.55
+    _minimumIntervalSeconds: 1
+  - _id: flow.offline-claim
+    _category: 2
+    _clip: {fileID: 8300000, guid: 699b6c427230415188f97e58b5df9798, type: 3}
+    _volume: 0.8
+    _minimumIntervalSeconds: 0.5

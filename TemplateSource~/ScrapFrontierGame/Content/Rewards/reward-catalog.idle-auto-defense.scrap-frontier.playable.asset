@@ -1,0 +1,669 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 712890d205284dc29fd6da8138ca555a, type: 3}
+  m_Name: reward-catalog.idle-auto-defense.scrap-frontier.playable
+  m_EditorClassIdentifier: Deucarian.TemplateGameIdleAutoDefense::Deucarian.TemplateGameIdleAutoDefense.IdleAutoDefenseRewardCatalogAsset
+  _id: reward-catalog.idle-auto-defense.scrap-frontier.playable
+  _displayName: Scrap Frontier Reward Catalog
+  _firstDraftSeconds: 30
+  _settings:
+    _choiceCount: 3
+    _normalEnemyExperience: 9
+    _eliteEnemyExperience: 42
+    _bossEnemyExperience: 120
+    _waveCompletionExperience: 18
+    _baseExperienceToNextLevel: 38
+    _experienceToNextLevelGrowth: 18
+    _normalInvestmentsForEpic: 3
+    _epicInvestmentsForLegendary: 3
+    _projectileRetargetRadius: 3.25
+    _levelUpUnlockWeightMultiplier: 1.35
+    _eliteUnlockWeightMultiplier: 1.1
+    _bossUnlockWeightMultiplier: 1.1
+    _levelUpRarityWeights:
+      _common: 100
+      _uncommon: 70
+      _rare: 36
+      _epic: 12
+      _legendary: 2
+    _eliteRarityWeights:
+      _common: 22
+      _uncommon: 56
+      _rare: 78
+      _epic: 44
+      _legendary: 10
+    _bossRarityWeights:
+      _common: 8
+      _uncommon: 24
+      _rare: 58
+      _epic: 86
+      _legendary: 42
+  _catalog:
+    _weaponUnlocks:
+    - _id: reward.unlock.weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _displayName: "Arc Furnace Module"
+      _effectDescription: "Unlocks a focused heat lance that melts the leading enemy."
+      _levelUpRarity: 1
+      _eliteRarity: 2
+      _bossRarity: 3
+      _weight: 1
+      _maxRank: 1
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.unlock.weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _displayName: "Sawblade Relay Module"
+      _effectDescription: "Unlocks a spinning relay that carves through clustered enemies."
+      _levelUpRarity: 1
+      _eliteRarity: 2
+      _bossRarity: 3
+      _weight: 1
+      _maxRank: 1
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.unlock.weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _displayName: "Salvage Mortar Module"
+      _effectDescription: "Unlocks a heavy scrap lobber for cleanup shots and pressure relief."
+      _levelUpRarity: 1
+      _eliteRarity: 2
+      _bossRarity: 3
+      _weight: 1
+      _maxRank: 1
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    _normalWeaponRewards:
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.normal.0
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Sharper Rivets"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for rivet impacts."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.normal.1
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Quick Chisel"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for faster rivet volleys."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.normal.2
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Split Tip"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Adds one extra rivet to each visible volley."
+      _effectKind: 8
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.normal.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.normal.0
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Heat Focus"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for furnace burns."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.normal.1
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Feed Coils"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for faster heat pulses."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.normal.2
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Furnace Throughput"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Arc Furnace vents through one extra enemy with authored heat VFX."
+      _effectKind: 9
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.normal.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.normal.0
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Tempered Teeth"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for sawblade impacts."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.normal.1
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Relay Flywheel"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for faster saw relays."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.normal.2
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Split Saw"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Sawblade Relay cuts through one extra nearby enemy."
+      _effectKind: 10
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.normal.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.normal.0
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: normal.0
+      _track: 1
+      _displayName: "Dense Charge"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 damage ranks for mortar impacts."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 0
+      _requiredEpicRank: 0
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.normal.1
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: normal.1
+      _track: 1
+      _displayName: "Quick Rammer"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "+2 fire-rate ranks for faster mortar launches."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 1
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.normal.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.normal.2
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: normal.2
+      _track: 1
+      _displayName: "Twin Shells"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Weapon Upgrade"
+      _effectDescription: "Salvage Mortar launches one extra authored scrap shell."
+      _effectKind: 11
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 2
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.normal.1
+      _eligibleSources: 15
+    _epicWeaponRewards:
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.epic.0
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Fracture Burst"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Rivet Repeater fires two extra visible rivets per volley."
+      _effectKind: 8
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.epic.1
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Ricochet Rivets"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Rivet volleys travel faster and retarget more cleanly after impact."
+      _effectKind: 7
+      _amount: 0.25
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.epic.2
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Rivet Storm"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Visible rivet hits punch much harder across all weapons."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.epic.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.epic.0
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Forked Vent"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Arc Furnace vents through one extra target with authored heat VFX."
+      _effectKind: 9
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.epic.1
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Hotter Bellows"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Arc Furnace cycles faster for more visible heat lashes."
+      _effectKind: 3
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.epic.2
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "White-Hot Slag"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Furnace burns deal a large visible damage spike."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.epic.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.epic.0
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Twin-Tooth Relay"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Sawblade Relay carves through one extra enemy in the sweep."
+      _effectKind: 10
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.epic.1
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Long Axle"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Sawblade Relay cuts pressure farther from the recycler."
+      _effectKind: 4
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.epic.2
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Serrated Impact"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Saw impacts hit harder and produce larger damage-number spikes."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.epic.1
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.epic.0
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: epic.0
+      _track: 2
+      _displayName: "Loaded Cradle"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Salvage Mortar fires one extra authored scrap shell."
+      _effectKind: 11
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 0
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.normal.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.epic.1
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: epic.1
+      _track: 2
+      _displayName: "Marked Salvage"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "Marked targets take a large visible damage spike."
+      _effectKind: 12
+      _amount: 0.3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 1
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.epic.0
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.epic.2
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: epic.2
+      _track: 2
+      _displayName: "Greased Traverse"
+      _rarity: 3
+      _weight: 1
+      _typeName: "Epic Weapon"
+      _effectDescription: "The mortar fires more often during pressure waves."
+      _effectKind: 3
+      _amount: 1
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 2
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.epic.1
+      _eligibleSources: 15
+    _legendaryWeaponRewards:
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.legendary
+      _weapon: {fileID: 11400000, guid: 5db32cc2e8ee4096bb8f39be95e0b6a8, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.rivet-repeater
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Rivet Monsoon"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Rivet Repeater becomes a storm of three extra visible rivets per volley."
+      _effectKind: 8
+      _amount: 3
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.rivet-repeater.epic.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.legendary
+      _weapon: {fileID: 11400000, guid: 598c1941f0ee440585978847b9e0d095, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.arc-furnace
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Foundry Breach"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Arc Furnace becomes a build-defining heat lance that hits two extra targets."
+      _effectKind: 9
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.arc-furnace.epic.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.legendary
+      _weapon: {fileID: 11400000, guid: a882b007d4e547d4817ebae4e14b69b4, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.sawblade-relay
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Grand Sawworks"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Sawblade Relay sweeps hit two extra enemies during pressure spikes."
+      _effectKind: 10
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.sawblade-relay.epic.2
+      _eligibleSources: 15
+    - _id: reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.legendary
+      _weapon: {fileID: 11400000, guid: 05f56dab580b4077a7ea5df5ce0ae414, type: 2}
+      _weaponId: weapon.idle-auto-defense.scrap-frontier.salvage-mortar
+      _tierKey: legendary
+      _track: 3
+      _displayName: "Wrecker Battery"
+      _rarity: 4
+      _weight: 1
+      _typeName: "Legendary Weapon"
+      _effectDescription: "Salvage Mortar launches two extra authored scrap shells."
+      _effectKind: 11
+      _amount: 2
+      _maxRank: 1
+      _requiredNormalRank: 3
+      _requiredEpicRank: 3
+      _prerequisiteIds:
+      - reward.weapon.idle-auto-defense.scrap-frontier.salvage-mortar.epic.2
+      _eligibleSources: 15
+    _baseRewards:
+    - _id: base.scrap-frontier.damage
+      _displayName: "Rivet Pressure"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.scrap-frontier.recycler
+      _targetName: "Tower"
+      _effectDescription: "+2 damage ranks for immediate relief."
+      _effectKind: 2
+      _amount: 2
+      _maxRank: 8
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.scrap-frontier.fire-rate
+      _displayName: "Belt Speed"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.scrap-frontier.recycler
+      _targetName: "Tower"
+      _effectDescription: "+2 fire-rate ranks so weapons visibly fire faster."
+      _effectKind: 3
+      _amount: 2
+      _maxRank: 6
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.scrap-frontier.range
+      _displayName: "Spotter Optics"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.scrap-frontier.recycler
+      _targetName: "Tower"
+      _effectDescription: "+1 range rank to catch enemies before they leak."
+      _effectKind: 4
+      _amount: 1
+      _maxRank: 6
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.scrap-frontier.repair
+      _displayName: "Field Patch"
+      _rarity: 0
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: objective.idle-auto-defense.scrap-frontier.recycler
+      _targetName: "Tower"
+      _effectDescription: "Repair and increase maximum HP."
+      _effectKind: 5
+      _amount: 1
+      _maxRank: 5
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.scrap-frontier.velocity
+      _displayName: "Hardened Feed"
+      _rarity: 1
+      _weight: 1
+      _typeName: "Base Upgrade"
+      _targetId: projectile.idle-auto-defense.scrap-frontier.rivet
+      _targetName: "Projectiles"
+      _effectDescription: "+25% projectile travel speed for snappier impacts."
+      _effectKind: 7
+      _amount: 0.25
+      _maxRank: 4
+      _prerequisiteIds: []
+      _eligibleSources: 15
+    - _id: base.scrap-frontier.scrap
+      _displayName: "Salvage Dividend"
+      _rarity: 2
+      _weight: 1
+      _typeName: "Economy"
+      _targetId: economy.idle-auto-defense.scrap-frontier.playable
+      _targetName: "Tower"
+      _effectDescription: "+25% scrap from kills for more live purchases."
+      _effectKind: 6
+      _amount: 0.25
+      _maxRank: 5
+      _prerequisiteIds: []
+      _eligibleSources: 15

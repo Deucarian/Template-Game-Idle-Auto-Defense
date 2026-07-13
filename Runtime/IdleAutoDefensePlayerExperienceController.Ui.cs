@@ -305,7 +305,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             header.style.justifyContent = Justify.SpaceBetween;
             header.style.alignItems = Align.Center;
             panel.Add(header);
-            Label title = AddLabel(header, "Defense Command", 27, FontStyle.Bold);
+            Label title = AddLabel(header, _effectiveExperience.UiSettings.PauseMenuTitle, 27, FontStyle.Bold);
             title.style.flexGrow = 1;
             AddButton(header, "Resume", ResumeRun, 112, 46);
             _pauseBody = new ScrollView(ScrollViewMode.Vertical) { name = "pause-scroll" };
@@ -423,7 +423,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _playerUiRoot.Add(_portraitOverlay);
             Label title = AddLabel(_portraitOverlay, "Rotate Device", 31, FontStyle.Bold);
             title.style.unityTextAlign = TextAnchor.MiddleCenter;
-            Label body = AddLabel(_portraitOverlay, "Bastion command is designed for landscape play.", 17);
+            Label body = AddLabel(_portraitOverlay, _effectiveExperience.UiSettings.PortraitMessage, 17);
             body.style.unityTextAlign = TextAnchor.MiddleCenter;
         }
 
@@ -548,25 +548,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _profileLabel.text = ActiveRunProfile == null ? "Authored Run" : ActiveRunProfile.DisplayName;
             _waveLabel.text = "Wave " + CurrentWaveNumber.ToString(CultureInfo.InvariantCulture) + " / " + TotalWaveCount.ToString(CultureInfo.InvariantCulture) +
                 (CurrentWaveNumber > 0 ? "  " + CurrentSpawnProfileName : string.Empty);
-            _healthLabel.text = "CORE  " + ObjectiveHealth.ToString("0", CultureInfo.InvariantCulture) + " / " + ObjectiveMaximumHealth.ToString("0", CultureInfo.InvariantCulture);
+            _healthLabel.text = _effectiveExperience.UiSettings.ObjectiveLabel.ToUpperInvariant() + "  " + ObjectiveHealth.ToString("0", CultureInfo.InvariantCulture) + " / " + ObjectiveMaximumHealth.ToString("0", CultureInfo.InvariantCulture);
             SetPercentWidth(_healthFill, ObjectiveMaximumHealth <= 0d ? 0f : (float)(ObjectiveHealth / ObjectiveMaximumHealth));
             _healthFill.style.backgroundColor = ObjectiveMaximumHealth > 0d && ObjectiveHealth / ObjectiveMaximumHealth <= 0.25d ? _activeTheme.Danger : _activeTheme.Success;
-            _currencyLabel.text = RuntimeCurrency.ToString(CultureInfo.InvariantCulture) + " CREDITS";
+            _currencyLabel.text = RuntimeCurrency.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyDisplayName.ToUpperInvariant();
             _currencyLabel.style.color = _activeTheme.Currency;
-            _levelLabel.text = "Commander " + CommanderLevel.ToString(CultureInfo.InvariantCulture) + "  XP " + CommanderExperience.ToString(CultureInfo.InvariantCulture) + " / " + ExperienceToNextLevel.ToString(CultureInfo.InvariantCulture);
+            _levelLabel.text = _effectiveExperience.UiSettings.PlayerRankLabel + " " + CommanderLevel.ToString(CultureInfo.InvariantCulture) + "  XP " + CommanderExperience.ToString(CultureInfo.InvariantCulture) + " / " + ExperienceToNextLevel.ToString(CultureInfo.InvariantCulture);
             SetPercentWidth(_xpFill, ExperienceToNextLevel <= 0 ? 0f : (float)CommanderExperience / ExperienceToNextLevel);
             _xpFill.style.backgroundColor = _activeTheme.Accent;
+            string overdriveName = _effectiveExperience.UiSettings.OverdriveName;
             _overdriveStatusLabel.text = OverdriveActive
-                ? "OVERDRIVE " + OverdriveSecondsRemaining.ToString("0.0", CultureInfo.InvariantCulture) + "s"
+                ? overdriveName.ToUpperInvariant() + " " + OverdriveSecondsRemaining.ToString("0.0", CultureInfo.InvariantCulture) + "s"
                 : OverdriveCooldownSecondsRemaining > 0f
                     ? "Cooldown " + OverdriveCooldownSecondsRemaining.ToString("0.0", CultureInfo.InvariantCulture) + "s"
-                    : "Overdrive ready";
+                    : overdriveName + " ready";
             _overdriveStatusLabel.style.color = OverdriveActive ? _activeTheme.Warning : _activeTheme.PrimaryText;
             _overdriveButton.text = OverdriveActive
                 ? OverdriveSecondsRemaining.ToString("0.0", CultureInfo.InvariantCulture) + "s ACTIVE"
                 : OverdriveCooldownSecondsRemaining > 0f
                     ? OverdriveCooldownSecondsRemaining.ToString("0.0", CultureInfo.InvariantCulture) + "s"
-                    : "Activate  " + OverdriveCost.ToString(CultureInfo.InvariantCulture) + " C";
+                    : "Activate  " + OverdriveCost.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyToken;
             _overdriveButton.SetEnabled(CanPurchaseOverdrive);
             RefreshModuleCards();
             RefreshRewardCards();
@@ -620,7 +621,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 string action = unlocked ? ResolveModuleUpgradeLabel(role) : "UNLOCK";
                 button.text = icon + "  " + name + "\n" + (unlocked ? "ONLINE" : "LOCKED") + "  |  " + Nicify(role.ToString()) +
                     "\nDMG " + damage.ToString("0.#", CultureInfo.InvariantCulture) + "  CAD " + cadence.ToString("0.00", CultureInfo.InvariantCulture) + "s  RNG " + range.ToString("0.#", CultureInfo.InvariantCulture) +
-                    "\nRank " + rank.ToString(CultureInfo.InvariantCulture) + " -> " + (rank + 1).ToString(CultureInfo.InvariantCulture) + "  |  " + action + " " + cost.ToString(CultureInfo.InvariantCulture) + " C" +
+                    "\nRank " + rank.ToString(CultureInfo.InvariantCulture) + " -> " + (rank + 1).ToString(CultureInfo.InvariantCulture) + "  |  " + action + " " + cost.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyToken +
                     (_compactLayout ? string.Empty : "\n" + description);
                 bool affordable = EncounterRunning && RuntimeCurrency >= cost;
                 button.SetEnabled(unlocked || cost > 0);
@@ -701,10 +702,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 "Mounted modules: " + UnlockedModuleCount.ToString(CultureInfo.InvariantCulture) + " / 4\n" +
                 "Damage rank: " + DamageUpgradeRank.ToString(CultureInfo.InvariantCulture) + "   Cadence rank: " + AttackSpeedUpgradeRank.ToString(CultureInfo.InvariantCulture) + "   Range rank: " + RangeUpgradeRank.ToString(CultureInfo.InvariantCulture) + "   Repair rank: " + RepairUpgradeRank.ToString(CultureInfo.InvariantCulture) + "\n" +
                 "Rewards acquired: " + RewardDraftSelectionCount.ToString(CultureInfo.InvariantCulture) + "   Epic: " + EpicRewardSelectionCount.ToString(CultureInfo.InvariantCulture) + "   Legendary: " + LegendaryRewardSelectionCount.ToString(CultureInfo.InvariantCulture) + "\n" +
-                "Credits earned: " + RuntimeCurrencyEarned.ToString(CultureInfo.InvariantCulture) + "   Spent: " + RuntimeCurrencySpent.ToString(CultureInfo.InvariantCulture) + "   Current: " + RuntimeCurrency.ToString(CultureInfo.InvariantCulture) + "\n" +
+                PrimaryCurrencyDisplayName + " earned: " + RuntimeCurrencyEarned.ToString(CultureInfo.InvariantCulture) + "   Spent: " + RuntimeCurrencySpent.ToString(CultureInfo.InvariantCulture) + "   Current: " + RuntimeCurrency.ToString(CultureInfo.InvariantCulture) + "\n" +
                 "Reward multiplier bonus: " + RewardCreditMultiplierBonus.ToString("0.##", CultureInfo.InvariantCulture) + "   Projectile speed: x" + ProjectileSpeedMultiplier.ToString("0.##", CultureInfo.InvariantCulture) + "\n" +
-                "Overdrive: " + (OverdriveActive ? "Active" : OverdriveCooldownSecondsRemaining > 0f ? "Cooling down" : "Ready") + "   Cost: " + OverdriveCost.ToString(CultureInfo.InvariantCulture) + " credits\n" +
-                "Persistent totals: " + _profile.LifetimeCredits.ToString(CultureInfo.InvariantCulture) + " credits, " + _profile.LifetimeParts.ToString(CultureInfo.InvariantCulture) + " parts";
+                _effectiveExperience.UiSettings.OverdriveName + ": " + (OverdriveActive ? "Active" : OverdriveCooldownSecondsRemaining > 0f ? "Cooling down" : "Ready") + "   Cost: " + OverdriveCost.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyDisplayName + "\n" +
+                "Persistent totals: " + _profile.LifetimeCredits.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyDisplayName.ToLowerInvariant() + ", " + _profile.LifetimeParts.ToString(CultureInfo.InvariantCulture) + " " + SecondaryCurrencyDisplayName.ToLowerInvariant();
         }
 
         private void RefreshTutorial()
@@ -725,8 +726,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _offlineTitleLabel.text = "Welcome Back";
             _offlineBodyLabel.text =
                 "Time away: " + FormatDuration(_offlinePreview.RawElapsed.TotalSeconds) + "\n\n" +
-                credits.ToString(CultureInfo.InvariantCulture) + " credits\n" + parts.ToString(CultureInfo.InvariantCulture) + " parts\n\n" +
-                "Authored rate: " + ActiveOfflineProgression.ProductionAmountPerSecond.ToString("0.##", CultureInfo.InvariantCulture) + " credits / second\n" +
+                credits.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyDisplayName.ToLowerInvariant() + "\n" + parts.ToString(CultureInfo.InvariantCulture) + " " + SecondaryCurrencyDisplayName.ToLowerInvariant() + "\n\n" +
+                "Authored rate: " + ActiveOfflineProgression.ProductionAmountPerSecond.ToString("0.##", CultureInfo.InvariantCulture) + " " + PrimaryCurrencyDisplayName.ToLowerInvariant() + " / second\n" +
                 "Effective time: " + FormatDuration(_offlinePreview.EffectiveElapsed.TotalSeconds) + (_offlinePreview.Capped ? " (cap applied)" : string.Empty) + "\n" +
                 "Rounding: " + ActiveOfflineProgression.Rounding + "\n\n" +
                 "The optional multiplier is omitted because no rewarded placement is currently available.";
@@ -734,7 +735,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         private void RefreshRunSummary()
         {
-            _summaryTitleLabel.text = EncounterCompleted ? "Defense Complete" : "Core Lost";
+            _summaryTitleLabel.text = EncounterCompleted ? _effectiveExperience.UiSettings.VictoryTitle : _effectiveExperience.UiSettings.DefeatTitle;
             _summaryTitleLabel.style.color = EncounterCompleted ? _activeTheme.Success : _activeTheme.Danger;
             _summaryBodyLabel.text =
                 "Run profile: " + (ActiveRunProfile == null ? "Authored Run" : ActiveRunProfile.DisplayName) + "\n" +
@@ -743,12 +744,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 "Enemies defeated: " + (DirectOrCombatKillCount + ProjectileAdapterKillCount).ToString(CultureInfo.InvariantCulture) + "\n" +
                 "Elites defeated: " + EliteDefeatCount.ToString(CultureInfo.InvariantCulture) + "\n" +
                 "Boss defeated: " + (BossDefeatCount > 0 ? "Yes" : "No") + "\n\n" +
-                "Credits earned / spent: " + RuntimeCurrencyEarned.ToString(CultureInfo.InvariantCulture) + " / " + RuntimeCurrencySpent.ToString(CultureInfo.InvariantCulture) + "\n" +
-                "Run reward: " + EncounterRewardCredits.ToString(CultureInfo.InvariantCulture) + " credits, " + EncounterRewardParts.ToString(CultureInfo.InvariantCulture) + " parts\n" +
+                PrimaryCurrencyDisplayName + " earned / spent: " + RuntimeCurrencyEarned.ToString(CultureInfo.InvariantCulture) + " / " + RuntimeCurrencySpent.ToString(CultureInfo.InvariantCulture) + "\n" +
+                "Run reward: " + EncounterRewardCredits.ToString(CultureInfo.InvariantCulture) + " " + PrimaryCurrencyDisplayName.ToLowerInvariant() + ", " + EncounterRewardParts.ToString(CultureInfo.InvariantCulture) + " " + SecondaryCurrencyDisplayName.ToLowerInvariant() + "\n" +
                 "Upgrades acquired: " + SelectedUpgradeCount.ToString(CultureInfo.InvariantCulture) + "\n" +
                 "Epic / Legendary: " + EpicRewardSelectionCount.ToString(CultureInfo.InvariantCulture) + " / " + LegendaryRewardSelectionCount.ToString(CultureInfo.InvariantCulture) + "\n" +
                 "Module ranks: Damage " + DamageUpgradeRank.ToString(CultureInfo.InvariantCulture) + ", Cadence " + AttackSpeedUpgradeRank.ToString(CultureInfo.InvariantCulture) + ", Range " + RangeUpgradeRank.ToString(CultureInfo.InvariantCulture) + ", Repair " + RepairUpgradeRank.ToString(CultureInfo.InvariantCulture) + "\n" +
-                "Core damage taken: " + Math.Max(0d, ObjectiveMaximumHealth - ObjectiveHealth).ToString("0", CultureInfo.InvariantCulture) + "\n\n" +
+                _effectiveExperience.UiSettings.ObjectiveLabel + " damage taken: " + Math.Max(0d, ObjectiveMaximumHealth - ObjectiveHealth).ToString("0", CultureInfo.InvariantCulture) + "\n\n" +
                 "Per-module damage attribution is not exposed by the current combat runtime, so no fabricated top-module statistic is shown.";
         }
 

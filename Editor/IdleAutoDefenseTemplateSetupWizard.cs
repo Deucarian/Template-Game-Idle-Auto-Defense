@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Deucarian.TemplateGameIdleAutoDefense;
 using UnityEditor;
@@ -17,12 +18,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         Failed = 2
     }
 
+    public enum IdleAutoDefenseTemplatePackSelection
+    {
+        BasicOnly = 0,
+        ScrapFrontierOnly = 1,
+        Both = 2
+    }
+
     public sealed class IdleAutoDefenseTemplateSetupRequest
     {
         public string TargetRootAssetPath = "Assets/IdleAutoDefense";
         public string ContentRootAssetPath = "Assets/GameContent/IdleAutoDefense";
         public string GameNamespace = "IdleAutoDefenseGame";
         public string GamePrefix = "Basic";
+        public IdleAutoDefenseTemplatePackSelection PackSelection = IdleAutoDefenseTemplatePackSelection.BasicOnly;
+        public bool RepairMissingContent;
         public bool AllowOverwrite;
         public bool OpenCreatedScene;
         public bool RefreshAssetDatabase = true;
@@ -33,6 +43,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private readonly List<string> _createdFiles = new List<string>();
         private readonly List<string> _createdDirectories = new List<string>();
         private readonly List<string> _blockedFiles = new List<string>();
+        private readonly List<string> _createdSceneAssetPaths = new List<string>();
         private readonly List<string> _messages = new List<string>();
 
         public IdleAutoDefenseTemplateSetupStatus Status { get; internal set; }
@@ -43,12 +54,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         public IReadOnlyList<string> CreatedFiles => _createdFiles;
         public IReadOnlyList<string> CreatedDirectories => _createdDirectories;
         public IReadOnlyList<string> BlockedFiles => _blockedFiles;
+        public IReadOnlyList<string> CreatedSceneAssetPaths => _createdSceneAssetPaths;
         public IReadOnlyList<string> Messages => _messages;
         public bool Succeeded => Status == IdleAutoDefenseTemplateSetupStatus.Succeeded;
 
         internal void AddCreatedFile(string path) => _createdFiles.Add(path);
         internal void AddCreatedDirectory(string path) => _createdDirectories.Add(path);
         internal void AddBlockedFile(string path) => _blockedFiles.Add(path);
+        internal void AddCreatedScene(string path)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && !_createdSceneAssetPaths.Contains(path))
+                _createdSceneAssetPaths.Add(path);
+        }
         internal void AddMessage(string message) => _messages.Add(message);
 
         public string CreateSummary()
@@ -57,7 +74,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 return "Created playable Idle Auto Defense game folder at " + TargetRootAssetPath +
                     "\nAuthored content: " + ContentRootAssetPath +
-                    "\nScene: " + CreatedSceneAssetPath +
+                    "\nScene(s): " + string.Join(", ", CreatedSceneAssetPaths) +
                     "\nReport: " + SetupReportAssetPath +
                     "\nNext: open the created scene and press Play.";
             }
@@ -72,9 +89,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     public static class IdleAutoDefenseTemplateSetupService
     {
-        private const string TemplateSourceFolderName = "BasicIdleAutoDefenseGame";
-        private const string SampleSceneName = "OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity";
-        private const string VisibleSceneRootAssetPath = "Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame";
+        private const string BasicTemplateSourceFolderName = "BasicIdleAutoDefenseGame";
+        private const string ScrapTemplateSourceFolderName = "ScrapFrontierGame";
+        private const string BasicSampleSceneName = "OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity";
+        private const string ScrapSampleSceneName = "OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity";
+        private const string BasicVisibleSceneRootAssetPath = "Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame";
+        private const string ScrapVisibleSceneRootAssetPath = "Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame";
         private const string SampleScriptName = "BasicIdleAutoDefenseGameBootstrap.cs";
         private const string SampleBootstrapClass = "BasicIdleAutoDefenseGameBootstrap";
         private const string SampleSaveClass = "BasicIdleAutoDefenseSampleSave";
@@ -94,6 +114,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 string gameNamespace = NormalizeNamespace(request.GameNamespace);
                 string prefix = ToIdentifierPrefix(request.GamePrefix);
                 if (string.IsNullOrEmpty(prefix)) prefix = LastNamespacePart(gameNamespace);
+                IReadOnlyList<PackTemplate> selectedPacks = GetSelectedPackTemplates(request.PackSelection);
 
                 result.TargetRootAssetPath = targetRoot;
                 result.ContentRootAssetPath = contentRoot;
@@ -114,28 +135,65 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 if (!IsValidNamespace(gameNamespace))
                     throw new ArgumentException("Game namespace must be a valid C# namespace.");
 
-                string sourceRoot = FindTemplateSourceRoot();
+                string basicSourceRoot = FindTemplateSourceRoot(BasicTemplateSourceFolderName);
                 string className = prefix + "IdleAutoDefenseGameBootstrap";
                 string saveClassName = prefix + "IdleAutoDefenseSave";
-                string sceneAssetPath = VisibleSceneRootAssetPath + "/" + SampleSceneName;
                 string reportAssetPath = targetRoot + "/Docs/setup-report.md";
-                result.CreatedSceneAssetPath = sceneAssetPath;
                 result.SetupReportAssetPath = reportAssetPath;
 
-                string sourceScriptMeta = Path.Combine(sourceRoot, "Scripts", SampleScriptName + ".meta");
+                string sourceScriptMeta = Path.Combine(basicSourceRoot, "Scripts", SampleScriptName + ".meta");
                 string sourceScriptGuid = TryReadGuid(sourceScriptMeta);
-                string generatedScriptGuid = GenerateUnityGuid();
+                string generatedScriptMetaPath = Path.Combine(targetFullRoot, "Scripts", className + ".cs.meta");
+                string generatedScriptGuid = request.RepairMissingContent
+                    ? TryReadGuid(generatedScriptMetaPath)
+                    : string.Empty;
+                if (string.IsNullOrWhiteSpace(generatedScriptGuid)) generatedScriptGuid = GenerateUnityGuid();
                 var guidMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 if (!string.IsNullOrWhiteSpace(sourceScriptGuid))
                     guidMap[sourceScriptGuid] = generatedScriptGuid;
 
                 var operations = new List<FileOperation>();
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), contentFullRoot, true, guidMap);
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(targetFullRoot, "Prefabs"), true, guidMap);
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Visuals"), Path.Combine(targetFullRoot, "Visuals"), true, guidMap);
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Audio"), Path.Combine(targetFullRoot, "Audio"), true, guidMap);
-                AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Resources"), Path.Combine(targetFullRoot, "Resources"), true, guidMap);
-                string packageRoot = Directory.GetParent(Directory.GetParent(sourceRoot).FullName).FullName;
+                var generatedPacks = new List<GeneratedPack>();
+                for (int i = 0; i < selectedPacks.Count; i++)
+                {
+                    PackTemplate pack = selectedPacks[i];
+                    string sourceRoot = FindTemplateSourceRoot(pack.SourceFolderName);
+                    bool usePackSubfolders = request.PackSelection == IdleAutoDefenseTemplatePackSelection.Both;
+                    string packTargetRoot = usePackSubfolders
+                        ? targetRoot + "/" + pack.OutputFolderName
+                        : targetRoot;
+                    string packContentRoot = usePackSubfolders
+                        ? contentRoot + "/" + pack.OutputFolderName
+                        : contentRoot;
+                    string packTargetFullRoot = AssetPathToFullPath(packTargetRoot);
+                    string packContentFullRoot = AssetPathToFullPath(packContentRoot);
+                    string sceneAssetPath = pack.VisibleSceneRootAssetPath + "/" + pack.SceneFileName;
+
+                    AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Content"), packContentFullRoot, true, guidMap);
+                    AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Prefabs"), Path.Combine(packTargetFullRoot, "Prefabs"), true, guidMap);
+                    AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Visuals"), Path.Combine(packTargetFullRoot, "Visuals"), true, guidMap);
+                    AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Audio"), Path.Combine(packTargetFullRoot, "Audio"), true, guidMap);
+                    AddDirectoryCopyOperations(operations, Path.Combine(sourceRoot, "Resources"), Path.Combine(packTargetFullRoot, "Resources"), true, guidMap);
+                    AddTextOperation(
+                        operations,
+                        Path.Combine(packTargetFullRoot, "README.md"),
+                        TransformReadme(
+                            ReadAllText(Path.Combine(sourceRoot, "README.md")),
+                            ResolveGeneratedReadmeTitle(request, pack),
+                            gameNamespace,
+                            className,
+                            packContentRoot));
+
+                    string sceneText = ReadAllText(Path.Combine(sourceRoot, "Scenes", pack.SceneFileName));
+                    if (!string.IsNullOrEmpty(sourceScriptGuid))
+                        sceneText = sceneText.Replace(sourceScriptGuid, generatedScriptGuid);
+                    AddTextOperation(operations, AssetPathToFullPath(sceneAssetPath), sceneText);
+                    result.AddCreatedScene(sceneAssetPath);
+                    generatedPacks.Add(new GeneratedPack(pack, packContentRoot, sceneAssetPath));
+                }
+
+                result.CreatedSceneAssetPath = generatedPacks[0].SceneAssetPath;
+                string packageRoot = Directory.GetParent(Directory.GetParent(basicSourceRoot).FullName).FullName;
                 string thirdPartyNoticesPath = Path.Combine(packageRoot, "ThirdPartyNotices.md");
                 if (FileExists(thirdPartyNoticesPath))
                 {
@@ -146,39 +204,42 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 }
                 AddTextOperation(
                     operations,
-                    Path.Combine(targetFullRoot, "README.md"),
-                    TransformReadme(ReadAllText(Path.Combine(sourceRoot, "README.md")), request.GamePrefix, gameNamespace, className, contentRoot));
-                AddTextOperation(
-                    operations,
                     Path.Combine(targetFullRoot, gameNamespace + ".asmdef"),
                     CreateAsmdef(gameNamespace));
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "Scripts", className + ".cs"),
-                    TransformScript(ReadAllText(Path.Combine(sourceRoot, "Scripts", SampleScriptName)), gameNamespace, className, saveClassName, prefix));
+                    TransformScript(ReadAllText(Path.Combine(basicSourceRoot, "Scripts", SampleScriptName)), gameNamespace, className, saveClassName, prefix));
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "Scripts", className + ".cs.meta"),
                     CreateMonoScriptMeta(generatedScriptGuid));
-                string sceneText = ReadAllText(Path.Combine(sourceRoot, "Scenes", SampleSceneName));
-                if (!string.IsNullOrEmpty(sourceScriptGuid))
-                    sceneText = sceneText.Replace(sourceScriptGuid, generatedScriptGuid);
-                AddTextOperation(operations, AssetPathToFullPath(sceneAssetPath), sceneText);
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "Docs", "asset-flip-checklist.md"),
-                    CreateAssetFlipChecklist(request.GamePrefix, gameNamespace, contentRoot));
+                    CreateAssetFlipChecklist(
+                        request.PackSelection == IdleAutoDefenseTemplatePackSelection.BasicOnly
+                            ? request.GamePrefix
+                            : string.Join(" + ", selectedPacks.Select(value => value.DisplayName)),
+                        gameNamespace,
+                        contentRoot));
                 AddTextOperation(
                     operations,
                     Path.Combine(targetFullRoot, "Docs", "setup-report.md"),
-                    CreateSetupReport(targetRoot, contentRoot, gameNamespace, prefix, sceneAssetPath));
+                    CreateSetupReport(targetRoot, contentRoot, gameNamespace, prefix, generatedPacks));
                 RewriteGuidReferences(operations, guidMap);
 
                 for (int i = 0; i < operations.Count; i++)
                 {
                     string assetPath = FullPathToAssetPath(operations[i].DestinationFullPath);
-                    if (FileExists(operations[i].DestinationFullPath) && !request.AllowOverwrite)
-                        result.AddBlockedFile(assetPath);
+                    if (!FileExists(operations[i].DestinationFullPath)) continue;
+                    if (request.RepairMissingContent && BytesEqual(ReadAllBytes(operations[i].DestinationFullPath), operations[i].ContentBytes))
+                    {
+                        operations[i].SkipWrite = true;
+                        continue;
+                    }
+
+                    if (!request.AllowOverwrite) result.AddBlockedFile(assetPath);
                 }
 
                 if (result.BlockedFiles.Count > 0)
@@ -191,11 +252,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 CreateDirectory(contentFullRoot, result);
                 CreateDirectory(Path.Combine(targetFullRoot, "Scripts"), result);
                 CreateDirectory(Path.Combine(targetFullRoot, "Docs"), result);
-                CreateDirectory(AssetPathToFullPath(VisibleSceneRootAssetPath), result);
+                for (int i = 0; i < selectedPacks.Count; i++)
+                    CreateDirectory(AssetPathToFullPath(selectedPacks[i].VisibleSceneRootAssetPath), result);
 
                 for (int i = 0; i < operations.Count; i++)
                 {
                     FileOperation operation = operations[i];
+                    if (operation.SkipWrite) continue;
                     string directory = Path.GetDirectoryName(operation.DestinationFullPath);
                     if (!string.IsNullOrEmpty(directory)) CreateDirectory(directory, result);
                     WriteAllBytes(operation.DestinationFullPath, operation.ContentBytes);
@@ -203,13 +266,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 }
 
                 result.Status = IdleAutoDefenseTemplateSetupStatus.Succeeded;
-                result.AddMessage("Created product-owned Idle Auto Defense starter folder.");
+                result.AddMessage("Created product-owned Idle Auto Defense content for " +
+                    string.Join(" and ", selectedPacks.Select(value => value.DisplayName)) + ".");
                 string generatedBootstrapTypeName = gameNamespace + "." + className;
                 if (request.RefreshAssetDatabase) AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-                if (request.OpenCreatedScene && !string.IsNullOrEmpty(sceneAssetPath) && !request.RefreshAssetDatabase)
-                    EditorSceneManager.OpenScene(sceneAssetPath);
-                else if (request.OpenCreatedScene && request.RefreshAssetDatabase && !string.IsNullOrEmpty(sceneAssetPath))
-                    IdleAutoDefenseGeneratedSceneOpenQueue.Queue(sceneAssetPath, contentRoot, generatedBootstrapTypeName);
+                GeneratedPack launchPack = generatedPacks[0];
+                if (request.OpenCreatedScene && !request.RefreshAssetDatabase)
+                    EditorSceneManager.OpenScene(launchPack.SceneAssetPath);
+                else if (request.OpenCreatedScene && request.RefreshAssetDatabase)
+                    IdleAutoDefenseGeneratedSceneOpenQueue.Queue(
+                        launchPack.SceneAssetPath,
+                        launchPack.ContentRootAssetPath,
+                        generatedBootstrapTypeName,
+                        launchPack.Template.ContentPackAssetRelativePath,
+                        launchPack.Template.ContentSetAssetRelativePath,
+                        launchPack.Template.PlayerExperienceAssetRelativePath);
                 return result;
             }
             catch (Exception ex)
@@ -250,12 +321,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return builder.ToString();
         }
 
-        private static string FindTemplateSourceRoot()
+        private static IReadOnlyList<PackTemplate> GetSelectedPackTemplates(
+            IdleAutoDefenseTemplatePackSelection selection)
+        {
+            var basic = new PackTemplate(
+                BasicTemplateSourceFolderName,
+                "Basic",
+                "Basic Idle Auto Defense",
+                BasicSampleSceneName,
+                BasicVisibleSceneRootAssetPath,
+                "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset",
+                "/ContentSets/contentset.idle-auto-defense.playable/contentset.idle-auto-defense.playable_GameContentSet.asset",
+                "/Presentation/player-experience.idle-auto-defense.playable.asset");
+            var scrap = new PackTemplate(
+                ScrapTemplateSourceFolderName,
+                "ScrapFrontier",
+                "Scrap Frontier",
+                ScrapSampleSceneName,
+                ScrapVisibleSceneRootAssetPath,
+                "/ContentPacks/contentpack.idle-auto-defense.scrap-frontier/contentpack.idle-auto-defense.scrap-frontier_ContentPack.asset",
+                "/ContentSets/contentset.idle-auto-defense.scrap-frontier.playable/contentset.idle-auto-defense.scrap-frontier.playable_GameContentSet.asset",
+                "/Presentation/player-experience.idle-auto-defense.scrap-frontier.playable.asset");
+            switch (selection)
+            {
+                case IdleAutoDefenseTemplatePackSelection.ScrapFrontierOnly:
+                    return new[] { scrap };
+                case IdleAutoDefenseTemplatePackSelection.Both:
+                    return new[] { basic, scrap };
+                default:
+                    return new[] { basic };
+            }
+        }
+
+        private static string FindTemplateSourceRoot(string sourceFolderName)
         {
             PackageInfo packageInfo = PackageInfo.FindForAssembly(typeof(IdleAutoDefenseTemplateController).Assembly);
             if (packageInfo == null || string.IsNullOrWhiteSpace(packageInfo.resolvedPath))
                 throw new InvalidOperationException("Could not find installed Idle Auto Defense template package.");
-            string sourceRoot = Path.Combine(packageInfo.resolvedPath, "TemplateSource~", TemplateSourceFolderName);
+            string sourceRoot = Path.Combine(packageInfo.resolvedPath, "TemplateSource~", sourceFolderName);
             if (!DirectoryExists(sourceRoot))
                 throw new DirectoryNotFoundException("Could not find Idle Auto Defense template source folder: " + sourceRoot);
             return sourceRoot;
@@ -274,10 +377,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 if (!includeMetaFiles && files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
                 string relative = files[i].Substring(Path.GetFullPath(sourceDirectory).Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string destinationFullPath = Path.Combine(destinationDirectory, relative);
                 byte[] contentBytes = ReadAllBytes(files[i]);
                 if (files[i].EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                    contentBytes = RemapMetaGuid(files[i], contentBytes, guidMap);
-                AddFileOperation(operations, Path.Combine(destinationDirectory, relative), contentBytes);
+                    contentBytes = RemapMetaGuid(files[i], destinationFullPath, contentBytes, guidMap);
+                AddFileOperation(operations, destinationFullPath, contentBytes);
             }
         }
 
@@ -291,12 +395,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             operations.Add(new FileOperation(Path.GetFullPath(destinationFullPath), contentBytes ?? Array.Empty<byte>()));
         }
 
-        private static byte[] RemapMetaGuid(string sourceMetaPath, byte[] contentBytes, Dictionary<string, string> guidMap)
+        private static byte[] RemapMetaGuid(
+            string sourceMetaPath,
+            string destinationMetaPath,
+            byte[] contentBytes,
+            Dictionary<string, string> guidMap)
         {
             string oldGuid = TryReadGuid(sourceMetaPath);
             if (string.IsNullOrWhiteSpace(oldGuid)) return contentBytes;
 
-            string newGuid = GenerateUnityGuid();
+            string newGuid = TryReadGuid(destinationMetaPath);
+            if (string.IsNullOrWhiteSpace(newGuid)) newGuid = GenerateUnityGuid();
             guidMap[oldGuid] = newGuid;
             string text = Utf8NoBom.GetString(contentBytes);
             return Utf8NoBom.GetBytes(ReplaceGuidLine(text, newGuid));
@@ -368,10 +477,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private static string TransformReadme(string source, string displayName, string gameNamespace, string className, string contentRoot)
         {
             return source
-                .Replace("# Basic Idle Auto Defense Game", "# " + displayName + " Idle Auto Defense")
+                .Replace("# Basic Idle Auto Defense Template Source", "# " + displayName)
+                .Replace("# Basic Idle Auto Defense Game", "# " + displayName)
+                .Replace("# Scrap Frontier Template Source", "# " + displayName)
+                .Replace(
+                    "This folder is private package template source. Unity Package Manager should not present it as an importable sample.",
+                    "This folder is product-owned output created by the Idle Auto Defense setup wizard.")
                 .Replace("BasicIdleAutoDefenseGameBootstrap.cs", className + ".cs")
                 .Replace("Deucarian.TemplateGameIdleAutoDefense.Samples", gameNamespace)
                 .Replace("`Assets/GameContent/IdleAutoDefense` or the setup wizard's chosen content root", "`" + contentRoot + "`");
+        }
+
+        private static string ResolveGeneratedReadmeTitle(
+            IdleAutoDefenseTemplateSetupRequest request,
+            PackTemplate pack)
+        {
+            if (request.PackSelection == IdleAutoDefenseTemplatePackSelection.BasicOnly &&
+                string.Equals(pack.SourceFolderName, BasicTemplateSourceFolderName, StringComparison.Ordinal))
+                return request.GamePrefix + " Idle Auto Defense";
+            return pack.DisplayName;
         }
 
         private static string CreateAsmdef(string gameNamespace)
@@ -443,15 +567,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                    "11. Keep Deucarian package source out of this folder.\n";
         }
 
-        private static string CreateSetupReport(string targetRoot, string contentRoot, string gameNamespace, string prefix, string sceneAssetPath)
+        private static string CreateSetupReport(
+            string targetRoot,
+            string contentRoot,
+            string gameNamespace,
+            string prefix,
+            IReadOnlyList<GeneratedPack> generatedPacks)
         {
             return "# Idle Auto Defense Setup Report\n\n" +
-                   "- Created UTC: " + DateTimeOffset.UtcNow.ToString("O") + "\n" +
                    "- Target root: `" + targetRoot + "`\n" +
                    "- Authored content root: `" + contentRoot + "`\n" +
                    "- Namespace: `" + gameNamespace + "`\n" +
                    "- Prefix: `" + prefix + "`\n" +
-                   "- Scene: `" + sceneAssetPath + "`\n" +
+                   "- Packs: " + string.Join(", ", generatedPacks.Select(value => value.Template.DisplayName)) + "\n" +
+                   "- Scenes: `" + string.Join("`, `", generatedPacks.Select(value => value.SceneAssetPath)) + "`\n" +
                    "- Authored core: reward catalog, economy, run profile, progression, offline progression, and game rules copied with remapped references.\n" +
                    "- Startup: strict authored binding; missing or invalid required content blocks gameplay instead of using fallback.\n" +
                    "- Dependencies: kept in Deucarian packages; generated assembly references `Deucarian.TemplateGameIdleAutoDefense`.\n\n" +
@@ -640,6 +769,64 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return (value ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
+        private static bool BytesEqual(byte[] left, byte[] right)
+        {
+            if (ReferenceEquals(left, right)) return true;
+            if (left == null || right == null || left.Length != right.Length) return false;
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (left[i] != right[i]) return false;
+            }
+
+            return true;
+        }
+
+        private sealed class PackTemplate
+        {
+            public PackTemplate(
+                string sourceFolderName,
+                string outputFolderName,
+                string displayName,
+                string sceneFileName,
+                string visibleSceneRootAssetPath,
+                string contentPackAssetRelativePath,
+                string contentSetAssetRelativePath,
+                string playerExperienceAssetRelativePath)
+            {
+                SourceFolderName = sourceFolderName;
+                OutputFolderName = outputFolderName;
+                DisplayName = displayName;
+                SceneFileName = sceneFileName;
+                VisibleSceneRootAssetPath = visibleSceneRootAssetPath;
+                ContentPackAssetRelativePath = contentPackAssetRelativePath;
+                ContentSetAssetRelativePath = contentSetAssetRelativePath;
+                PlayerExperienceAssetRelativePath = playerExperienceAssetRelativePath;
+            }
+
+            public string SourceFolderName { get; }
+            public string OutputFolderName { get; }
+            public string DisplayName { get; }
+            public string SceneFileName { get; }
+            public string VisibleSceneRootAssetPath { get; }
+            public string ContentPackAssetRelativePath { get; }
+            public string ContentSetAssetRelativePath { get; }
+            public string PlayerExperienceAssetRelativePath { get; }
+        }
+
+        private sealed class GeneratedPack
+        {
+            public GeneratedPack(PackTemplate template, string contentRootAssetPath, string sceneAssetPath)
+            {
+                Template = template;
+                ContentRootAssetPath = contentRootAssetPath;
+                SceneAssetPath = sceneAssetPath;
+            }
+
+            public PackTemplate Template { get; }
+            public string ContentRootAssetPath { get; }
+            public string SceneAssetPath { get; }
+        }
+
         private sealed class FileOperation
         {
             public FileOperation(string destinationFullPath, byte[] contentBytes)
@@ -650,6 +837,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             public string DestinationFullPath { get; }
             public byte[] ContentBytes { get; set; }
+            public bool SkipWrite { get; set; }
         }
     }
 
@@ -659,6 +847,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private const string PendingScenePathKey = "Deucarian.IdleAutoDefenseTemplate.PendingScenePath";
         private const string PendingContentRootKey = "Deucarian.IdleAutoDefenseTemplate.PendingContentRoot";
         private const string PendingBootstrapTypeKey = "Deucarian.IdleAutoDefenseTemplate.PendingBootstrapType";
+        private const string PendingContentPackRelativePathKey = "Deucarian.IdleAutoDefenseTemplate.PendingContentPackRelativePath";
+        private const string PendingContentSetRelativePathKey = "Deucarian.IdleAutoDefenseTemplate.PendingContentSetRelativePath";
+        private const string PendingPlayerExperienceRelativePathKey = "Deucarian.IdleAutoDefenseTemplate.PendingPlayerExperienceRelativePath";
         private const string PendingAttemptCountKey = "Deucarian.IdleAutoDefenseTemplate.PendingAttemptCount";
         private const int MaximumOpenAttempts = 300;
         private const string ContentPackAssetRelativePath = "/ContentPacks/contentpack.idle-auto-defense.playable/contentpack.idle-auto-defense.playable_ContentPack.asset";
@@ -671,7 +862,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             QueuePendingOpen();
         }
 
-        internal static void Queue(string sceneAssetPath, string contentRootAssetPath, string bootstrapTypeFullName)
+        internal static void Queue(
+            string sceneAssetPath,
+            string contentRootAssetPath,
+            string bootstrapTypeFullName,
+            string contentPackAssetRelativePath,
+            string contentSetAssetRelativePath,
+            string playerExperienceAssetRelativePath)
         {
             if (string.IsNullOrWhiteSpace(sceneAssetPath) ||
                 string.IsNullOrWhiteSpace(contentRootAssetPath) ||
@@ -683,6 +880,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             SessionState.SetString(PendingScenePathKey, sceneAssetPath);
             SessionState.SetString(PendingContentRootKey, contentRootAssetPath);
             SessionState.SetString(PendingBootstrapTypeKey, bootstrapTypeFullName);
+            SessionState.SetString(PendingContentPackRelativePathKey, contentPackAssetRelativePath);
+            SessionState.SetString(PendingContentSetRelativePathKey, contentSetAssetRelativePath);
+            SessionState.SetString(PendingPlayerExperienceRelativePathKey, playerExperienceAssetRelativePath);
             SessionState.SetInt(PendingAttemptCountKey, 0);
             QueuePendingOpen();
         }
@@ -729,17 +929,32 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             string contentRootAssetPath = SessionState.GetString(PendingContentRootKey, string.Empty);
+            string contentPackAssetRelativePath = SessionState.GetString(PendingContentPackRelativePathKey, ContentPackAssetRelativePath);
+            string contentSetAssetRelativePath = SessionState.GetString(PendingContentSetRelativePathKey, ContentSetAssetRelativePath);
+            string playerExperienceAssetRelativePath = SessionState.GetString(PendingPlayerExperienceRelativePathKey, PlayerExperienceAssetRelativePath);
             var scene = EditorSceneManager.OpenScene(sceneAssetPath);
-            if (ReapplyGeneratedSceneContent(sceneAssetPath, contentRootAssetPath, bootstrapTypeFullName))
+            if (ReapplyGeneratedSceneContent(
+                    sceneAssetPath,
+                    contentRootAssetPath,
+                    bootstrapTypeFullName,
+                    contentPackAssetRelativePath,
+                    contentSetAssetRelativePath,
+                    playerExperienceAssetRelativePath))
                 EditorSceneManager.SaveScene(scene);
             Clear();
         }
 
-        private static bool ReapplyGeneratedSceneContent(string sceneAssetPath, string contentRootAssetPath, string bootstrapTypeFullName)
+        private static bool ReapplyGeneratedSceneContent(
+            string sceneAssetPath,
+            string contentRootAssetPath,
+            string bootstrapTypeFullName,
+            string contentPackAssetRelativePath,
+            string contentSetAssetRelativePath,
+            string playerExperienceAssetRelativePath)
         {
-            GameContentPackAsset contentPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(contentRootAssetPath + ContentPackAssetRelativePath);
-            GameContentSetAsset contentSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(contentRootAssetPath + ContentSetAssetRelativePath);
-            IdleAutoDefensePlayerExperienceAsset playerExperience = AssetDatabase.LoadAssetAtPath<IdleAutoDefensePlayerExperienceAsset>(contentRootAssetPath + PlayerExperienceAssetRelativePath);
+            GameContentPackAsset contentPack = AssetDatabase.LoadAssetAtPath<GameContentPackAsset>(contentRootAssetPath + contentPackAssetRelativePath);
+            GameContentSetAsset contentSet = AssetDatabase.LoadAssetAtPath<GameContentSetAsset>(contentRootAssetPath + contentSetAssetRelativePath);
+            IdleAutoDefensePlayerExperienceAsset playerExperience = AssetDatabase.LoadAssetAtPath<IdleAutoDefensePlayerExperienceAsset>(contentRootAssetPath + playerExperienceAssetRelativePath);
             if (contentPack == null || contentSet == null || playerExperience == null) return false;
 
             bool changed = false;
@@ -805,6 +1020,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             SessionState.EraseString(PendingScenePathKey);
             SessionState.EraseString(PendingContentRootKey);
             SessionState.EraseString(PendingBootstrapTypeKey);
+            SessionState.EraseString(PendingContentPackRelativePathKey);
+            SessionState.EraseString(PendingContentSetRelativePathKey);
+            SessionState.EraseString(PendingPlayerExperienceRelativePathKey);
             SessionState.EraseInt(PendingAttemptCountKey);
         }
     }
@@ -815,7 +1033,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         private string _contentRoot = "Assets/GameContent/IdleAutoDefense";
         private string _gameNamespace = "IdleAutoDefenseGame";
         private string _gamePrefix = "Basic";
+        private IdleAutoDefenseTemplatePackSelection _packSelection = IdleAutoDefenseTemplatePackSelection.BasicOnly;
         private bool _openScene = true;
+        private bool _repairMissingContent;
         private bool _allowOverwrite;
         private string _lastSummary = string.Empty;
 
@@ -841,11 +1061,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             _contentRoot = EditorGUILayout.TextField("Content root", _contentRoot);
             _gameNamespace = EditorGUILayout.TextField("Namespace", _gameNamespace);
             _gamePrefix = EditorGUILayout.TextField("Game prefix", _gamePrefix);
+            _packSelection = (IdleAutoDefenseTemplatePackSelection)EditorGUILayout.EnumPopup("Content packs", _packSelection);
             _openScene = EditorGUILayout.Toggle("Open created scene", _openScene);
+            _repairMissingContent = EditorGUILayout.Toggle("Repair missing content", _repairMissingContent);
             _allowOverwrite = EditorGUILayout.Toggle("Allow overwrite", _allowOverwrite);
 
             EditorGUILayout.HelpBox(
-                "Creates a visible playable scene under Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame, authored content under Assets/GameContent, and product-owned scripts, resources, visuals, audio, and docs under the target root. Deucarian package source stays in packages.",
+                "Creates Basic Idle Auto Defense, the Scrap Frontier asset-flip proof, or both as separate strict-authored packs. Each selected pack gets a visible playable scene; shared runtime code remains in the package.",
                 MessageType.Info);
 
             if (GUILayout.Button("Create Playable Game"))
@@ -881,6 +1103,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 ContentRootAssetPath = _contentRoot,
                 GameNamespace = _gameNamespace,
                 GamePrefix = _gamePrefix,
+                PackSelection = _packSelection,
+                RepairMissingContent = _repairMissingContent,
                 AllowOverwrite = _allowOverwrite,
                 OpenCreatedScene = _openScene
             };
