@@ -28,7 +28,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             GameContentSourceRevision revision = IdleAutoDefenseSourceRevision.Create(request, source);
             IReadOnlyDictionary<string, GameContentFieldValue> values =
-                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings);
+                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings, source.Index);
             return new IdleAutoDefenseContentEditSession(this, request, source, revision, values);
         }
 
@@ -90,6 +90,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             if (!IdleAutoDefenseContentEditMappings.TryResolve(
                     record.SourceAsset,
+                    index,
                     out UnityEngine.Object sourceAsset,
                     out IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> mappings,
                     out reason))
@@ -106,7 +107,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             if (!GameContentSourceIdentity.TryCreate(sourceAsset, sourcePath, out GameContentSourceIdentity identity))
             {
-                reason = "The scalar source has no canonical Unity asset identity.";
+                reason = "The editable source has no canonical Unity asset identity.";
                 return false;
             }
 
@@ -114,7 +115,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 claim != null && claim.SourceIdentity != null && claim.SourceIdentity.Equals(identity));
             if (!claimedBySelectedPack)
             {
-                reason = "The scalar source is not claimed by the selected named pack. Refresh or repair the generated content graph.";
+                reason = "The editable source is not claimed by the selected named pack. Refresh or repair the generated content graph.";
                 return false;
             }
 
@@ -127,7 +128,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 .ToArray();
             if (otherClaimants.Length > 0)
             {
-                reason = "The scalar source is claimed by multiple named packs: " + string.Join(", ", otherClaimants) + ". Resolve the ownership conflict first.";
+                reason = "The editable source is claimed by multiple named packs: " + string.Join(", ", otherClaimants) + ". Resolve the ownership conflict first.";
                 return false;
             }
 
@@ -140,7 +141,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 sourcePath.ToLowerInvariant());
             var target = new GameContentSourceTarget(
                 lockKey,
-                record.DisplayName + " scalar source",
+                record.DisplayName + " field source",
                 sourcePath,
                 IdleAutoDefenseSourceRevision.SchemaToken);
             editableSource = new IdleAutoDefenseEditableSource(
@@ -154,6 +155,207 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 globalObjectId);
             reason = string.Empty;
             return true;
+        }
+
+        internal GameContentReferenceEvaluation EvaluateAttackReferenceTarget(
+            IdleAutoDefenseEditableSource source,
+            string fieldId,
+            GameContentRecordKey targetKey)
+        {
+            if (source == null ||
+                !(source.Record.SourceAsset is WeaponDefinitionAsset weapon) ||
+                !(source.SourceAsset is WeaponStatsDefinitionAsset stats))
+                return GameContentReferenceEvaluation.Rejected(targetKey, "Only a mounted Weapon's authored Attack reference is editable.");
+
+            IdleAutoDefenseSerializedFieldMapping mapping = source.Mappings.FirstOrDefault(candidate =>
+                string.Equals(candidate.Descriptor.FieldId, fieldId, StringComparison.Ordinal));
+            if (mapping == null || mapping.Descriptor.FieldType != GameContentFieldType.RecordReference)
+                return GameContentReferenceEvaluation.Rejected(targetKey, "The field is not the approved mounted-weapon Attack reference.");
+            if (targetKey == null || !targetKey.IsValid)
+                return GameContentReferenceEvaluation.Rejected(targetKey, "A valid canonical Attack target is required.");
+
+            bool sameOwner = string.Equals(
+                targetKey.OwningPackageId,
+                source.Record.CanonicalKey.OwningPackageId,
+                StringComparison.OrdinalIgnoreCase);
+            bool samePack = string.Equals(
+                targetKey.PackId,
+                source.Record.CanonicalKey.PackId,
+                StringComparison.OrdinalIgnoreCase);
+            if (!sameOwner || !samePack)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The Attack target must belong to the currently selected Idle Auto Defense named pack.",
+                    samePackPolicySatisfied: false);
+            }
+
+            GameContentRecordDescriptor targetRecord = source.Index.Records.FirstOrDefault(candidate =>
+                candidate?.CanonicalKey != null && candidate.CanonicalKey.Equals(targetKey));
+            if (targetRecord == null)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The Attack target is absent from the selected named pack's persistent authored index.",
+                    sourceClaimValid: false);
+            }
+            if (!mapping.Descriptor.RecordReference.RequiredCapabilities.All(targetRecord.HasCapability))
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected canonical record is not an Attack.",
+                    requiredCapabilitiesSatisfied: false);
+            }
+            if (!IdleAutoDefenseAttackReferencePolicy.TryResolveTarget(
+                    source.Index,
+                    targetKey,
+                    out targetRecord,
+                    out AttackDefinitionAsset attack,
+                    out string reason))
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    reason,
+                    sourceClaimValid: false);
+            }
+
+            string targetPath = AssetDatabase.GetAssetPath(attack);
+            if (!GameContentSourceIdentity.TryCreate(attack, targetPath, out GameContentSourceIdentity identity))
+                return GameContentReferenceEvaluation.Rejected(targetKey, "The Attack target has no stable source identity.", sourceClaimValid: false);
+            EnsureContentPackIndexes();
+            int claimantCount = _contentPackIndexes.Values.Count(candidate => candidate.SourceClaims.Any(claim =>
+                claim?.SourceIdentity != null && claim.SourceIdentity.Equals(identity)));
+            if (claimantCount != 1)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    claimantCount == 0
+                        ? "The Attack target is not claimed by the selected named pack."
+                        : "The Attack target is claimed by multiple named packs.",
+                    sourceClaimValid: false);
+            }
+
+            if (targetRecord.Validation == null || !targetRecord.Validation.IsValid || targetRecord.HasBrokenReferences)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected Attack has blocking authored validation errors or broken references.",
+                    validationState: GameContentEditValidationState.Invalid);
+            }
+
+            AttackRecipeValidationReport attackReport = AttackRecipeValidator.Validate(
+                attack,
+                AttackRecipeValidationOptions.RuntimeFriendly);
+            if (!attackReport.IsValid)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected Attack fails the current Attack recipe validator.",
+                    validationState: GameContentEditValidationState.Invalid);
+            }
+            if (attack.Delivery == null)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected Attack has no authored delivery definition.",
+                    validationState: GameContentEditValidationState.Invalid);
+            }
+
+            bool projectileWeapon = stats.FireMode == Deucarian.WeaponSystems.WeaponFireMode.Projectile;
+            bool projectileAttack = attack.Delivery.Mode == AttackRecipeDeliveryMode.Projectile;
+            if (projectileWeapon != projectileAttack)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    projectileWeapon
+                        ? "Projectile weapons require a Projectile-delivery Attack."
+                        : "Direct weapons require a non-Projectile Attack.",
+                    providerCompatibilitySatisfied: false);
+            }
+
+            if (!TryValidateProposedWeaponReference(weapon, stats, attack, out bool hasWarnings, out reason))
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    reason,
+                    providerCompatibilitySatisfied: false,
+                    validationState: GameContentEditValidationState.Invalid);
+            }
+
+            GameContentEditValidationState validationState = hasWarnings ||
+                                                               attackReport.WarningCount > 0 ||
+                                                               targetRecord.Validation.WarningCount > 0
+                ? GameContentEditValidationState.Warning
+                : GameContentEditValidationState.Valid;
+            return GameContentReferenceEvaluation.Approved(
+                targetRecord.CanonicalKey,
+                GameContentReferenceRuntimeImpact.Refresh | GameContentReferenceRuntimeImpact.Rebind,
+                validationState);
+        }
+
+        private static bool TryValidateProposedWeaponReference(
+            WeaponDefinitionAsset weapon,
+            WeaponStatsDefinitionAsset stats,
+            AttackDefinitionAsset attack,
+            out bool hasWarnings,
+            out string reason)
+        {
+            hasWarnings = false;
+            reason = string.Empty;
+            WeaponStatsDefinitionAsset statsClone = null;
+            WeaponDefinitionAsset weaponClone = null;
+            try
+            {
+                statsClone = UnityEngine.Object.Instantiate(stats);
+                statsClone.hideFlags = HideFlags.DontSave;
+                var serializedStats = new SerializedObject(statsClone);
+                serializedStats.Update();
+                SerializedProperty attackProperty = serializedStats.FindProperty("_attack");
+                if (attackProperty == null || attackProperty.propertyType != SerializedPropertyType.ObjectReference)
+                {
+                    reason = "The approved WeaponStatsDefinitionAsset._attack mapping is unavailable.";
+                    return false;
+                }
+                attackProperty.objectReferenceValue = attack;
+                serializedStats.ApplyModifiedPropertiesWithoutUndo();
+
+                weaponClone = UnityEngine.Object.Instantiate(weapon);
+                weaponClone.hideFlags = HideFlags.DontSave;
+                var serializedWeapon = new SerializedObject(weaponClone);
+                serializedWeapon.Update();
+                SerializedProperty statsProperty = serializedWeapon.FindProperty("_stats");
+                if (statsProperty == null || statsProperty.propertyType != SerializedPropertyType.ObjectReference)
+                {
+                    reason = "The proposed WeaponDefinition clone cannot bind its stats section.";
+                    return false;
+                }
+                statsProperty.objectReferenceValue = statsClone;
+                serializedWeapon.ApplyModifiedPropertiesWithoutUndo();
+
+                WeaponDefinitionValidationReport report = WeaponDefinitionValidator.Validate(
+                    weaponClone,
+                    WeaponDefinitionValidationOptions.RuntimeFriendly);
+                if (!report.IsValid)
+                {
+                    reason = "The proposed mounted Weapon fails WeaponDefinitionValidator: " + string.Join(
+                        " | ",
+                        report.Issues.Where(issue => issue.IsError).Select(issue => issue.Path + ": " + issue.Message));
+                    return false;
+                }
+                hasWarnings = report.Issues.Any(issue =>
+                    issue.Severity == WeaponDefinitionValidationSeverity.Warning);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                reason = "The proposed mounted Weapon could not be validated safely: " + exception.GetBaseException().Message;
+                return false;
+            }
+            finally
+            {
+                if (weaponClone != null) GameContentAuthoringEditorAssets.DestroyTransientObject(weaponClone);
+                if (statsClone != null) GameContentAuthoringEditorAssets.DestroyTransientObject(statsClone);
+            }
         }
 
         internal GameContentValidationPreview ValidateActualPack(string packId)
@@ -189,7 +391,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                         scalarClone,
                         source.Mappings,
                         stagedValues,
-                        false);
+                        false,
+                        source.Index);
 
                     var replacements = new Dictionary<UnityEngine.Object, UnityEngine.Object>();
                     BuildRecordReplacement(source, scalarClone, replacements, clones);

@@ -31,7 +31,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         public string PropertyPath { get; }
         public SerializedPropertyType PropertyType { get; }
 
-        public bool TryRead(UnityEngine.Object source, out GameContentFieldValue value, out string reason)
+        public bool TryRead(
+            UnityEngine.Object source,
+            out GameContentFieldValue value,
+            out string reason,
+            IdleAutoDefenseContentPackIndex index = null)
         {
             value = null;
             if (source == null)
@@ -72,6 +76,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     }
                     value = GameContentFieldValue.FromEnum(property.enumNames[property.enumValueIndex]);
                     break;
+                case GameContentFieldType.RecordReference:
+                    return TryReadRecordReference(property, index, out value, out reason);
                 default:
                     reason = "Field '" + Descriptor.FieldId + "' uses an unsupported scalar mapping type.";
                     return false;
@@ -81,7 +87,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             return true;
         }
 
-        public bool TryWrite(SerializedObject serialized, GameContentFieldValue value, out string reason)
+        public bool TryWrite(
+            SerializedObject serialized,
+            GameContentFieldValue value,
+            out string reason,
+            IdleAutoDefenseContentPackIndex index = null)
         {
             if (serialized == null)
             {
@@ -133,11 +143,68 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     }
                     property.enumValueIndex = enumIndex;
                     break;
+                case GameContentFieldType.RecordReference:
+                    GameContentRecordReferenceValue reference = value.RecordReferenceValue;
+                    if (reference == null || !reference.IsResolved)
+                    {
+                        reason = "A resolved canonical Attack target is required.";
+                        return false;
+                    }
+                    if (!IdleAutoDefenseAttackReferencePolicy.TryResolveTarget(
+                            index,
+                            reference.TargetKey,
+                            out _,
+                            out AttackDefinitionAsset target,
+                            out reason))
+                        return false;
+                    property.objectReferenceValue = target;
+                    break;
                 default:
                     reason = "Field '" + Descriptor.FieldId + "' uses an unsupported scalar mapping type.";
                     return false;
             }
 
+            reason = string.Empty;
+            return true;
+        }
+
+        private static bool TryReadRecordReference(
+            SerializedProperty property,
+            IdleAutoDefenseContentPackIndex index,
+            out GameContentFieldValue value,
+            out string reason)
+        {
+            UnityEngine.Object target = property.objectReferenceValue;
+            if (target == null)
+            {
+                value = GameContentFieldValue.FromRecordReference(
+                    GameContentRecordReferenceValue.Broken(
+                        "<missing Attack asset>",
+                        "The required authored Attack reference is missing."));
+                reason = string.Empty;
+                return true;
+            }
+
+            if (!IdleAutoDefenseAttackReferencePolicy.TryResolveTarget(
+                    index,
+                    target,
+                    out GameContentRecordDescriptor record,
+                    out _,
+                    out string targetReason))
+            {
+                string original = AssetDatabase.GetAssetPath(target);
+                if (string.IsNullOrWhiteSpace(original)) original = target.name;
+                value = GameContentFieldValue.FromRecordReference(
+                    GameContentRecordReferenceValue.Broken(original, targetReason));
+                reason = string.Empty;
+                return true;
+            }
+
+            value = GameContentFieldValue.FromRecordReference(
+                GameContentRecordReferenceValue.Resolved(
+                    record.CanonicalKey,
+                    record.DisplayName,
+                    record.SourcePath));
             reason = string.Empty;
             return true;
         }
@@ -166,6 +233,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static readonly IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> WeaponMappings = new[]
         {
+            Reference("weapon.attack", "combat.attack", "Attack", "Same-pack authored Attack used by this mounted weapon.", "_attack", 5, CombatGroup),
             Integer("weapon.cooldownTicks", "combat.cooldown-ticks", "Cooldown Ticks", "Simulation ticks between mounted weapon activations.", "_cooldownTicks", 10, CombatGroup, 0),
             Number("weapon.range", "combat.range", "Range", "Mounted weapon targeting range.", "_range", 20, CombatGroup, 0d),
             Integer("weapon.burstCount", "combat.burst-count", "Burst Count", "Attack intents emitted per burst.", "_burstCount", 30, CombatGroup, 1),
@@ -191,6 +259,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public static bool TryResolve(
             UnityEngine.Object recordAsset,
+            IdleAutoDefenseContentPackIndex index,
             out UnityEngine.Object sourceAsset,
             out IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> mappings,
             out string reason)
@@ -219,7 +288,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
             else
             {
-                reason = "This record type has no approved direct scalar fields. IDs, references, lists, waves, rewards, progression, themes, audio, tutorials, and UI structures remain read-only.";
+                reason = "This record type has no approved direct fields. IDs, unapproved references, lists, waves, rewards, progression, themes, audio, tutorials, and UI structures remain read-only.";
                 return false;
             }
 
@@ -234,7 +303,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             for (int i = 0; i < mappings.Count; i++)
             {
                 IdleAutoDefenseSerializedFieldMapping mapping = mappings[i];
-                if (mapping.TryRead(sourceAsset, out _, out string failure)) active.Add(mapping);
+                if (mapping.TryRead(sourceAsset, out _, out string failure, index)) active.Add(mapping);
                 else failures.Add(mapping.Descriptor.DisplayName + ": " + failure);
             }
 
@@ -249,20 +318,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             reason = failures.Count == 0
-                ? "This record exposes no approved scalar fields."
-                : "The approved scalar mapping no longer matches the serialized schema: " + string.Join("; ", failures) + ".";
+                ? "This record exposes no approved fields."
+                : "The approved field mapping no longer matches the serialized schema: " + string.Join("; ", failures) + ".";
             return false;
         }
 
         public static IReadOnlyDictionary<string, GameContentFieldValue> ReadValues(
             UnityEngine.Object source,
-            IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> mappings)
+            IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> mappings,
+            IdleAutoDefenseContentPackIndex index)
         {
             var values = new Dictionary<string, GameContentFieldValue>(StringComparer.Ordinal);
             for (int i = 0; i < mappings.Count; i++)
             {
                 IdleAutoDefenseSerializedFieldMapping mapping = mappings[i];
-                if (!mapping.TryRead(source, out GameContentFieldValue value, out string reason))
+                if (!mapping.TryRead(source, out GameContentFieldValue value, out string reason, index))
                     throw new InvalidOperationException(reason);
                 values.Add(mapping.Descriptor.FieldId, value);
             }
@@ -273,7 +343,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             UnityEngine.Object source,
             IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> mappings,
             IReadOnlyDictionary<string, GameContentFieldValue> values,
-            bool withUndo)
+            bool withUndo,
+            IdleAutoDefenseContentPackIndex index)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             var serialized = new SerializedObject(source);
@@ -283,7 +354,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 IdleAutoDefenseSerializedFieldMapping mapping = mappings[i];
                 if (!values.TryGetValue(mapping.Descriptor.FieldId, out GameContentFieldValue value))
                     throw new InvalidOperationException("The staged snapshot is missing field '" + mapping.Descriptor.FieldId + "'.");
-                if (!mapping.TryWrite(serialized, value, out string reason))
+                if (!mapping.TryWrite(serialized, value, out string reason, index))
                     throw new InvalidOperationException(reason);
             }
 
@@ -363,6 +434,171 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     enumOptions: tokens.Select(token => new GameContentEnumOption(token, token))),
                 propertyPath,
                 SerializedPropertyType.Enum);
+        }
+
+        private static IdleAutoDefenseSerializedFieldMapping Reference(
+            string fieldId,
+            string semanticId,
+            string displayName,
+            string description,
+            string propertyPath,
+            int order,
+            string group)
+        {
+            return new IdleAutoDefenseSerializedFieldMapping(
+                new GameContentFieldDescriptor(
+                    fieldId,
+                    semanticId,
+                    displayName,
+                    description,
+                    GameContentFieldType.RecordReference,
+                    order: order,
+                    group: group,
+                    required: true,
+                    recordReference: new GameContentRecordReferenceFieldDescriptor(
+                        "Attack",
+                        new[] { GameContentRecordCapabilities.Attack },
+                        GameContentReferencePackPolicy.SameSelectedPack,
+                        GameContentReferenceRuntimeImpact.Refresh | GameContentReferenceRuntimeImpact.Rebind,
+                        allowClear: false)),
+                propertyPath,
+                SerializedPropertyType.ObjectReference);
+        }
+    }
+
+    internal static class IdleAutoDefenseAttackReferencePolicy
+    {
+        public static bool TryResolveTarget(
+            IdleAutoDefenseContentPackIndex index,
+            GameContentRecordKey targetKey,
+            out GameContentRecordDescriptor record,
+            out AttackDefinitionAsset attack,
+            out string reason)
+        {
+            record = null;
+            attack = null;
+            if (index == null)
+            {
+                reason = "The selected named-pack index is unavailable.";
+                return false;
+            }
+            if (targetKey == null || !targetKey.IsValid)
+            {
+                reason = "A valid canonical Attack target is required.";
+                return false;
+            }
+
+            GameContentRecordDescriptor[] matches = index.Records.Where(candidate =>
+                    candidate?.CanonicalKey != null && candidate.CanonicalKey.Equals(targetKey))
+                .ToArray();
+            if (matches.Length != 1)
+            {
+                reason = matches.Length == 0
+                    ? "The Attack target is absent from the selected named pack."
+                    : "The Attack target resolves to multiple canonical records.";
+                return false;
+            }
+
+            if (!TryResolveTarget(index, matches[0].SourceAsset, out record, out attack, out reason))
+                return false;
+            if (!record.CanonicalKey.Equals(targetKey))
+            {
+                reason = "The canonical Attack key does not match the persistent target identity.";
+                record = null;
+                attack = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool TryResolveTarget(
+            IdleAutoDefenseContentPackIndex index,
+            UnityEngine.Object candidate,
+            out GameContentRecordDescriptor record,
+            out AttackDefinitionAsset attack,
+            out string reason)
+        {
+            record = null;
+            attack = null;
+            if (index == null)
+            {
+                reason = "The selected named-pack index is unavailable.";
+                return false;
+            }
+            if (candidate == null || candidate.GetType() != typeof(AttackDefinitionAsset))
+            {
+                reason = "The target is not an exact AttackDefinitionAsset.";
+                return false;
+            }
+
+            attack = (AttackDefinitionAsset)candidate;
+            if (!EditorUtility.IsPersistent(attack) || !AssetDatabase.Contains(attack))
+            {
+                reason = "The Attack target is transient or belongs to a scene rather than a persistent asset.";
+                attack = null;
+                return false;
+            }
+
+            string path = AssetDatabase.GetAssetPath(attack);
+            if (!IdleAutoDefenseWritableSourcePolicy.IsAllowedAssetPath(path, index.ContentRootPath, out reason))
+            {
+                attack = null;
+                return false;
+            }
+            if (AssetDatabase.LoadMainAssetAtPath(path) != attack)
+            {
+                reason = "The Attack target is not the exact main asset at its claimed path.";
+                attack = null;
+                return false;
+            }
+            if (MonoScript.FromScriptableObject(attack) == null)
+            {
+                reason = "The Attack target has a missing or unresolved script.";
+                attack = null;
+                return false;
+            }
+            if (!GameContentSourceIdentity.TryCreate(attack, path, out GameContentSourceIdentity identity))
+            {
+                reason = "The Attack target has no stable Unity asset identity.";
+                attack = null;
+                return false;
+            }
+
+            AttackDefinitionAsset resolvedAttack = attack;
+            GameContentRecordDescriptor[] records = index.Records.Where(candidateRecord =>
+                    candidateRecord.SourceAsset == resolvedAttack &&
+                    candidateRecord.HasCapability(GameContentRecordCapabilities.Attack))
+                .ToArray();
+            if (records.Length != 1)
+            {
+                reason = records.Length == 0
+                    ? "The persistent Attack is not canonical in the selected named pack."
+                    : "The persistent Attack is claimed by multiple canonical records in the selected named pack.";
+                attack = null;
+                return false;
+            }
+            if (!string.Equals(records[0].CanonicalKey.SourceId, identity.StableKey, StringComparison.OrdinalIgnoreCase))
+            {
+                reason = "The Attack record's canonical source identity does not match the persistent asset.";
+                attack = null;
+                return false;
+            }
+
+            int claimCount = index.SourceClaims.Count(claim =>
+                claim?.SourceIdentity != null && claim.SourceIdentity.Equals(identity));
+            if (claimCount != 1)
+            {
+                reason = claimCount == 0
+                    ? "The selected named pack does not claim the Attack source."
+                    : "The selected named pack contains multiple claims for the Attack source.";
+                attack = null;
+                return false;
+            }
+
+            record = records[0];
+            reason = string.Empty;
+            return true;
         }
     }
 
@@ -571,7 +807,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     internal static class IdleAutoDefenseSourceRevision
     {
-        public const string SchemaToken = "idle-scriptable-object-scalar-v1";
+        public const string SchemaToken = "idle-scriptable-object-fields-v2";
 
         public static GameContentSourceRevision Create(
             GameContentEditRequest request,
@@ -580,7 +816,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             string fullPath = IdleAutoDefenseWritableSourcePolicy.AssetPathToFullPath(source.SourcePath);
             byte[] fileBytes = File.ReadAllBytes(fullPath);
             IReadOnlyDictionary<string, GameContentFieldValue> values =
-                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings);
+                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings, source.Index);
             var payload = new StringBuilder();
             Append(payload, "schema", SchemaToken);
             Append(payload, "guid", source.SourceGuid);
@@ -595,10 +831,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                          .OrderBy(value => value.Descriptor.FieldId, StringComparer.Ordinal))
             {
                 GameContentFieldValue value = values[mapping.Descriptor.FieldId];
+                string revisionValue = value.FieldType == GameContentFieldType.RecordReference
+                    ? value.RecordReferenceValue?.TargetKey?.StableKey ?? value.ToDisplayString()
+                    : value.ToDisplayString();
                 Append(
                     payload,
                     "field:" + mapping.Descriptor.FieldId,
-                    value.FieldType + ":" + value.ToDisplayString());
+                    value.FieldType + ":" + revisionValue);
             }
 
             return new GameContentSourceRevision(SchemaToken + ":" + Hash(Encoding.UTF8.GetBytes(payload.ToString())));

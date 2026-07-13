@@ -76,7 +76,7 @@ All copied asset GUIDs are remapped. The two source trees have no duplicate GUID
 
 ## Game Content Authoring
 
-Game Content Authoring displays Basic and Scrap Frontier as separate read-only named packs. Each projects 124 canonical records with its own pack ID and source identities. Validate, Reveal Source, and Open Playable Scene route to the selected pack. Source claims prevent the same generated assets from appearing under Project Content.
+Game Content Authoring displays Basic and Scrap Frontier as separate named packs. Each projects 124 canonical records with its own pack ID and source identities. Validate, Reveal Source, and Open Playable Scene route to the selected pack. Safe editing is limited to the documented scalar fields and the Weapon/Tower Attack reference; the latter can select only canonical, compatible Attacks from the same pack. Source claims prevent the same generated assets from appearing under Project Content.
 
 Cross-pack validation compares selected-pack dependencies against other generated named-pack content roots and reports concrete leakage. The source-isolation test also rejects Basic source GUIDs in Scrap, except for the declared shared bootstrap script.
 
@@ -95,5 +95,5 @@ Both Basic Idle Auto Defense and Scrap Frontier remain complete playable games i
 - Presentation is polished placeholder art, not production art.
 - Both scenes coexist, but pack switching is scene-based rather than an in-game pack selector.
 - When Both is generated and setup opens a scene automatically, it opens Basic first; Scrap remains one click away at its visible scene path.
-- Game Content Authoring remains read-only for named packs.
+- Game Content Authoring supports the narrow documented field-editing surface; all other references and complex structures remain read-only.
 - Generic Kenney resources and semantic audio event keys are shared foundations by design; concrete pack assignments are independent.

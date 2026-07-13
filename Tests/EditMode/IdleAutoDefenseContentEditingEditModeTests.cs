@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using Deucarian.Attacks.Authoring;
 using Deucarian.GameContentAuthoring.Editor;
 using Deucarian.RunUpgrades.Authoring;
 using Deucarian.TemplateGameIdleAutoDefense.Editor;
+using Deucarian.WeaponSystems;
 using Deucarian.WeaponSystems.Authoring;
 using NUnit.Framework;
 using UnityEditor;
@@ -103,8 +105,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertMapping(
                 IdleAutoDefenseNamedPackDefinition.Basic.PackId,
                 GameContentRecordCapabilities.Weapon,
-                new[] { "weapon.cooldownTicks", "weapon.range", "weapon.burstCount", "weapon.volleyCount", "weapon.spreadDegrees", "weapon.buildCost" },
-                new[] { "_cooldownTicks", "_range", "_burstCount", "_volleyCount", "_spreadDegrees", "_buildCost" });
+                new[] { "weapon.attack", "weapon.cooldownTicks", "weapon.range", "weapon.burstCount", "weapon.volleyCount", "weapon.spreadDegrees", "weapon.buildCost" },
+                new[] { "_attack", "_cooldownTicks", "_range", "_burstCount", "_volleyCount", "_spreadDegrees", "_buildCost" });
             AssertMapping(
                 IdleAutoDefenseNamedPackDefinition.Basic.PackId,
                 GameContentRecordCapabilities.Upgrade,
@@ -174,7 +176,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 GameContentRecordDescriptor wave = GetRecord(packId, GameContentRecordCapabilities.Wave);
                 GameContentEditAvailability waveAvailability = _provider.CanEdit(Request(pack, wave));
                 Assert.That(waveAvailability.IsEditable, Is.False);
-                Assert.That(waveAvailability.DisabledReason, Does.Contain("no approved direct scalar fields"));
+                Assert.That(waveAvailability.DisabledReason, Does.Contain("no approved direct fields"));
             }
 
             GameContentPackDescriptor basic = GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId);
@@ -230,6 +232,423 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(missingPack.Access.CanEditExisting, Is.False);
                 Assert.That(missingPack.Access.DisabledReason, Does.Contain("Generate or repair"));
             }
+        }
+
+        [Test]
+        public void PersistedAttackDiscoveryUsesOnlyExactNamedPackRoots()
+        {
+            string unrelatedPath = "Assets/T/UnrelatedAttack_" + Guid.NewGuid().ToString("N") + ".asset";
+            var unrelated = ScriptableObject.CreateInstance<AttackDefinitionAsset>();
+            try
+            {
+                AssetDatabase.CreateAsset(unrelated, unrelatedPath);
+                AssetDatabase.ImportAsset(unrelatedPath, ImportAssetOptions.ForceSynchronousImport);
+                _provider.RefreshAfterExternalEdit();
+
+                foreach (string packId in new[]
+                         {
+                             IdleAutoDefenseNamedPackDefinition.Basic.PackId,
+                             IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId
+                         })
+                {
+                    IdleAutoDefenseEditableSource source = ResolveSource(packId, GameContentRecordCapabilities.Attack);
+                    GameContentRecordDescriptor[] attacks = source.Index.Records
+                        .Where(record => record.HasCapability(GameContentRecordCapabilities.Attack))
+                        .ToArray();
+                    Assert.That(attacks, Has.Length.EqualTo(4));
+                    Assert.That(attacks.Select(record => record.CanonicalKey).Distinct().Count(), Is.EqualTo(4));
+                    Assert.That(attacks.All(record => record.SourceAsset is AttackDefinitionAsset), Is.True);
+                    Assert.That(attacks.All(record => record.SourcePath.StartsWith(
+                        source.Index.ContentRootPath + "/",
+                        StringComparison.OrdinalIgnoreCase)), Is.True);
+                    Assert.That(attacks.Any(record => record.SourceAsset == unrelated), Is.False);
+                    foreach (GameContentRecordDescriptor attack in attacks)
+                    {
+                        Assert.That(GameContentSourceIdentity.TryCreate(
+                            attack.SourceAsset,
+                            attack.SourcePath,
+                            out GameContentSourceIdentity identity), Is.True);
+                        Assert.That(source.Index.SourceClaims.Count(claim =>
+                            claim.SourceIdentity.Equals(identity)), Is.EqualTo(1));
+                    }
+                }
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(unrelatedPath);
+                _provider.RefreshAfterExternalEdit();
+            }
+        }
+
+        [Test]
+        public void PersistedAttackRemainsCanonicalWithoutAWeaponReference()
+        {
+            IdleAutoDefenseEditableSource source = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            var stats = (WeaponStatsDefinitionAsset)source.SourceAsset;
+            AttackDefinitionAsset originalAttack = stats.Attack;
+            GameContentRecordDescriptor originalRecord = source.Index.Records.Single(record =>
+                record.SourceAsset == originalAttack && record.HasCapability(GameContentRecordCapabilities.Attack));
+            GameContentRecordDescriptor replacement = GetAlternateCompatibleAttack(source);
+            byte[] originalBytes = ReadFileBytes(source.SourcePath);
+            try
+            {
+                PersistAttackReference(source, (AttackDefinitionAsset)replacement.SourceAsset);
+                GameContentRecordDescriptor[] attacks = _provider.GetRecords(source.Index.Definition.PackId)
+                    .Where(record => record.HasCapability(GameContentRecordCapabilities.Attack))
+                    .ToArray();
+                Assert.That(attacks, Has.Length.EqualTo(4));
+                GameContentRecordDescriptor unreferenced = attacks.Single(record =>
+                    record.CanonicalKey.Equals(originalRecord.CanonicalKey));
+                Assert.That(unreferenced.SourceAsset, Is.SameAs(originalAttack));
+                Assert.That(unreferenced.InboundReferences, Is.Empty);
+            }
+            finally
+            {
+                RestoreFileBytes(source.SourcePath, originalBytes);
+            }
+            Assert.That(_provider.ValidatePack(source.Index.Definition.PackId).IsValid, Is.True);
+        }
+
+        [Test]
+        public void DuplicatePersistedAttackIdDisablesOnlyItsNamedPack()
+        {
+            IdleAutoDefenseEditableSource source = ResolveSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId,
+                GameContentRecordCapabilities.Attack);
+            string duplicatePath = source.Index.ContentRootPath + "/Attacks/DuplicateAttackDefinition.asset";
+            try
+            {
+                Assert.That(AssetDatabase.CopyAsset(source.Record.SourcePath, duplicatePath), Is.True);
+                AssetDatabase.ImportAsset(duplicatePath, ImportAssetOptions.ForceSynchronousImport);
+                _provider.RefreshAfterExternalEdit();
+                GameContentPackDescriptor basic = GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+                GameContentPackDescriptor scrap = GetPack(IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId);
+                Assert.That(basic.SourceState, Is.EqualTo(GameContentPackSourceState.ValidationFailed));
+                Assert.That(basic.Validation.Issues.Any(issue =>
+                    issue.Message.Contains("Duplicate stable record ID", StringComparison.OrdinalIgnoreCase)), Is.True);
+                Assert.That(scrap.SourceState, Is.EqualTo(GameContentPackSourceState.Available));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(duplicatePath);
+                _provider.RefreshAfterExternalEdit();
+            }
+            Assert.That(GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId).SourceState,
+                Is.EqualTo(GameContentPackSourceState.Available));
+        }
+
+        [Test]
+        public void WeaponAttackSelectorEnforcesCanonicalPackTypeClaimAndDeliveryRules()
+        {
+            GameContentPackDescriptor basic = GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            IdleAutoDefenseEditableSource source = ResolveStartingWeaponSource(basic.PackId);
+            GameContentPackCatalog catalog = GameContentPackCatalog.Build(
+                new IGameContentAuthoringProvider[] { _provider });
+            GameContentPackContext context = new GameContentPackSelectionState().Select(catalog, basic.StableKey);
+            GameContentRecordDescriptor weapon = context.Records.Single(record =>
+                record.CanonicalKey.Equals(source.Record.CanonicalKey));
+            using (var coordinator = new GameContentEditSessionCoordinator())
+            {
+                GameContentEditBeginResult begin = coordinator.BeginEdit(context, weapon, "weapon");
+                Assert.That(begin.Succeeded, Is.True, begin.Message);
+                GameContentFieldDescriptor field = begin.Session.Fields.Single(candidate =>
+                    candidate.FieldId == "weapon.attack");
+                Assert.That(field.FieldType, Is.EqualTo(GameContentFieldType.RecordReference));
+                Assert.That(field.Required, Is.True);
+                Assert.That(field.RecordReference.AllowClear, Is.False);
+                Assert.That(field.RecordReference.PackPolicy, Is.EqualTo(GameContentReferencePackPolicy.SameSelectedPack));
+                Assert.That(field.RecordReference.RequiredCapabilities,
+                    Is.EqualTo(new[] { GameContentRecordCapabilities.Attack }));
+                Assert.That(begin.Session.Snapshot.FieldValues["weapon.attack"].RecordReferenceValue.IsResolved, Is.True);
+
+                GameContentReferenceCandidateSet candidates = coordinator.GetReferenceCandidates(
+                    begin.Session,
+                    "weapon.attack");
+                Assert.That(candidates.Candidates.Count, Is.EqualTo(2));
+                Assert.That(candidates.Candidates.All(candidate =>
+                    candidate.Record.CanonicalKey.PackId == basic.PackId &&
+                    candidate.Record.SourceAsset is AttackDefinitionAsset), Is.True);
+                bool projectileWeapon = ((WeaponStatsDefinitionAsset)source.SourceAsset).FireMode == WeaponFireMode.Projectile;
+                Assert.That(candidates.Candidates.All(candidate =>
+                    (((AttackDefinitionAsset)candidate.Record.SourceAsset).Delivery.Mode == AttackRecipeDeliveryMode.Projectile) == projectileWeapon), Is.True);
+
+                GameContentRecordDescriptor scrapAttack = GetRecord(
+                    IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId,
+                    GameContentRecordCapabilities.Attack);
+                Assert.That(coordinator.EvaluateReferenceTarget(
+                    begin.Session,
+                    "weapon.attack",
+                    scrapAttack.CanonicalKey).IsValid, Is.False);
+
+                GameContentRecordDescriptor enemy = GetRecord(
+                    basic.PackId,
+                    GameContentRecordCapabilities.Enemy);
+                GameContentReferenceEvaluation wrongType = coordinator.EvaluateReferenceTarget(
+                    begin.Session,
+                    "weapon.attack",
+                    enemy.CanonicalKey);
+                Assert.That(wrongType.IsValid, Is.False);
+                Assert.That(wrongType.RequiredCapabilitiesSatisfied, Is.False);
+
+                GameContentRecordDescriptor incompatible = source.Index.Records.First(record =>
+                    record.HasCapability(GameContentRecordCapabilities.Attack) &&
+                    ((((AttackDefinitionAsset)record.SourceAsset).Delivery.Mode == AttackRecipeDeliveryMode.Projectile) != projectileWeapon));
+                GameContentReferenceEvaluation wrongDelivery = coordinator.EvaluateReferenceTarget(
+                    begin.Session,
+                    "weapon.attack",
+                    incompatible.CanonicalKey);
+                Assert.That(wrongDelivery.IsValid, Is.False);
+                Assert.That(wrongDelivery.Reason, Does.Contain(projectileWeapon ? "Projectile-delivery" : "non-Projectile"));
+
+                var crafted = new GameContentRecordKey(
+                    source.Record.CanonicalKey.OwningPackageId,
+                    source.Record.CanonicalKey.PackId,
+                    candidates.Candidates[0].Record.CanonicalKey.SourceRecordId,
+                    "unity-asset-guid::crafted-or-missing-script");
+                Assert.That(coordinator.EvaluateReferenceTarget(
+                    begin.Session,
+                    "weapon.attack",
+                    crafted).IsValid, Is.False);
+                Assert.That(coordinator.Apply(
+                    begin.Session,
+                    "weapon.attack",
+                    GameContentFieldValue.FromRecordReference(GameContentRecordReferenceValue.None())).Succeeded, Is.False);
+            }
+
+            var transientAttack = ScriptableObject.CreateInstance<AttackDefinitionAsset>();
+            var sceneObject = new GameObject("scene-attack-target");
+            try
+            {
+                Assert.That(IdleAutoDefenseAttackReferencePolicy.TryResolveTarget(
+                    source.Index,
+                    transientAttack,
+                    out _,
+                    out _,
+                    out string transientReason), Is.False);
+                Assert.That(transientReason, Does.Contain("transient"));
+                Assert.That(IdleAutoDefenseAttackReferencePolicy.TryResolveTarget(
+                    source.Index,
+                    sceneObject,
+                    out _,
+                    out _,
+                    out _), Is.False);
+                GameContentRecordDescriptor foreign = GetRecord(
+                    IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId,
+                    GameContentRecordCapabilities.Attack);
+                Assert.That(IdleAutoDefenseAttackReferencePolicy.TryResolveTarget(
+                    source.Index,
+                    foreign.SourceAsset,
+                    out _,
+                    out _,
+                    out _), Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sceneObject);
+                UnityEngine.Object.DestroyImmediate(transientAttack);
+            }
+        }
+
+        [Test]
+        public void BasicAttackReferenceCommitIsUndoableRuntimeVisibleAndExactlyRollbackSafe()
+        {
+            IdleAutoDefenseEditableSource source = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            IdleAutoDefenseEditableSource scrapSource = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId);
+            var weapon = (WeaponDefinitionAsset)source.Record.SourceAsset;
+            var stats = (WeaponStatsDefinitionAsset)source.SourceAsset;
+            AttackDefinitionAsset originalAttack = stats.Attack;
+            GameContentRecordDescriptor originalRecord = source.Index.Records.Single(record =>
+                record.SourceAsset == originalAttack && record.HasCapability(GameContentRecordCapabilities.Attack));
+            GameContentRecordDescriptor replacementRecord = GetAlternateCompatibleAttack(source);
+            var replacement = (AttackDefinitionAsset)replacementRecord.SourceAsset;
+            byte[] originalBytes = ReadFileBytes(source.SourcePath);
+            string originalHash = FileHash(source.SourcePath);
+            string scrapHash = FileHash(scrapSource.SourcePath);
+            string sourceGuid = source.SourceGuid;
+            string sourceObjectId = source.GlobalObjectId;
+
+            using (IGameContentEditSession session = _provider.BeginEdit(
+                       Request(GetPack(source.Index.Definition.PackId), source.Record)))
+            {
+                Assert.That(session, Is.InstanceOf<IGameContentRecordReferenceEditSession>());
+                Assert.That(session.Fields.Where(field => field.FieldType == GameContentFieldType.RecordReference)
+                    .Select(field => field.FieldId), Is.EqualTo(new[] { "weapon.attack" }));
+                Assert.That(session.Apply(
+                    "weapon.attack",
+                    ReferenceValue(replacementRecord)).Succeeded, Is.True);
+                Assert.That(stats.Attack, Is.SameAs(originalAttack));
+                Assert.That(FileHash(source.SourcePath), Is.EqualTo(originalHash));
+                GameContentValidationPreview preview = session.Preview();
+                Assert.That(preview.CanCommit, Is.True, FormatIssues(preview));
+                GameContentCommitResult commit = session.Commit(true);
+                Assert.That(commit.Succeeded, Is.True, commit.Message);
+                Assert.That(stats.Attack, Is.SameAs(replacement));
+                Assert.That(weapon.ToRuntimeDefinition().AttackDefinitionId.Value, Is.EqualTo(replacement.Id));
+                Assert.That(AssetDatabase.AssetPathToGUID(source.SourcePath), Is.EqualTo(sourceGuid));
+                Assert.That(GlobalObjectId.GetGlobalObjectIdSlow(stats).ToString(), Is.EqualTo(sourceObjectId));
+                Assert.That(FileHash(scrapSource.SourcePath), Is.EqualTo(scrapHash));
+
+                GameContentRecordDescriptor canonicalOriginal = _provider.GetRecords(source.Index.Definition.PackId)
+                    .Single(record => record.CanonicalKey.Equals(originalRecord.CanonicalKey));
+                Assert.That(canonicalOriginal.SourceAsset, Is.SameAs(originalAttack));
+                Assert.That(canonicalOriginal.InboundReferences, Is.Empty);
+                Assert.That(_provider.GetSourceClaims(source.Index.Definition.PackId).Any(claim =>
+                    claim.SourcePath == originalRecord.SourcePath), Is.True);
+                GameContentPackResolution resolution = GameContentPackValidator.Resolve(
+                    source.Index.PackAsset,
+                    source.Index.ContentSetAsset);
+                Assert.That(resolution.IsValid, Is.True);
+                Assert.That(resolution.ContentSetResolution.AttackRecipes, Does.Contain(replacement));
+                AssertStrictRuntimeConsumes(source.Index.ContentSetAsset, replacement.Id);
+
+                Undo.PerformUndo();
+                Assert.That(stats.Attack, Is.SameAs(originalAttack));
+                Assert.That(session.CheckStale().IsStale, Is.True);
+                Undo.PerformRedo();
+                Assert.That(stats.Attack, Is.SameAs(replacement));
+                Assert.That(session.CheckStale().IsStale, Is.False);
+                Assert.That(session.Rollback().Succeeded, Is.True);
+            }
+
+            Assert.That(FileHash(source.SourcePath), Is.EqualTo(originalHash));
+            Assert.That(ReadFileBytes(source.SourcePath), Is.EqualTo(originalBytes));
+            Assert.That(FileHash(scrapSource.SourcePath), Is.EqualTo(scrapHash));
+            Assert.That(_provider.ValidatePack(source.Index.Definition.PackId).IsValid, Is.True);
+        }
+
+        [Test]
+        public void ScrapAttackReferenceCommitCannotAlterBasic()
+        {
+            IdleAutoDefenseEditableSource scrap = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId);
+            IdleAutoDefenseEditableSource basic = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            var stats = (WeaponStatsDefinitionAsset)scrap.SourceAsset;
+            AttackDefinitionAsset original = stats.Attack;
+            GameContentRecordDescriptor replacement = GetAlternateCompatibleAttack(scrap);
+            string scrapHash = FileHash(scrap.SourcePath);
+            string basicHash = FileHash(basic.SourcePath);
+            using (IGameContentEditSession session = _provider.BeginEdit(
+                       Request(GetPack(scrap.Index.Definition.PackId), scrap.Record)))
+            {
+                Assert.That(session.Apply("weapon.attack", ReferenceValue(replacement)).Succeeded, Is.True);
+                Assert.That(session.Commit(true).Succeeded, Is.True);
+                Assert.That(stats.Attack, Is.SameAs(replacement.SourceAsset));
+                Assert.That(FileHash(basic.SourcePath), Is.EqualTo(basicHash));
+                Assert.That(session.Rollback().Succeeded, Is.True);
+            }
+            Assert.That(stats.Attack, Is.SameAs(original));
+            Assert.That(FileHash(scrap.SourcePath), Is.EqualTo(scrapHash));
+            Assert.That(FileHash(basic.SourcePath), Is.EqualTo(basicHash));
+        }
+
+        [Test]
+        public void DisappearedAttackTargetBlocksCommitWithoutChangingWeapon()
+        {
+            IdleAutoDefenseEditableSource source = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            GameContentRecordDescriptor replacement = GetAlternateCompatibleAttack(source);
+            string originalTargetPath = replacement.SourcePath;
+            string temporaryTargetPath = AssetDatabase.GenerateUniqueAssetPath(
+                _targetRoot + "/Moved_" + Path.GetFileName(originalTargetPath));
+            byte[] sourceBytes = ReadFileBytes(source.SourcePath);
+            IGameContentEditSession session = _provider.BeginEdit(
+                Request(GetPack(source.Index.Definition.PackId), source.Record));
+            try
+            {
+                Assert.That(session.Apply("weapon.attack", ReferenceValue(replacement)).Succeeded, Is.True);
+                Assert.That(AssetDatabase.MoveAsset(originalTargetPath, temporaryTargetPath), Is.Empty);
+                _provider.RefreshAfterExternalEdit();
+                Assert.That(session.Commit(true).Succeeded, Is.False);
+                Assert.That(session.State, Is.EqualTo(GameContentEditSessionState.Stale));
+                Assert.That(ReadFileBytes(source.SourcePath), Is.EqualTo(sourceBytes));
+            }
+            finally
+            {
+                session.Dispose();
+                Assert.That(AssetDatabase.MoveAsset(temporaryTargetPath, originalTargetPath), Is.Empty);
+                _provider.RefreshAfterExternalEdit();
+            }
+            GameContentAuthoringValidationResult validation = _provider.ValidatePack(source.Index.Definition.PackId);
+            Assert.That(
+                validation.IsValid,
+                Is.True,
+                string.Join(Environment.NewLine, validation.Issues.Select(issue => issue.Path + ": " + issue.Message)));
+        }
+
+        [Test]
+        public void InvalidatedAttackTargetBlocksPreviewAndCommit()
+        {
+            IdleAutoDefenseEditableSource source = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            GameContentRecordDescriptor replacement = GetAlternateCompatibleAttack(source);
+            var attack = (AttackDefinitionAsset)replacement.SourceAsset;
+            string mechanicsPath = AssetDatabase.GetAssetPath(attack.Mechanics);
+            byte[] mechanicsBytes = ReadFileBytes(mechanicsPath);
+            byte[] sourceBytes = ReadFileBytes(source.SourcePath);
+            IGameContentEditSession session = _provider.BeginEdit(
+                Request(GetPack(source.Index.Definition.PackId), source.Record));
+            try
+            {
+                Assert.That(session.Apply("weapon.attack", ReferenceValue(replacement)).Succeeded, Is.True);
+                var serialized = new SerializedObject(attack.Mechanics);
+                serialized.Update();
+                serialized.FindProperty("_damageAmount").floatValue = 0f;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(attack.Mechanics);
+                AssetDatabase.SaveAssetIfDirty(attack.Mechanics);
+                AssetDatabase.ImportAsset(mechanicsPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                _provider.RefreshAfterExternalEdit();
+                Assert.That(session.Preview().CanCommit, Is.False);
+                Assert.That(session.Commit(true).Succeeded, Is.False);
+                Assert.That(ReadFileBytes(source.SourcePath), Is.EqualTo(sourceBytes));
+            }
+            finally
+            {
+                session.Dispose();
+                RestoreFileBytes(mechanicsPath, mechanicsBytes);
+            }
+            Assert.That(_provider.ValidatePack(source.Index.Definition.PackId).IsValid, Is.True);
+        }
+
+        [Test]
+        public void ReferenceRollbackRefusesToOverwriteLaterSourceEdit()
+        {
+            IdleAutoDefenseEditableSource source = ResolveStartingWeaponSource(
+                IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId);
+            GameContentRecordDescriptor replacement = GetAlternateCompatibleAttack(source);
+            var stats = (WeaponStatsDefinitionAsset)source.SourceAsset;
+            byte[] originalBytes = ReadFileBytes(source.SourcePath);
+            int laterCooldown = stats.CooldownTicks + 1;
+            IGameContentEditSession session = _provider.BeginEdit(
+                Request(GetPack(source.Index.Definition.PackId), source.Record));
+            try
+            {
+                Assert.That(session.Apply("weapon.attack", ReferenceValue(replacement)).Succeeded, Is.True);
+                Assert.That(session.Commit(true).Succeeded, Is.True);
+                var serialized = new SerializedObject(stats);
+                serialized.Update();
+                serialized.FindProperty("_cooldownTicks").intValue = laterCooldown;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(stats);
+                AssetDatabase.SaveAssetIfDirty(stats);
+                AssetDatabase.ImportAsset(source.SourcePath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                _provider.RefreshAfterExternalEdit();
+                GameContentRollbackResult rollback = session.Rollback();
+                Assert.That(rollback.Succeeded, Is.False);
+                Assert.That(session.State, Is.EqualTo(GameContentEditSessionState.Stale));
+                Assert.That(stats.Attack, Is.SameAs(replacement.SourceAsset));
+                Assert.That(stats.CooldownTicks, Is.EqualTo(laterCooldown));
+            }
+            finally
+            {
+                session.Dispose();
+                RestoreFileBytes(source.SourcePath, originalBytes);
+            }
+            Assert.That(_provider.ValidatePack(source.Index.Definition.PackId).IsValid, Is.True);
         }
 
         [Test]
@@ -333,7 +752,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 GameContentRecordCapabilities.Attack);
             GameContentEditRequest request = Request(GetPack(source.Index.Definition.PackId), source.Record);
             IReadOnlyDictionary<string, GameContentFieldValue> originals =
-                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings);
+                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings, source.Index);
             byte[] beforeBytes = ReadFileBytes(source.SourcePath);
             string beforeHash = FileHash(source.SourcePath);
             IGameContentEditSession session = _provider.BeginEdit(request);
@@ -474,7 +893,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId,
                 GameContentRecordCapabilities.Upgrade);
             IReadOnlyDictionary<string, GameContentFieldValue> originals =
-                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings);
+                IdleAutoDefenseContentEditMappings.ReadValues(source.SourceAsset, source.Mappings, source.Index);
             byte[] beforeBytes = ReadFileBytes(source.SourcePath);
             string beforeHash = FileHash(source.SourcePath);
             IGameContentEditSession session = _provider.BeginEdit(
@@ -489,7 +908,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     GameContentRecordCapabilities.Upgrade,
                     record => record.CanonicalKey.Equals(source.Record.CanonicalKey));
                 Dictionary<string, GameContentFieldValue> external = CopyValues(
-                    IdleAutoDefenseContentEditMappings.ReadValues(committedSource.SourceAsset, committedSource.Mappings));
+                    IdleAutoDefenseContentEditMappings.ReadValues(
+                        committedSource.SourceAsset,
+                        committedSource.Mappings,
+                        committedSource.Index));
                 long laterMaxRank = external["upgrade.maxRank"].IntegerValue + 1;
                 external["upgrade.maxRank"] = GameContentFieldValue.FromInteger(laterMaxRank);
                 PersistValues(committedSource, external);
@@ -502,7 +924,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     GameContentRecordCapabilities.Upgrade,
                     record => record.CanonicalKey.Equals(source.Record.CanonicalKey));
                 IReadOnlyDictionary<string, GameContentFieldValue> afterValues =
-                    IdleAutoDefenseContentEditMappings.ReadValues(afterRefusal.SourceAsset, afterRefusal.Mappings);
+                    IdleAutoDefenseContentEditMappings.ReadValues(
+                        afterRefusal.SourceAsset,
+                        afterRefusal.Mappings,
+                        afterRefusal.Index);
                 Assert.That(afterValues["upgrade.weight"].IntegerValue, Is.EqualTo(committedWeight));
                 Assert.That(afterValues["upgrade.maxRank"].IntegerValue, Is.EqualTo(laterMaxRank));
             }
@@ -537,6 +962,92 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
         }
 
+        private IdleAutoDefenseEditableSource ResolveStartingWeaponSource(string packId)
+        {
+            return ResolveSource(
+                packId,
+                GameContentRecordCapabilities.Weapon,
+                record => record.SourceAsset == GetPackIndex(packId).ContentSetAsset.StartingWeapon);
+        }
+
+        private IdleAutoDefenseContentPackIndex GetPackIndex(string packId)
+        {
+            IdleAutoDefenseEditableSource source = ResolveSource(packId, GameContentRecordCapabilities.Attack);
+            return source.Index;
+        }
+
+        private static GameContentRecordDescriptor GetAlternateCompatibleAttack(
+            IdleAutoDefenseEditableSource source)
+        {
+            var stats = (WeaponStatsDefinitionAsset)source.SourceAsset;
+            bool projectile = stats.FireMode == WeaponFireMode.Projectile;
+            return source.Index.Records.First(record =>
+                record.HasCapability(GameContentRecordCapabilities.Attack) &&
+                record.SourceAsset != stats.Attack &&
+                record.SourceAsset is AttackDefinitionAsset attack &&
+                attack.Delivery != null &&
+                (attack.Delivery.Mode == AttackRecipeDeliveryMode.Projectile) == projectile);
+        }
+
+        private static GameContentFieldValue ReferenceValue(GameContentRecordDescriptor target)
+        {
+            return GameContentFieldValue.FromRecordReference(
+                GameContentRecordReferenceValue.Resolved(
+                    target.CanonicalKey,
+                    target.DisplayName,
+                    target.SourcePath));
+        }
+
+        private void PersistAttackReference(
+            IdleAutoDefenseEditableSource source,
+            AttackDefinitionAsset attack)
+        {
+            var serialized = new SerializedObject(source.SourceAsset);
+            serialized.Update();
+            SerializedProperty property = serialized.FindProperty("_attack");
+            Assert.That(property, Is.Not.Null);
+            Assert.That(property.propertyType, Is.EqualTo(SerializedPropertyType.ObjectReference));
+            property.objectReferenceValue = attack;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(source.SourceAsset);
+            AssetDatabase.SaveAssetIfDirty(source.SourceAsset);
+            AssetDatabase.ImportAsset(
+                source.SourcePath,
+                ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            _provider.RefreshAfterExternalEdit();
+        }
+
+        private static void AssertStrictRuntimeConsumes(
+            GameContentSetAsset contentSet,
+            string expectedAttackId)
+        {
+            Assert.That(contentSet.StartingWeapon.ToRuntimeDefinition().AttackDefinitionId.Value,
+                Is.EqualTo(expectedAttackId));
+            GameObject host = new GameObject("idle-reference-runtime-proof");
+            host.SetActive(false);
+            IdleAutoDefenseTemplateController controller = null;
+            try
+            {
+                controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+                FieldInfo field = typeof(IdleAutoDefenseTemplateController).GetField(
+                    "_contentSet",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(field, Is.Not.Null);
+                field.SetValue(controller, contentSet);
+                controller.ConfigureStrictAuthoredStartup(true);
+                host.SetActive(true);
+                controller.Build();
+                Assert.That(controller.StartupBlocked, Is.False, controller.StartupError);
+                Assert.That(controller.UsingAuthoredCore, Is.True);
+                Assert.That(controller.FallbackModeActive, Is.False);
+                Assert.That(controller.Runtime, Is.Not.Null);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
         private void AssertMapping(
             string packId,
             GameContentRecordCapability capability,
@@ -549,8 +1060,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.That(source.Mappings.Select(mapping => mapping.Descriptor.Order), Is.Ordered);
             Assert.That(source.Mappings.Any(mapping =>
                 mapping.PropertyPath.Contains("_id", StringComparison.OrdinalIgnoreCase) ||
-                mapping.PropertyType == SerializedPropertyType.ObjectReference ||
                 mapping.PropertyType == SerializedPropertyType.Generic), Is.False);
+            Assert.That(source.Mappings.Where(mapping => mapping.PropertyType == SerializedPropertyType.ObjectReference)
+                .Select(mapping => mapping.PropertyPath), Is.SubsetOf(new[] { "_attack" }));
         }
 
         private GameContentPackDescriptor GetPack(string packId)
@@ -588,7 +1100,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             IdleAutoDefenseEditableSource source,
             IReadOnlyDictionary<string, GameContentFieldValue> values)
         {
-            IdleAutoDefenseContentEditMappings.ApplyValues(source.SourceAsset, source.Mappings, values, false);
+            IdleAutoDefenseContentEditMappings.ApplyValues(
+                source.SourceAsset,
+                source.Mappings,
+                values,
+                false,
+                source.Index);
             EditorUtility.SetDirty(source.SourceAsset);
             AssetDatabase.SaveAssetIfDirty(source.SourceAsset);
             AssetDatabase.ImportAsset(

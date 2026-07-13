@@ -3396,7 +3396,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.That(pack.DisplayName, Is.EqualTo(IdleAutoDefenseContentPackIndex.DisplayName));
             Assert.That(pack.SourceState, Is.EqualTo(GameContentPackSourceState.Available), FormatValidation(pack.Validation));
             Assert.That(pack.Access.CanEditExisting, Is.True);
-            Assert.That(pack.Access.PersistenceLabel, Is.EqualTo("Staged project-owned ScriptableObject scalar editing"));
+            Assert.That(pack.Access.PersistenceLabel, Is.EqualTo("Staged project-owned ScriptableObject field editing"));
             Assert.That(pack.Manifest, Is.Null);
             Assert.That(pack.PlayableScene, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(pack.PlayableScene), Is.EqualTo(generatedSceneAssetPath));

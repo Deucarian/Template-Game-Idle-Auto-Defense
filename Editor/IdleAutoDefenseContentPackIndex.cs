@@ -179,7 +179,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (packCanEdit) capabilities |= GameContentPackBackendCapability.EditExisting;
             var access = new GameContentPackAccessDescriptor(
                 capabilities,
-                "Staged project-owned ScriptableObject scalar editing",
+                "Staged project-owned ScriptableObject field editing",
                 packCanEdit
                     ? string.Empty
                     : "Generate or repair the named pack and resolve its validation or discovery conflict before editing.");
@@ -359,11 +359,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             ICollection<GameContentAuthoringValidationIssue> packIssues)
         {
             if (contentSet == null) return Array.Empty<GameContentRecordDescriptor>();
-            AttackDefinitionAsset[] attacks = contentSet.AvailableWeapons
-                .Where(weapon => weapon != null && weapon.Stats != null && weapon.Stats.Attack != null)
-                .Select(weapon => weapon.Stats.Attack)
-                .Distinct()
-                .ToArray();
+            AttackDefinitionAsset[] attacks = FindPersistedAttackAssets(contentRoot);
             EnemyDefinitionAsset[] enemies = contentSet.EnemyPool.Where(value => value != null)
                 .Distinct().ToArray();
             WaveDefinitionAsset[] waves = contentSet.WaveSet.Where(value => value != null)
@@ -1380,6 +1376,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 objects.Add(contentSet.GameRules);
             }
 
+            foreach (AttackDefinitionAsset attack in FindPersistedAttackAssets(contentRoot))
+            {
+                objects.Add(attack);
+                objects.Add(attack.Mechanics);
+                objects.Add(attack.Targeting);
+                objects.Add(attack.Delivery);
+                objects.Add(attack.StatusEffects);
+                objects.Add(attack.Presentation);
+            }
+
             IdleAutoDefensePlayerExperienceAsset experience = FindFirstAsset<IdleAutoDefensePlayerExperienceAsset>(contentRoot);
             if (experience != null)
             {
@@ -1576,6 +1582,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 if (asset != null) return asset;
             }
             return null;
+        }
+
+        private static AttackDefinitionAsset[] FindPersistedAttackAssets(string searchRoot)
+        {
+            string root = NormalizePath(searchRoot).TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(root) ||
+                !root.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) ||
+                !AssetDatabase.IsValidFolder(root))
+                return Array.Empty<AttackDefinitionAsset>();
+
+            return AssetDatabase.FindAssets("t:" + nameof(AttackDefinitionAsset), new[] { root })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Select(NormalizePath)
+                .Where(path => path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Select(AssetDatabase.LoadAssetAtPath<AttackDefinitionAsset>)
+                .Where(asset => asset != null && EditorUtility.IsPersistent(asset))
+                .Distinct()
+                .ToArray();
         }
 
         private static GameContentAuthoringValidationResult PresentationValidation(IReadOnlyList<string> issues, string path)
