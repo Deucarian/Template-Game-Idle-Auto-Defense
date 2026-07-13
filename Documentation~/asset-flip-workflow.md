@@ -26,3 +26,11 @@ Keep reusable framework behavior in Deucarian packages. Keep product player flow
 The generated `GameContentSetAsset` is the graph root, not a duplicate balance container. Follow its references to `Rewards`, `Economy`, `RunProfiles`, `Progression`, `OfflineProgression`, and `GameRules`; tune weapon, attack, enemy, wave, and run-upgrade assets in their existing folders. The controller reads these assets at runtime. Do not maintain a separate reward catalog, JSON mirror, economy table, or tower map on the scene object.
 
 After an asset flip, run content validation and press Play. A valid generated scene reports `UsingAuthoredCore == true` and `FallbackModeActive == false`. If required content is missing, strict startup intentionally blocks; fix the reported asset/reference instead of enabling fallback.
+
+## Staged Tuning In GCA
+
+For a small scalar tuning change, select the generated Basic or Scrap named pack in `Tools > Deucarian > Game Content Authoring`, open an Attack, Enemy, Weapon/Tower, or Upgrade record, and choose **Edit Existing**. Apply values and use the workbench Undo/Redo freely; the generated ScriptableObject is untouched until Commit. Review the cloned-pack validation result, confirm warnings deliberately, then Commit. Cancel is byte-neutral.
+
+After Commit, Unity Undo/Redo is available and GCA reindexes automatically. The workbench Rollback action restores the exact pre-edit source only if no later source change occurred. If the setup wizard repairs/regenerates content or another tool edits the asset, the session becomes stale; cancel it and reopen the current record instead of forcing an overwrite.
+
+This workflow edits only the selected pack's claimed project-owned scalar asset. Basic and Scrap stay isolated. IDs, references, lists, wave schedules, nested catalogs, presentation structures, and JSON are outside this workflow. Do not run setup repair while an edit is staged. ScriptableObjects remain authoritative and no mirror or replacement asset is created.

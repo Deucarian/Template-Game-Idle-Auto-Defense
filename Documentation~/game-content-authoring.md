@@ -7,12 +7,12 @@ Running the existing Idle Auto Defense setup wizard generates project-owned auth
 - Display name: `Basic Idle Auto Defense`
 - Pack ID: `contentpack.idle-auto-defense.playable`
 - Owner: `com.deucarian.template.game.idle-auto-defense`
-- Persistence: read-only ScriptableObject graph
+- Persistence: staged project-owned ScriptableObject scalar editing
 
 - Display name: `Scrap Frontier`
 - Pack ID: `contentpack.idle-auto-defense.scrap-frontier`
 - Owner: `com.deucarian.template.game.idle-auto-defense`
-- Persistence: read-only ScriptableObject graph
+- Persistence: staged project-owned ScriptableObject scalar editing
 
 The generated `GameContentPackAsset`, its default `GameContentSetAsset`, and the set's referenced ScriptableObjects form the source-of-truth graph. The authoring integration does not create a GCA manifest, JSON mirror, content copy, or second database. The provider ignores private `TemplateSource~` assets and discovers only generated project content with the expected serialized pack ID.
 
@@ -59,8 +59,29 @@ If setup has not run, each named pack remains visible in a missing/generated-con
 - **Open Playable Scene** resolves the generated scene that references the selected pack and opens it.
 - **Open Setup Wizard** appears when generated content is missing and calls the existing setup command.
 
-Browsing is read-only and must not dirty assets, prefabs, metadata, or scenes. Transactional editing is a later milestone.
+Browsing remains non-mutating. For a supported record, **Edit Existing** opens the shared GCA transaction workbench without dirtying the source asset.
+
+## Safe Scalar Editing
+
+Editing is deliberately limited to one standalone scalar section asset per transaction:
+
+| Record | Writable fields | Serialized owner |
+|---|---|---|
+| Attack | cooldown ticks, range, damage | `AttackMechanicsDefinitionAsset` |
+| Enemy | maximum health, move speed, reward value, contact damage, collision radius | `EnemyStatsDefinitionAsset` |
+| Weapon / Tower | cooldown ticks, range, burst count, volley count, spread degrees, build cost | `WeaponStatsDefinitionAsset` |
+| Run Upgrade | rarity, draft weight, maximum rank | `RunUpgradeEconomyDefinitionAsset` |
+
+The provider uses explicit field IDs and `SerializedProperty` paths; it never exposes an arbitrary serialized property tree. A missing path, mismatched property type, invalid scalar type, non-finite number, or out-of-range value disables or rejects that edit safely.
+
+The workbench captures the asset GUID, `GlobalObjectId`, normalized path, exact file SHA-256, dependency hash, mapped values, selected pack, canonical record, and backend schema. Apply, in-session Undo/Redo, Preview, and Cancel only change staged memory. Preview substitutes in-memory clones into the complete selected pack and runs the existing strict validators. Errors block Commit and warnings require explicit confirmation.
+
+Commit rechecks the revision and source policy, writes only the whitelisted fields to the same object in one Unity Undo group, validates the actual graph, saves only that source asset, imports it, and reindexes GCA. Unity Undo/Redo keeps the GUID and references and triggers another reindex. Explicit Rollback uses a new named Undo group and restores the exact captured source bytes only when the current revision still equals the committed revision; a later Inspector edit, setup repair, regeneration, import, or dependency change makes the session stale and prevents overwrite.
+
+Only writable generated assets under `Assets` that are claimed exclusively by the directly selected named pack qualify. Template sources, installed packages, `PackageCache`, `Library`, `Temp`, traversal/reparse paths, missing/read-only sources, All Packs, and Project Content through this backend remain read-only. Basic and Scrap have distinct GUID-backed sources and locks, so editing one cannot mutate the other.
 
 ## Current Limits
 
-Named packs remain intentionally read-only; this milestone does not add transactional GCA editing or generic presentation lenses. Presentation records are browsed through Pack Dashboard, All Content, and the pack-specific categories above.
+Stable IDs, record references, Unity object fields, tags, arrays/lists/maps, waves, reward choices, economy collections, progression nodes, offline resource links, presentation, themes, audio events, tutorials, UI settings, creation, duplication, deletion, bulk edits, and pack cloning remain read-only. Setup refresh or repair must finish before a new edit session begins.
+
+ScriptableObjects remain the source of truth. No JSON mirror, duplicate ScriptableObject, temporary asset, or second content database is created. JSON and complex nested editing are separate deferred milestones.

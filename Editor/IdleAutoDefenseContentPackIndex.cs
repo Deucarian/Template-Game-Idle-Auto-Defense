@@ -168,12 +168,21 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public GameContentPackDescriptor BuildDescriptor(string providerId)
         {
-            var access = new GameContentPackAccessDescriptor(
+            GameContentPackBackendCapability capabilities =
                 GameContentPackBackendCapability.Read |
                 GameContentPackBackendCapability.Validate |
-                GameContentPackBackendCapability.RevealSource,
-                "Read-only ScriptableObject graph",
-                "Transactional ScriptableObject editing is deferred.");
+                GameContentPackBackendCapability.RevealSource;
+            bool packCanEdit = SourceState == GameContentPackSourceState.Available &&
+                               PackAsset != null &&
+                               ContentSetAsset != null &&
+                               Validation.IsValid;
+            if (packCanEdit) capabilities |= GameContentPackBackendCapability.EditExisting;
+            var access = new GameContentPackAccessDescriptor(
+                capabilities,
+                "Staged project-owned ScriptableObject scalar editing",
+                packCanEdit
+                    ? string.Empty
+                    : "Generate or repair the named pack and resolve its validation or discovery conflict before editing.");
             var actions = new List<GameContentActionDescriptor>
             {
                 new GameContentActionDescriptor(

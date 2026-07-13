@@ -17,11 +17,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
     }
 
-    internal sealed class GameContentPackAuthoringProvider :
+    internal sealed partial class GameContentPackAuthoringProvider :
         IGameContentAuthoringProvider,
         IGameContentAuthoringSurfaceProvider,
         IGameContentPackProvider,
-        IGameContentSourceClaimProvider
+        IGameContentSourceClaimProvider,
+        IGameContentPackEditProvider
     {
         public const string ContentPackProviderId = "com.deucarian.template.idle-auto-defense.content-pack";
 
@@ -35,11 +36,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public GameContentPackAuthoringProvider()
         {
+            IdleAutoDefenseUnityUndoBridge.RegisterProvider(this);
         }
 
         internal GameContentPackAuthoringProvider(string generatedContentSearchRoot)
         {
             _generatedContentSearchRoot = generatedContentSearchRoot;
+            IdleAutoDefenseUnityUndoBridge.RegisterProvider(this);
         }
 
         public string ProviderId => ContentPackProviderId;

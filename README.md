@@ -50,7 +50,7 @@ The authored gameplay data is created separately under `Assets/GameContent/IdleA
 
 The generated scene references the generated content pack and content set. Its bootstrap enables strict authored startup. A valid run reports `UsingAssignedContentSet == true`, `UsingAuthoredCore == true`, and `FallbackModeActive == false`; incomplete required content blocks startup instead of substituting hidden balance.
 
-The generated graphs also appear in `Tools > Deucarian > Game Content Authoring` as the read-only named packs `Basic Idle Auto Defense` and `Scrap Frontier`. Each exposes 124 records including gameplay, Player Experience, Themes, Audio Events, Tutorial Steps, and UI Settings. See [Game Content Authoring](Documentation~/game-content-authoring.md) and the [Scrap Frontier asset-flip proof](Documentation~/scrap-frontier-asset-flip.md).
+The generated graphs also appear in `Tools > Deucarian > Game Content Authoring` as the named packs `Basic Idle Auto Defense` and `Scrap Frontier`. Each exposes 124 records including gameplay, Player Experience, Themes, Audio Events, Tutorial Steps, and UI Settings. A narrow set of direct attack, enemy, mounted-weapon, and run-upgrade scalars can be staged and committed on claimed project assets; all other records and structural fields remain read-only. See [Game Content Authoring](Documentation~/game-content-authoring.md) and the [Scrap Frontier asset-flip proof](Documentation~/scrap-frontier-asset-flip.md).
 
 ## Template Source
 
@@ -90,7 +90,13 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 ## Editing Content
 
-Open `Tools > Deucarian > Game Content Authoring` to browse, validate, reveal, and navigate the generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. The named pack is read-only in this milestone; unclaimed standalone ScriptableObjects retain the existing writable Project Content workflows. Stable-ID changes still require a coordinated reference and runtime audit.
+Open `Tools > Deucarian > Game Content Authoring` to browse, validate, reveal, navigate, and safely stage approved scalar edits on generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Select `Basic Idle Auto Defense` or `Scrap Frontier` directly, then open an Attack, Enemy, Weapon/Tower, or Upgrade record. The workbench keeps Apply and its in-session Undo/Redo outside the live asset until Commit, validates a cloned proposed pack, and commits only the physical scalar section asset in one Unity Undo group.
+
+Cancel changes no source bytes. After Commit, normal Unity Undo/Redo reindexes the named pack, and the workbench's explicit Rollback restores the captured original source only while the committed revision is still current. Setup repair, regeneration, manual Inspector edits, or any other source/dependency change makes the session stale and blocks Commit or Rollback; cancel and reopen the record after that operation.
+
+The approved fields are attack cooldown/range/damage; enemy health/speed/reward/contact damage/collision radius; mounted-weapon cooldown/range/burst/volley/spread/build cost; and run-upgrade rarity/weight/max rank. Stable IDs, display metadata on record roots, object references, tags, lists, wave schedules, rewards, economy collections, progression, themes, audio, tutorial, and UI structures remain read-only. Editing requires a writable project-owned asset claimed only by the selected named pack. `TemplateSource~`, packages, Project Content through this backend, JSON, and arbitrary paths are never write targets.
+
+Generated ScriptableObjects remain the only source of truth. Editing creates no JSON mirror, replacement asset, or duplicate content database; unclaimed standalone ScriptableObjects retain the existing Project Content behavior.
 
 During play, the controller turns kills, wave progress, elite kills, boss kills, and a guaranteed early run moment into a visible three-choice reward draft. Choices, prerequisites, source eligibility, XP cadence, and rarity tables come from the reward-catalog asset. Economy, run/session rules, persistent progression, offline accumulation, objective/module rules, themes, tutorial copy, UI tokens, and audio event mappings are authored under `Assets/GameContent`; the generated bootstrap owns no duplicate catalog.
 
