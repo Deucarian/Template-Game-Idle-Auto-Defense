@@ -90,7 +90,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
-        public void ScalarMappingsAreExplicitDeterministicAndPathPolicyIsClosed()
+        public void EditMappingsAreExplicitDeterministicAndPathPolicyIsClosed()
         {
             AssertMapping(
                 IdleAutoDefenseNamedPackDefinition.Basic.PackId,
@@ -112,6 +112,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 GameContentRecordCapabilities.Upgrade,
                 new[] { "upgrade.rarity", "upgrade.weight", "upgrade.maxRank" },
                 new[] { "_rarity", "_weight", "_maxRank" });
+
+            IdleAutoDefenseEditableSource runProfileSource = ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            Assert.That(runProfileSource.Mappings.Select(mapping => mapping.Descriptor.FieldId),
+                Is.EqualTo(new[] { "runProfile.waves" }));
+            Assert.That(runProfileSource.Mappings.Select(mapping => mapping.PropertyPath),
+                Is.EqualTo(new[] { "_waves" }));
+            Assert.That(runProfileSource.Mappings.Single().PropertyType, Is.EqualTo(SerializedPropertyType.Generic));
 
             IdleAutoDefenseEditableSource attackSource = ResolveSource(
                 IdleAutoDefenseNamedPackDefinition.Basic.PackId,
@@ -172,6 +180,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     Assert.That(availability.SupportedFieldCount, Is.GreaterThan(0));
                     Assert.That(availability.SourceTarget.ProjectRelativeDescription, Does.StartWith("Assets/"));
                 }
+
+                GameContentRecordDescriptor runProfile = GetRunProfileRecord(packId);
+                GameContentEditAvailability runProfileAvailability = _provider.CanEdit(Request(pack, runProfile));
+                Assert.That(runProfileAvailability.IsEditable, Is.True, runProfileAvailability.DisabledReason);
+                Assert.That(runProfileAvailability.SupportedFieldCount, Is.EqualTo(1));
+                Assert.That(runProfileAvailability.SourceTarget.ProjectRelativeDescription, Does.StartWith("Assets/"));
 
                 GameContentRecordDescriptor wave = GetRecord(packId, GameContentRecordCapabilities.Wave);
                 GameContentEditAvailability waveAvailability = _provider.CanEdit(Request(pack, wave));
@@ -339,6 +353,115 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void PersistedWaveDiscoveryUsesOnlyExactNamedPackRoots()
+        {
+            string unrelatedPath = "Assets/T/UnrelatedWave_" + Guid.NewGuid().ToString("N") + ".asset";
+            var unrelated = ScriptableObject.CreateInstance<WaveDefinitionAsset>();
+            try
+            {
+                AssetDatabase.CreateAsset(unrelated, unrelatedPath);
+                AssetDatabase.ImportAsset(unrelatedPath, ImportAssetOptions.ForceSynchronousImport);
+                _provider.RefreshAfterExternalEdit();
+
+                foreach (string packId in new[]
+                         {
+                             IdleAutoDefenseNamedPackDefinition.Basic.PackId,
+                             IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId
+                         })
+                {
+                    IdleAutoDefenseEditableSource source = ResolveRunProfileSource(packId);
+                    GameContentRecordDescriptor[] waves = source.Index.Records
+                        .Where(record => record.HasCapability(GameContentRecordCapabilities.Wave))
+                        .ToArray();
+                    Assert.That(waves, Has.Length.EqualTo(7));
+                    Assert.That(waves.Select(record => record.CanonicalKey).Distinct().Count(), Is.EqualTo(7));
+                    Assert.That(waves.All(record => record.SourceAsset is WaveDefinitionAsset), Is.True);
+                    Assert.That(waves.All(record => record.SourcePath.StartsWith(
+                        source.Index.ContentRootPath + "/",
+                        StringComparison.OrdinalIgnoreCase)), Is.True);
+                    Assert.That(waves.Any(record => record.SourceAsset == unrelated), Is.False);
+                    foreach (GameContentRecordDescriptor wave in waves)
+                    {
+                        Assert.That(GameContentSourceIdentity.TryCreate(
+                            wave.SourceAsset,
+                            wave.SourcePath,
+                            out GameContentSourceIdentity identity), Is.True);
+                        Assert.That(source.Index.SourceClaims.Count(claim =>
+                            claim.SourceIdentity.Equals(identity)), Is.EqualTo(1));
+                    }
+                }
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(unrelatedPath);
+                _provider.RefreshAfterExternalEdit();
+            }
+        }
+
+        [Test]
+        public void PersistedWaveRemainsCanonicalWithoutARunProfileReference()
+        {
+            IdleAutoDefenseEditableSource source = ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            var profile = (IdleAutoDefenseRunProfileAsset)source.SourceAsset;
+            WaveDefinitionAsset[] originalWaves = profile.Waves.ToArray();
+            WaveDefinitionAsset removedWave = originalWaves[0];
+            GameContentRecordDescriptor originalRecord = source.Index.Records.Single(record =>
+                record.SourceAsset == removedWave && record.HasCapability(GameContentRecordCapabilities.Wave));
+            byte[] originalBytes = ReadFileBytes(source.SourcePath);
+            try
+            {
+                PersistWaveSequence(source, originalWaves.Skip(1).ToArray());
+                GameContentRecordDescriptor[] waves = _provider.GetRecords(source.Index.Definition.PackId)
+                    .Where(record => record.HasCapability(GameContentRecordCapabilities.Wave))
+                    .ToArray();
+                Assert.That(waves, Has.Length.EqualTo(7));
+                GameContentRecordDescriptor unreferenced = waves.Single(record =>
+                    record.CanonicalKey.Equals(originalRecord.CanonicalKey));
+                Assert.That(unreferenced.SourceAsset, Is.SameAs(removedWave));
+                Assert.That(unreferenced.InboundReferences, Is.Empty);
+                Assert.That(_provider.ValidatePack(source.Index.Definition.PackId).IsValid, Is.True);
+            }
+            finally
+            {
+                RestoreFileBytes(source.SourcePath, originalBytes);
+            }
+
+            Assert.That(((IdleAutoDefenseRunProfileAsset)ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId).SourceAsset).Waves,
+                Is.EqualTo(originalWaves));
+        }
+
+        [Test]
+        public void DuplicatePersistedWaveIdDisablesOnlyItsNamedPack()
+        {
+            IdleAutoDefenseEditableSource source = ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            GameContentRecordDescriptor wave = source.Index.Records.First(record =>
+                record.HasCapability(GameContentRecordCapabilities.Wave));
+            string duplicatePath = source.Index.ContentRootPath + "/Waves/DuplicateWaveDefinition.asset";
+            try
+            {
+                Assert.That(AssetDatabase.CopyAsset(wave.SourcePath, duplicatePath), Is.True);
+                AssetDatabase.ImportAsset(duplicatePath, ImportAssetOptions.ForceSynchronousImport);
+                _provider.RefreshAfterExternalEdit();
+                GameContentPackDescriptor basic = GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+                GameContentPackDescriptor scrap = GetPack(IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId);
+                Assert.That(basic.SourceState, Is.EqualTo(GameContentPackSourceState.ValidationFailed));
+                Assert.That(basic.Validation.Issues.Any(issue =>
+                    issue.Message.Contains("Duplicate stable record ID", StringComparison.OrdinalIgnoreCase)), Is.True);
+                Assert.That(scrap.SourceState, Is.EqualTo(GameContentPackSourceState.Available));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(duplicatePath);
+                _provider.RefreshAfterExternalEdit();
+            }
+            Assert.That(GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId).SourceState,
+                Is.EqualTo(GameContentPackSourceState.Available));
+        }
+
+        [Test]
         public void WeaponAttackSelectorEnforcesCanonicalPackTypeClaimAndDeliveryRules()
         {
             GameContentPackDescriptor basic = GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId);
@@ -448,6 +571,258 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 UnityEngine.Object.DestroyImmediate(sceneObject);
                 UnityEngine.Object.DestroyImmediate(transientAttack);
             }
+        }
+
+        [Test]
+        public void RunProfileWavesDescriptorAndSelectorAreCanonicalAndPackScoped()
+        {
+            foreach (string packId in new[]
+                     {
+                         IdleAutoDefenseNamedPackDefinition.Basic.PackId,
+                         IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId
+                     })
+            {
+                GameContentPackDescriptor pack = GetPack(packId);
+                IdleAutoDefenseEditableSource source = ResolveRunProfileSource(packId);
+                GameContentPackCatalog catalog = GameContentPackCatalog.Build(
+                    new IGameContentAuthoringProvider[] { _provider });
+                GameContentPackContext context = new GameContentPackSelectionState().Select(catalog, pack.StableKey);
+                GameContentRecordDescriptor runProfile = context.Records.Single(record =>
+                    record.CanonicalKey.Equals(source.Record.CanonicalKey));
+                using (var coordinator = new GameContentEditSessionCoordinator())
+                {
+                    GameContentEditBeginResult begin = coordinator.BeginEdit(context, runProfile, "run-profile");
+                    Assert.That(begin.Succeeded, Is.True, begin.Message);
+                    GameContentFieldDescriptor field = begin.Session.Fields.Single();
+                    Assert.That(field.FieldId, Is.EqualTo("runProfile.waves"));
+                    Assert.That(field.DisplayName, Is.EqualTo("Waves"));
+                    Assert.That(field.FieldType, Is.EqualTo(GameContentFieldType.OrderedRecordReferenceCollection));
+                    Assert.That(field.Required, Is.True);
+                    Assert.That(field.Collection.MinimumCount, Is.EqualTo(1));
+                    Assert.That(field.Collection.MaximumCount, Is.Null);
+                    Assert.That(field.Collection.AllowDuplicates, Is.False);
+                    Assert.That(field.Collection.OrderingDescription, Does.Contain("runtime-significant"));
+                    Assert.That(field.Collection.RuntimeImpact.HasFlag(GameContentReferenceRuntimeImpact.Rebind), Is.True);
+                    Assert.That(field.Collection.RuntimeImpact.HasFlag(GameContentReferenceRuntimeImpact.Restart), Is.True);
+                    GameContentFieldDescriptor item = field.Collection.ItemDescriptor;
+                    Assert.That(item.DisplayName, Is.EqualTo("Wave"));
+                    Assert.That(item.Required, Is.True);
+                    Assert.That(item.RecordReference.AllowClear, Is.False);
+                    Assert.That(item.RecordReference.PackPolicy, Is.EqualTo(GameContentReferencePackPolicy.SameSelectedPack));
+                    Assert.That(item.RecordReference.RequiredCapabilities,
+                        Is.EqualTo(new[] { GameContentRecordCapabilities.Wave }));
+
+                    GameContentOrderedCollectionValue original =
+                        begin.Session.Snapshot.FieldValues[field.FieldId].OrderedCollectionValue;
+                    Assert.That(original.Count, Is.EqualTo(7));
+                    Assert.That(original.Items.Select(value => value.ItemKey).Distinct().Count(), Is.EqualTo(7));
+                    Assert.That(original.Items.Select(value => value.OriginalIndex), Is.EqualTo(Enumerable.Range(0, 7)));
+                    Assert.That(original.Items.All(value =>
+                        value.Value.RecordReferenceValue.IsResolved &&
+                        value.Value.RecordReferenceValue.TargetKey.PackId == packId), Is.True);
+
+                    GameContentReferenceCandidateSet candidates = coordinator.GetReferenceCandidates(
+                        begin.Session,
+                        field.FieldId,
+                        original.Items[0].ItemKey);
+                    Assert.That(candidates.Candidates.Count, Is.EqualTo(1));
+                    Assert.That(candidates.Candidates.All(candidate =>
+                        candidate.Record.HasCapability(GameContentRecordCapabilities.Wave) &&
+                        candidate.Record.CanonicalKey.PackId == packId &&
+                        candidate.Record.SourceAsset is WaveDefinitionAsset), Is.True);
+
+                    string otherPackId = packId == IdleAutoDefenseNamedPackDefinition.Basic.PackId
+                        ? IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId
+                        : IdleAutoDefenseNamedPackDefinition.Basic.PackId;
+                    GameContentRecordDescriptor foreignWave = GetRecord(otherPackId, GameContentRecordCapabilities.Wave);
+                    Assert.That(coordinator.EvaluateReferenceTarget(
+                        begin.Session,
+                        field.FieldId,
+                        foreignWave.CanonicalKey).IsValid, Is.False);
+
+                    GameContentRecordDescriptor weapon = GetRecord(packId, GameContentRecordCapabilities.Weapon);
+                    GameContentReferenceEvaluation wrongType = coordinator.EvaluateReferenceTarget(
+                        begin.Session,
+                        field.FieldId,
+                        weapon.CanonicalKey);
+                    Assert.That(wrongType.IsValid, Is.False);
+                    Assert.That(wrongType.RequiredCapabilitiesSatisfied, Is.False);
+
+                    var crafted = new GameContentRecordKey(
+                        source.Record.CanonicalKey.OwningPackageId,
+                        source.Record.CanonicalKey.PackId,
+                        candidates.Candidates[0].Record.CanonicalKey.SourceRecordId,
+                        "unity-asset-guid::crafted-wave");
+                    Assert.That(coordinator.EvaluateReferenceTarget(
+                        begin.Session,
+                        field.FieldId,
+                        crafted).IsValid, Is.False);
+                }
+            }
+
+            IdleAutoDefenseEditableSource basicSource = ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            var transientWave = ScriptableObject.CreateInstance<WaveDefinitionAsset>();
+            var wrongTypeObject = new GameObject("scene-wave-target");
+            try
+            {
+                Assert.That(IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                    basicSource.Index,
+                    transientWave,
+                    out _,
+                    out _,
+                    out string transientReason), Is.False);
+                Assert.That(transientReason, Does.Contain("transient"));
+                Assert.That(IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                    basicSource.Index,
+                    wrongTypeObject,
+                    out _,
+                    out _,
+                    out _), Is.False);
+                GameContentRecordDescriptor foreign = GetRecord(
+                    IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId,
+                    GameContentRecordCapabilities.Wave);
+                Assert.That(IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                    basicSource.Index,
+                    foreign.SourceAsset,
+                    out _,
+                    out _,
+                    out _), Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(wrongTypeObject);
+                UnityEngine.Object.DestroyImmediate(transientWave);
+            }
+        }
+
+        [Test]
+        public void WaveCollectionOperationsStageOnlyAndPreserveSessionItemIdentity()
+        {
+            GameContentPackDescriptor basic = GetPack(IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            IdleAutoDefenseEditableSource source = ResolveRunProfileSource(basic.PackId);
+            var profile = (IdleAutoDefenseRunProfileAsset)source.SourceAsset;
+            WaveDefinitionAsset[] originalWaves = profile.Waves.ToArray();
+            string beforeHash = FileHash(source.SourcePath);
+            GameContentPackCatalog catalog = GameContentPackCatalog.Build(
+                new IGameContentAuthoringProvider[] { _provider });
+            GameContentPackContext context = new GameContentPackSelectionState().Select(catalog, basic.StableKey);
+            GameContentRecordDescriptor record = context.Records.Single(candidate =>
+                candidate.CanonicalKey.Equals(source.Record.CanonicalKey));
+
+            using (var coordinator = new GameContentEditSessionCoordinator())
+            {
+                GameContentEditBeginResult begin = coordinator.BeginEdit(context, record, "run-profile");
+                Assert.That(begin.Succeeded, Is.True, begin.Message);
+                GameContentOrderedCollectionValue original = CurrentWaves(begin.Session);
+                GameContentCollectionItem first = original.Items[0];
+                GameContentCollectionItem second = original.Items[1];
+
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Move(first.ItemKey, 1)).Succeeded, Is.True);
+                GameContentOrderedCollectionValue moved = CurrentWaves(begin.Session);
+                Assert.That(moved.Items[1].ItemKey, Is.EqualTo(first.ItemKey));
+                Assert.That(moved.Items.Select(item => item.Value.RecordReferenceValue.TargetKey),
+                    Is.EqualTo(new[]
+                    {
+                        second.Value.RecordReferenceValue.TargetKey,
+                        first.Value.RecordReferenceValue.TargetKey
+                    }.Concat(original.Items.Skip(2).Select(item => item.Value.RecordReferenceValue.TargetKey))));
+                Assert.That(profile.Waves, Is.EqualTo(originalWaves));
+                Assert.That(FileHash(source.SourcePath), Is.EqualTo(beforeHash));
+                Assert.That(EditorUtility.IsDirty(profile), Is.False);
+
+                Assert.That(coordinator.Undo(begin.Session).Succeeded, Is.True);
+                Assert.That(CurrentWaves(begin.Session).Items.Select(item => item.ItemKey),
+                    Is.EqualTo(original.Items.Select(item => item.ItemKey)));
+                Assert.That(coordinator.Redo(begin.Session).Succeeded, Is.True);
+                Assert.That(CurrentWaves(begin.Session).Items[1].ItemKey, Is.EqualTo(first.ItemKey));
+                Assert.That(coordinator.RestoreOriginalCollectionOrder(
+                    begin.Session,
+                    "runProfile.waves").Succeeded, Is.True);
+                Assert.That(CurrentWaves(begin.Session).Items.Select(item => item.Value),
+                    Is.EqualTo(original.Items.Select(item => item.Value)));
+
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Add(first.Value)).Succeeded, Is.False);
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Remove(GameContentCollectionItemKey.Create())).Succeeded, Is.False);
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Remove(first.ItemKey)).Succeeded, Is.True);
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Add(first.Value)).Succeeded, Is.True);
+
+                GameContentOrderedCollectionValue afterAdd = CurrentWaves(begin.Session);
+                GameContentCollectionItem addedFirst = afterAdd.Items.Single(item =>
+                    item.Value.Equals(first.Value));
+                GameContentCollectionItem retainedSecond = afterAdd.Items.Single(item =>
+                    item.Value.Equals(second.Value));
+                Assert.That(addedFirst.IsAdded, Is.True);
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Remove(retainedSecond.ItemKey)).Succeeded, Is.True);
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Replace(addedFirst.ItemKey, second.Value)).Succeeded, Is.True);
+                Assert.That(coordinator.Preview(begin.Session).CanCommit, Is.True);
+                Assert.That(profile.Waves, Is.EqualTo(originalWaves));
+                Assert.That(FileHash(source.SourcePath), Is.EqualTo(beforeHash));
+                Assert.That(coordinator.Cancel(begin.Session).Succeeded, Is.True);
+                Assert.That(coordinator.ActiveSourceCount, Is.Zero);
+            }
+
+            Assert.That(profile.Waves, Is.EqualTo(originalWaves));
+            Assert.That(FileHash(source.SourcePath), Is.EqualTo(beforeHash));
+        }
+
+        [Test]
+        public void WaveCollectionStructuralRulesRejectEmptyDuplicateBrokenAndCraftedOperations()
+        {
+            IdleAutoDefenseEditableSource source = ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            string beforeHash = FileHash(source.SourcePath);
+            using (IGameContentEditSession session = _provider.BeginEdit(
+                       Request(GetPack(source.Index.Definition.PackId), source.Record)))
+            {
+                var collectionSession = (IGameContentOrderedCollectionEditSession)session;
+                GameContentOrderedCollectionValue current = CurrentWaves(session);
+                GameContentFieldValue duplicate = current.Items[0].Value;
+                Assert.That(collectionSession.ApplyCollectionOperation(
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Add(duplicate)).Succeeded, Is.False);
+                Assert.That(collectionSession.ApplyCollectionOperation(
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Add(GameContentFieldValue.FromRecordReference(
+                        GameContentRecordReferenceValue.Broken("missing", "Missing Wave")))).Succeeded, Is.False);
+
+                while ((current = CurrentWaves(session)).Count > 1)
+                {
+                    Assert.That(collectionSession.ApplyCollectionOperation(
+                        "runProfile.waves",
+                        GameContentCollectionOperation.Remove(current.Items[0].ItemKey)).Succeeded, Is.True);
+                }
+                Assert.That(collectionSession.ApplyCollectionOperation(
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Remove(current.Items[0].ItemKey)).Succeeded, Is.False);
+                Assert.That(collectionSession.ApplyCollectionOperation(
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Remove(GameContentCollectionItemKey.Create())).Succeeded, Is.False);
+                Assert.That(session.Rollback().Succeeded, Is.True);
+            }
+
+            Assert.That(FileHash(source.SourcePath), Is.EqualTo(beforeHash));
         }
 
         [Test]
@@ -649,6 +1024,64 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 RestoreFileBytes(source.SourcePath, originalBytes);
             }
             Assert.That(_provider.ValidatePack(source.Index.Definition.PackId).IsValid, Is.True);
+        }
+
+        [Test]
+        public void BasicWaveCollectionCommitIsUndoableRuntimeVisibleAndExactlyRollbackSafe()
+        {
+            AssertWaveCollectionCommitIsSafeAndIsolated(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId,
+                IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId);
+        }
+
+        [Test]
+        public void ScrapWaveCollectionCommitIsUndoableRuntimeVisibleAndExactlyRollbackSafe()
+        {
+            AssertWaveCollectionCommitIsSafeAndIsolated(
+                IdleAutoDefenseNamedPackDefinition.ScrapFrontier.PackId,
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+        }
+
+        [Test]
+        public void WaveCollectionRollbackRefusesToOverwriteLaterSourceEdit()
+        {
+            IdleAutoDefenseEditableSource source = ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+            WaveDefinitionAsset[] original = ((IdleAutoDefenseRunProfileAsset)source.SourceAsset).Waves.ToArray();
+            byte[] beforeBytes = ReadFileBytes(source.SourcePath);
+            string beforeHash = FileHash(source.SourcePath);
+            IGameContentEditSession session = _provider.BeginEdit(
+                Request(GetPack(source.Index.Definition.PackId), source.Record));
+            try
+            {
+                var collectionSession = (IGameContentOrderedCollectionEditSession)session;
+                GameContentCollectionItem first = CurrentWaves(session).Items[0];
+                Assert.That(collectionSession.ApplyCollectionOperation(
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Move(first.ItemKey, 1)).Succeeded, Is.True);
+                Assert.That(session.Commit(true).Succeeded, Is.True);
+
+                IdleAutoDefenseEditableSource committedSource = ResolveRunProfileSource(
+                    IdleAutoDefenseNamedPackDefinition.Basic.PackId);
+                WaveDefinitionAsset[] laterSequence = original.Skip(1).Concat(original.Take(1)).ToArray();
+                PersistWaveSequence(committedSource, laterSequence);
+                GameContentRollbackResult rollback = session.Rollback();
+                Assert.That(rollback.Succeeded, Is.False);
+                Assert.That(session.State, Is.EqualTo(GameContentEditSessionState.Stale));
+                Assert.That(((IdleAutoDefenseRunProfileAsset)ResolveRunProfileSource(
+                    IdleAutoDefenseNamedPackDefinition.Basic.PackId).SourceAsset).Waves,
+                    Is.EqualTo(laterSequence));
+            }
+            finally
+            {
+                session.Dispose();
+                RestoreFileBytes(source.SourcePath, beforeBytes);
+            }
+
+            Assert.That(FileHash(source.SourcePath), Is.EqualTo(beforeHash));
+            Assert.That(((IdleAutoDefenseRunProfileAsset)ResolveRunProfileSource(
+                IdleAutoDefenseNamedPackDefinition.Basic.PackId).SourceAsset).Waves,
+                Is.EqualTo(original));
         }
 
         [Test]
@@ -970,6 +1403,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 record => record.SourceAsset == GetPackIndex(packId).ContentSetAsset.StartingWeapon);
         }
 
+        private IdleAutoDefenseEditableSource ResolveRunProfileSource(string packId)
+        {
+            GameContentPackDescriptor pack = GetPack(packId);
+            GameContentRecordDescriptor record = GetRunProfileRecord(packId);
+            Assert.That(_provider.TryResolveEditableSource(
+                Request(pack, record),
+                out IdleAutoDefenseEditableSource source,
+                out string reason), Is.True, reason);
+            return source;
+        }
+
+        private GameContentRecordDescriptor GetRunProfileRecord(string packId)
+        {
+            return _provider.GetRecords(packId).Single(record => record.IsInCategory("run-profiles"));
+        }
+
         private IdleAutoDefenseContentPackIndex GetPackIndex(string packId)
         {
             IdleAutoDefenseEditableSource source = ResolveSource(packId, GameContentRecordCapabilities.Attack);
@@ -998,6 +1447,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                     target.SourcePath));
         }
 
+        private static GameContentOrderedCollectionValue CurrentWaves(IGameContentEditSession session)
+        {
+            GameContentProposedChange change = session.Changes.FirstOrDefault(candidate =>
+                string.Equals(candidate.FieldId, "runProfile.waves", StringComparison.Ordinal));
+            return change == null
+                ? session.Snapshot.FieldValues["runProfile.waves"].OrderedCollectionValue
+                : change.ProposedValue.OrderedCollectionValue;
+        }
+
+        private static GameContentOrderedCollectionValue CurrentWaves(GameContentActiveEditSession session)
+        {
+            return session.GetEffectiveValue("runProfile.waves").OrderedCollectionValue;
+        }
+
         private void PersistAttackReference(
             IdleAutoDefenseEditableSource source,
             AttackDefinitionAsset attack)
@@ -1008,6 +1471,31 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.That(property, Is.Not.Null);
             Assert.That(property.propertyType, Is.EqualTo(SerializedPropertyType.ObjectReference));
             property.objectReferenceValue = attack;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(source.SourceAsset);
+            AssetDatabase.SaveAssetIfDirty(source.SourceAsset);
+            AssetDatabase.ImportAsset(
+                source.SourcePath,
+                ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            _provider.RefreshAfterExternalEdit();
+        }
+
+        private void PersistWaveSequence(
+            IdleAutoDefenseEditableSource source,
+            IReadOnlyList<WaveDefinitionAsset> waves)
+        {
+            var serialized = new SerializedObject(source.SourceAsset);
+            serialized.Update();
+            SerializedProperty property = serialized.FindProperty("_waves");
+            Assert.That(property, Is.Not.Null);
+            Assert.That(property.isArray, Is.True);
+            property.arraySize = waves == null ? 0 : waves.Count;
+            for (int i = 0; i < property.arraySize; i++)
+            {
+                SerializedProperty element = property.GetArrayElementAtIndex(i);
+                Assert.That(element.propertyType, Is.EqualTo(SerializedPropertyType.ObjectReference));
+                element.objectReferenceValue = waves[i];
+            }
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(source.SourceAsset);
             AssetDatabase.SaveAssetIfDirty(source.SourceAsset);
@@ -1041,6 +1529,115 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(controller.UsingAuthoredCore, Is.True);
                 Assert.That(controller.FallbackModeActive, Is.False);
                 Assert.That(controller.Runtime, Is.Not.Null);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        private void AssertWaveCollectionCommitIsSafeAndIsolated(
+            string editedPackId,
+            string untouchedPackId)
+        {
+            IdleAutoDefenseEditableSource source = ResolveRunProfileSource(editedPackId);
+            IdleAutoDefenseEditableSource untouched = ResolveRunProfileSource(untouchedPackId);
+            var profile = (IdleAutoDefenseRunProfileAsset)source.SourceAsset;
+            WaveDefinitionAsset[] original = profile.Waves.ToArray();
+            WaveDefinitionAsset[] committed = original.ToArray();
+            committed[0] = original[1];
+            committed[1] = original[0];
+            string sourceHash = FileHash(source.SourcePath);
+            string untouchedHash = FileHash(untouched.SourcePath);
+            string sourceGuid = source.SourceGuid;
+            string sourceObjectId = source.GlobalObjectId;
+            string[] waveGuids = original.Select(wave =>
+                AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(wave))).ToArray();
+
+            GameContentPackDescriptor pack = GetPack(editedPackId);
+            GameContentPackCatalog catalog = GameContentPackCatalog.Build(
+                new IGameContentAuthoringProvider[] { _provider });
+            GameContentPackContext context = new GameContentPackSelectionState().Select(catalog, pack.StableKey);
+            GameContentRecordDescriptor record = context.Records.Single(candidate =>
+                candidate.CanonicalKey.Equals(source.Record.CanonicalKey));
+            using (var coordinator = new GameContentEditSessionCoordinator())
+            {
+                GameContentEditBeginResult begin = coordinator.BeginEdit(context, record, "run-profile");
+                Assert.That(begin.Succeeded, Is.True, begin.Message);
+                GameContentCollectionItem first = CurrentWaves(begin.Session).Items[0];
+                Assert.That(coordinator.ApplyCollectionOperation(
+                    begin.Session,
+                    "runProfile.waves",
+                    GameContentCollectionOperation.Move(first.ItemKey, 1)).Succeeded, Is.True);
+                GameContentValidationPreview preview = coordinator.Preview(begin.Session);
+                Assert.That(preview.CanCommit, Is.True, FormatIssues(preview));
+                GameContentCommitResult commit = coordinator.Commit(begin.Session, true);
+                Assert.That(commit.Succeeded, Is.True, commit.Message);
+
+                IdleAutoDefenseEditableSource persisted = ResolveRunProfileSource(editedPackId);
+                var persistedProfile = (IdleAutoDefenseRunProfileAsset)persisted.SourceAsset;
+                Assert.That(persistedProfile.Waves, Is.EqualTo(committed));
+                Assert.That(AssetDatabase.AssetPathToGUID(persisted.SourcePath), Is.EqualTo(sourceGuid));
+                Assert.That(GlobalObjectId.GetGlobalObjectIdSlow(persistedProfile).ToString(), Is.EqualTo(sourceObjectId));
+                Assert.That(original.Select(wave => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(wave))),
+                    Is.EqualTo(waveGuids));
+                Assert.That(FileHash(untouched.SourcePath), Is.EqualTo(untouchedHash));
+                AssertStrictRuntimeConsumesWaveSequence(persisted.Index.ContentSetAsset, committed);
+
+                Undo.PerformUndo();
+                Assert.That(((IdleAutoDefenseRunProfileAsset)ResolveRunProfileSource(editedPackId).SourceAsset).Waves,
+                    Is.EqualTo(original));
+                Assert.That(coordinator.CheckStale(begin.Session).IsStale, Is.True);
+                Undo.PerformRedo();
+                IdleAutoDefenseEditableSource redone = ResolveRunProfileSource(editedPackId);
+                Assert.That(((IdleAutoDefenseRunProfileAsset)redone.SourceAsset).Waves, Is.EqualTo(committed));
+                Assert.That(coordinator.CheckStale(begin.Session).IsStale, Is.False);
+                Assert.That(begin.Session.State, Is.EqualTo(GameContentEditSessionState.Committed));
+                AssertStrictRuntimeConsumesWaveSequence(redone.Index.ContentSetAsset, committed);
+
+                GameContentRollbackResult rollback = coordinator.Rollback(begin.Session);
+                Assert.That(rollback.Succeeded, Is.True, rollback.Message);
+                Assert.That(coordinator.ActiveSourceCount, Is.Zero);
+            }
+
+            IdleAutoDefenseEditableSource restored = ResolveRunProfileSource(editedPackId);
+            Assert.That(((IdleAutoDefenseRunProfileAsset)restored.SourceAsset).Waves, Is.EqualTo(original));
+            Assert.That(FileHash(restored.SourcePath), Is.EqualTo(sourceHash));
+            Assert.That(FileHash(untouched.SourcePath), Is.EqualTo(untouchedHash));
+            Assert.That(_provider.ValidatePack(editedPackId).IsValid, Is.True);
+            Assert.That(_provider.ValidatePack(untouchedPackId).IsValid, Is.True);
+            AssertStrictRuntimeConsumesWaveSequence(restored.Index.ContentSetAsset, original);
+        }
+
+        private static void AssertStrictRuntimeConsumesWaveSequence(
+            GameContentSetAsset contentSet,
+            IReadOnlyList<WaveDefinitionAsset> expectedWaves)
+        {
+            GameObject host = new GameObject("idle-wave-runtime-proof");
+            host.SetActive(false);
+            IdleAutoDefenseTemplateController controller = null;
+            try
+            {
+                controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+                FieldInfo contentField = typeof(IdleAutoDefenseTemplateController).GetField(
+                    "_contentSet",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(contentField, Is.Not.Null);
+                contentField.SetValue(controller, contentSet);
+                controller.ConfigureStrictAuthoredStartup(true);
+                host.SetActive(true);
+                controller.Build();
+                Assert.That(controller.StartupBlocked, Is.False, controller.StartupError);
+                Assert.That(controller.UsingAuthoredCore, Is.True);
+                Assert.That(controller.FallbackModeActive, Is.False);
+                Assert.That(controller.ActiveRunProfile, Is.SameAs(contentSet.RunProfile));
+                Assert.That(controller.TotalWaveCount, Is.EqualTo(expectedWaves.Count));
+                FieldInfo wavesField = typeof(IdleAutoDefenseTemplateController).GetField(
+                    "_resolvedWaveDefinitions",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(wavesField, Is.Not.Null);
+                var resolved = (WaveDefinitionAsset[])wavesField.GetValue(controller);
+                Assert.That(resolved, Is.EqualTo(expectedWaves));
             }
             finally
             {

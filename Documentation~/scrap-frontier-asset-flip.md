@@ -76,7 +76,7 @@ All copied asset GUIDs are remapped. The two source trees have no duplicate GUID
 
 ## Game Content Authoring
 
-Game Content Authoring displays Basic and Scrap Frontier as separate named packs. Each projects 124 canonical records with its own pack ID and source identities. Validate, Reveal Source, and Open Playable Scene route to the selected pack. Safe editing is limited to the documented scalar fields and the Weapon/Tower Attack reference; the latter can select only canonical, compatible Attacks from the same pack. Source claims prevent the same generated assets from appearing under Project Content.
+Game Content Authoring displays Basic and Scrap Frontier as separate named packs. Each projects 124 canonical records with its own pack ID and source identities. Validate, Reveal Source, and Open Playable Scene route to the selected pack. Safe editing is limited to the documented scalar fields, Weapon/Tower Attack reference, and Run Profile Waves sequence; each selector accepts only canonical compatible records from the same pack. Source claims prevent the same generated assets from appearing under Project Content.
 
 Cross-pack validation compares selected-pack dependencies against other generated named-pack content roots and reports concrete leakage. The source-isolation test also rejects Basic source GUIDs in Scrap, except for the declared shared bootstrap script.
 

@@ -78,8 +78,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     break;
                 case GameContentFieldType.RecordReference:
                     return TryReadRecordReference(property, index, out value, out reason);
+                case GameContentFieldType.OrderedRecordReferenceCollection:
+                    return TryReadWaveCollection(property, index, out value, out reason);
                 default:
-                    reason = "Field '" + Descriptor.FieldId + "' uses an unsupported scalar mapping type.";
+                    reason = "Field '" + Descriptor.FieldId + "' uses an unsupported mapping type.";
                     return false;
             }
 
@@ -159,8 +161,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                         return false;
                     property.objectReferenceValue = target;
                     break;
+                case GameContentFieldType.OrderedRecordReferenceCollection:
+                    return TryWriteWaveCollection(property, value.OrderedCollectionValue, index, out reason);
                 default:
-                    reason = "Field '" + Descriptor.FieldId + "' uses an unsupported scalar mapping type.";
+                    reason = "Field '" + Descriptor.FieldId + "' uses an unsupported mapping type.";
                     return false;
             }
 
@@ -208,12 +212,129 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             reason = string.Empty;
             return true;
         }
+
+        private static bool TryReadWaveCollection(
+            SerializedProperty property,
+            IdleAutoDefenseContentPackIndex index,
+            out GameContentFieldValue value,
+            out string reason)
+        {
+            value = null;
+            if (!property.isArray)
+            {
+                reason = "The approved run-profile Waves property is no longer an array.";
+                return false;
+            }
+
+            var items = new List<GameContentCollectionItem>(property.arraySize);
+            for (int i = 0; i < property.arraySize; i++)
+            {
+                SerializedProperty element = property.GetArrayElementAtIndex(i);
+                if (element == null || element.propertyType != SerializedPropertyType.ObjectReference)
+                {
+                    reason = "The approved run-profile Waves array no longer contains object references.";
+                    return false;
+                }
+
+                UnityEngine.Object target = element.objectReferenceValue;
+                GameContentRecordReferenceValue reference;
+                if (target == null)
+                {
+                    reference = GameContentRecordReferenceValue.Broken(
+                        "<missing Wave asset>",
+                        "Wave " + (i + 1).ToString(CultureInfo.InvariantCulture) + " is missing its required authored reference.");
+                }
+                else if (!IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                             index,
+                             target,
+                             out GameContentRecordDescriptor record,
+                             out _,
+                             out string targetReason))
+                {
+                    string original = AssetDatabase.GetAssetPath(target);
+                    if (string.IsNullOrWhiteSpace(original)) original = target.name;
+                    reference = GameContentRecordReferenceValue.Broken(original, targetReason);
+                }
+                else
+                {
+                    reference = GameContentRecordReferenceValue.Resolved(
+                        record.CanonicalKey,
+                        record.DisplayName,
+                        record.SourcePath);
+                }
+
+                items.Add(new GameContentCollectionItem(
+                    GameContentCollectionItemKey.Create(),
+                    i,
+                    GameContentFieldValue.FromRecordReference(reference)));
+            }
+
+            value = GameContentFieldValue.FromOrderedRecordReferenceCollection(
+                new GameContentOrderedCollectionValue(GameContentFieldType.RecordReference, items));
+            reason = string.Empty;
+            return true;
+        }
+
+        private static bool TryWriteWaveCollection(
+            SerializedProperty property,
+            GameContentOrderedCollectionValue collection,
+            IdleAutoDefenseContentPackIndex index,
+            out string reason)
+        {
+            if (!property.isArray)
+            {
+                reason = "The approved run-profile Waves property is no longer an array.";
+                return false;
+            }
+            if (collection == null ||
+                collection.FieldType != GameContentFieldType.OrderedRecordReferenceCollection ||
+                collection.ItemType != GameContentFieldType.RecordReference)
+            {
+                reason = "A valid ordered Wave reference collection is required.";
+                return false;
+            }
+
+            var targets = new WaveDefinitionAsset[collection.Count];
+            for (int i = 0; i < collection.Count; i++)
+            {
+                GameContentRecordReferenceValue reference = collection.Items[i].Value.RecordReferenceValue;
+                if (reference == null || !reference.IsResolved || reference.TargetKey == null)
+                {
+                    reason = "Wave " + (i + 1).ToString(CultureInfo.InvariantCulture) +
+                             " requires a resolved canonical target.";
+                    return false;
+                }
+                if (!IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                        index,
+                        reference.TargetKey,
+                        out _,
+                        out targets[i],
+                        out reason))
+                    return false;
+            }
+
+            property.arraySize = targets.Length;
+            for (int i = 0; i < targets.Length; i++)
+            {
+                SerializedProperty element = property.GetArrayElementAtIndex(i);
+                if (element == null || element.propertyType != SerializedPropertyType.ObjectReference)
+                {
+                    reason = "The approved run-profile Waves array no longer contains object references.";
+                    return false;
+                }
+                element.objectReferenceValue = targets[i];
+            }
+
+            reason = string.Empty;
+            return true;
+        }
     }
 
     internal static class IdleAutoDefenseContentEditMappings
     {
         private const string CombatGroup = "Combat";
         private const string EconomyGroup = "Economy";
+        private const string RunFlowGroup = "Run Flow";
 
         private static readonly IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> AttackMappings = new[]
         {
@@ -257,6 +378,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             Integer("upgrade.maxRank", "upgrade.max-rank", "Maximum Rank", "Maximum number of times this upgrade can be selected.", "_maxRank", 30, EconomyGroup, 1)
         };
 
+        private static readonly IReadOnlyList<IdleAutoDefenseSerializedFieldMapping> RunProfileMappings = new[]
+        {
+            WaveCollection()
+        };
+
         public static bool TryResolve(
             UnityEngine.Object recordAsset,
             IdleAutoDefenseContentPackIndex index,
@@ -286,15 +412,37 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 sourceAsset = upgrade.Economy;
                 mappings = UpgradeMappings;
             }
+            else if (recordAsset is IdleAutoDefenseRunProfileAsset runProfile)
+            {
+                sourceAsset = runProfile;
+                mappings = RunProfileMappings;
+            }
             else
             {
-                reason = "This record type has no approved direct fields. IDs, unapproved references, lists, waves, rewards, progression, themes, audio, tutorials, and UI structures remain read-only.";
+                reason = "This record type has no approved direct fields. IDs, unapproved references, collections other than the run-profile Waves sequence, rewards, progression, themes, audio, tutorials, and UI structures remain read-only.";
                 return false;
             }
 
             if (sourceAsset == null)
             {
-                reason = "The record's standalone scalar section asset is missing.";
+                reason = "The record's approved field source asset is missing.";
+                return false;
+            }
+
+            if (recordAsset is IdleAutoDefenseRunProfileAsset &&
+                (index == null || !index.Records.Any(candidate =>
+                    candidate.HasCapability(GameContentRecordCapabilities.Wave) &&
+                    candidate.Validation != null &&
+                    candidate.Validation.IsValid &&
+                    !candidate.HasBrokenReferences &&
+                    IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                        index,
+                        candidate.CanonicalKey,
+                        out _,
+                        out _,
+                        out _))))
+            {
+                reason = "The selected named pack has no valid persistent Wave target available for its run profile.";
                 return false;
             }
 
@@ -464,6 +612,44 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 propertyPath,
                 SerializedPropertyType.ObjectReference);
         }
+
+        private static IdleAutoDefenseSerializedFieldMapping WaveCollection()
+        {
+            GameContentReferenceRuntimeImpact impact = GameContentReferenceRuntimeImpact.Refresh |
+                                                        GameContentReferenceRuntimeImpact.Rebind |
+                                                        GameContentReferenceRuntimeImpact.Restart;
+            return new IdleAutoDefenseSerializedFieldMapping(
+                new GameContentFieldDescriptor(
+                    "runProfile.waves",
+                    "run-profile.waves",
+                    "Waves",
+                    "Ordered same-pack authored Waves consumed as the runtime encounter sequence. Removing a reference does not delete a Wave asset, and adding one does not create a Wave asset. Commit requires a run-profile rebind and run restart.",
+                    GameContentFieldType.OrderedRecordReferenceCollection,
+                    order: 10,
+                    group: RunFlowGroup,
+                    required: true,
+                    collection: new GameContentCollectionFieldDescriptor(
+                        new GameContentFieldDescriptor(
+                            "runProfile.waves.item",
+                            "run-profile.waves.item",
+                            "Wave",
+                            "Persistent authored Wave owned by the selected named pack.",
+                            GameContentFieldType.RecordReference,
+                            required: true,
+                            recordReference: new GameContentRecordReferenceFieldDescriptor(
+                                "Wave",
+                                new[] { GameContentRecordCapabilities.Wave },
+                                GameContentReferencePackPolicy.SameSelectedPack,
+                                impact,
+                                allowClear: false)),
+                        minimumCount: 1,
+                        maximumCount: null,
+                        allowDuplicates: false,
+                        orderingDescription: "Encounter order is runtime-significant; the first item is the first authored Wave.",
+                        runtimeImpact: impact)),
+                "_waves",
+                SerializedPropertyType.Generic);
+        }
     }
 
     internal static class IdleAutoDefenseAttackReferencePolicy
@@ -602,6 +788,142 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         }
     }
 
+    internal static class IdleAutoDefenseWaveReferencePolicy
+    {
+        public static bool TryResolveTarget(
+            IdleAutoDefenseContentPackIndex index,
+            GameContentRecordKey targetKey,
+            out GameContentRecordDescriptor record,
+            out WaveDefinitionAsset wave,
+            out string reason)
+        {
+            record = null;
+            wave = null;
+            if (index == null)
+            {
+                reason = "The selected named-pack index is unavailable.";
+                return false;
+            }
+            if (targetKey == null || !targetKey.IsValid)
+            {
+                reason = "A valid canonical Wave target is required.";
+                return false;
+            }
+
+            GameContentRecordDescriptor[] matches = index.Records.Where(candidate =>
+                    candidate?.CanonicalKey != null && candidate.CanonicalKey.Equals(targetKey))
+                .ToArray();
+            if (matches.Length != 1)
+            {
+                reason = matches.Length == 0
+                    ? "The Wave target is absent from the selected named pack."
+                    : "The Wave target resolves to multiple canonical records.";
+                return false;
+            }
+
+            if (!TryResolveTarget(index, matches[0].SourceAsset, out record, out wave, out reason))
+                return false;
+            if (!record.CanonicalKey.Equals(targetKey))
+            {
+                reason = "The canonical Wave key does not match the persistent target identity.";
+                record = null;
+                wave = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool TryResolveTarget(
+            IdleAutoDefenseContentPackIndex index,
+            UnityEngine.Object candidate,
+            out GameContentRecordDescriptor record,
+            out WaveDefinitionAsset wave,
+            out string reason)
+        {
+            record = null;
+            wave = null;
+            if (index == null)
+            {
+                reason = "The selected named-pack index is unavailable.";
+                return false;
+            }
+            if (candidate == null || candidate.GetType() != typeof(WaveDefinitionAsset))
+            {
+                reason = "The target is not an exact WaveDefinitionAsset.";
+                return false;
+            }
+
+            wave = (WaveDefinitionAsset)candidate;
+            if (!EditorUtility.IsPersistent(wave) || !AssetDatabase.Contains(wave))
+            {
+                reason = "The Wave target is transient or belongs to a scene rather than a persistent asset.";
+                wave = null;
+                return false;
+            }
+
+            string path = AssetDatabase.GetAssetPath(wave);
+            if (!IdleAutoDefenseWritableSourcePolicy.IsAllowedAssetPath(path, index.ContentRootPath, out reason))
+            {
+                wave = null;
+                return false;
+            }
+            if (AssetDatabase.LoadMainAssetAtPath(path) != wave)
+            {
+                reason = "The Wave target is not the exact main asset at its claimed path.";
+                wave = null;
+                return false;
+            }
+            if (MonoScript.FromScriptableObject(wave) == null)
+            {
+                reason = "The Wave target has a missing or unresolved script.";
+                wave = null;
+                return false;
+            }
+            if (!GameContentSourceIdentity.TryCreate(wave, path, out GameContentSourceIdentity identity))
+            {
+                reason = "The Wave target has no stable Unity asset identity.";
+                wave = null;
+                return false;
+            }
+
+            WaveDefinitionAsset resolvedWave = wave;
+            GameContentRecordDescriptor[] records = index.Records.Where(candidateRecord =>
+                    candidateRecord.SourceAsset == resolvedWave &&
+                    candidateRecord.HasCapability(GameContentRecordCapabilities.Wave))
+                .ToArray();
+            if (records.Length != 1)
+            {
+                reason = records.Length == 0
+                    ? "The persistent Wave is not canonical in the selected named pack."
+                    : "The persistent Wave is claimed by multiple canonical records in the selected named pack.";
+                wave = null;
+                return false;
+            }
+            if (!string.Equals(records[0].CanonicalKey.SourceId, identity.StableKey, StringComparison.OrdinalIgnoreCase))
+            {
+                reason = "The Wave record's canonical source identity does not match the persistent asset.";
+                wave = null;
+                return false;
+            }
+
+            int claimCount = index.SourceClaims.Count(claim =>
+                claim?.SourceIdentity != null && claim.SourceIdentity.Equals(identity));
+            if (claimCount != 1)
+            {
+                reason = claimCount == 0
+                    ? "The selected named pack does not claim the Wave source."
+                    : "The selected named pack contains multiple claims for the Wave source.";
+                wave = null;
+                return false;
+            }
+
+            record = records[0];
+            reason = string.Empty;
+            return true;
+        }
+    }
+
     internal sealed class IdleAutoDefenseEditableSource
     {
         public IdleAutoDefenseEditableSource(
@@ -649,7 +971,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             globalObjectId = string.Empty;
             if (source == null || string.IsNullOrWhiteSpace(assetPath))
             {
-                reason = "The scalar source is not a persisted Unity asset.";
+                reason = "The editable source is not a persisted Unity asset.";
                 return false;
             }
 
@@ -807,7 +1129,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     internal static class IdleAutoDefenseSourceRevision
     {
-        public const string SchemaToken = "idle-scriptable-object-fields-v2";
+        public const string SchemaToken = "idle-scriptable-object-fields-v3";
 
         public static GameContentSourceRevision Create(
             GameContentEditRequest request,
@@ -831,9 +1153,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                          .OrderBy(value => value.Descriptor.FieldId, StringComparer.Ordinal))
             {
                 GameContentFieldValue value = values[mapping.Descriptor.FieldId];
-                string revisionValue = value.FieldType == GameContentFieldType.RecordReference
-                    ? value.RecordReferenceValue?.TargetKey?.StableKey ?? value.ToDisplayString()
-                    : value.ToDisplayString();
+                string revisionValue = RevisionValue(value);
                 Append(
                     payload,
                     "field:" + mapping.Descriptor.FieldId,
@@ -841,6 +1161,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             return new GameContentSourceRevision(SchemaToken + ":" + Hash(Encoding.UTF8.GetBytes(payload.ToString())));
+        }
+
+        private static string RevisionValue(GameContentFieldValue value)
+        {
+            if (value.FieldType == GameContentFieldType.RecordReference)
+                return value.RecordReferenceValue?.TargetKey?.StableKey ?? value.ToDisplayString();
+            if (value.FieldType == GameContentFieldType.OrderedRecordReferenceCollection)
+            {
+                GameContentOrderedCollectionValue collection = value.OrderedCollectionValue;
+                if (collection == null) return string.Empty;
+                return string.Join(
+                    "\n",
+                    collection.Items.Select(item =>
+                        item.Value.RecordReferenceValue?.TargetKey?.StableKey ?? item.Value.ToDisplayString()));
+            }
+            return value.ToDisplayString();
         }
 
         public static string FileSha256(string assetPath)

@@ -103,7 +103,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
     internal sealed class IdleAutoDefenseContentEditSession :
         IGameContentEditSession,
-        IGameContentRecordReferenceEditSession
+        IGameContentRecordReferenceEditSession,
+        IGameContentOrderedCollectionEditSession
     {
         private readonly GameContentPackAuthoringProvider _provider;
         private readonly GameContentEditRequest _request;
@@ -172,7 +173,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (stale.IsStale) return GameContentEditOperationResult.Failure(stale.Message);
             IdleAutoDefenseSerializedFieldMapping mapping = _source.Mappings.FirstOrDefault(candidate =>
                 string.Equals(candidate.Descriptor.FieldId, fieldId, StringComparison.Ordinal));
-            if (mapping == null) return GameContentEditOperationResult.Failure("The field is not part of the provider-owned scalar whitelist.");
+            if (mapping == null) return GameContentEditOperationResult.Failure("The field is not part of the provider-owned edit whitelist.");
+            if (mapping.Descriptor.FieldType.IsOrderedCollection())
+                return GameContentEditOperationResult.Failure("Use an ordered collection operation to edit this field.");
             if (!mapping.Descriptor.Accepts(value, out string reason))
                 return GameContentEditOperationResult.Failure(reason);
             if (mapping.Descriptor.FieldType == GameContentFieldType.RecordReference)
@@ -185,6 +188,61 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             if (CurrentValues.TryGetValue(mapping.Descriptor.FieldId, out GameContentFieldValue current) && current.Equals(value))
                 return GameContentEditOperationResult.Success("The staged value is already current.");
 
+            return StageValue(mapping, value, "Staged " + mapping.Descriptor.DisplayName + ".");
+        }
+
+        public GameContentEditOperationResult ApplyCollectionOperation(
+            string fieldId,
+            GameContentCollectionOperation operation)
+        {
+            if (!IsMutable) return GameContentEditOperationResult.Failure("The edit session cannot accept staged changes in its current state.");
+            GameContentStaleCheckResult stale = CheckStale();
+            if (stale.IsStale) return GameContentEditOperationResult.Failure(stale.Message);
+            IdleAutoDefenseSerializedFieldMapping mapping = _source.Mappings.FirstOrDefault(candidate =>
+                string.Equals(candidate.Descriptor.FieldId, fieldId, StringComparison.Ordinal));
+            if (mapping == null ||
+                mapping.Descriptor.FieldType != GameContentFieldType.OrderedRecordReferenceCollection ||
+                mapping.Descriptor.Collection == null)
+                return GameContentEditOperationResult.Failure("The field is not the approved run-profile Waves collection.");
+            if (!CurrentValues.TryGetValue(mapping.Descriptor.FieldId, out GameContentFieldValue currentValue) ||
+                currentValue.OrderedCollectionValue == null)
+                return GameContentEditOperationResult.Failure("The staged Waves collection is unavailable.");
+
+            if (operation != null &&
+                (operation.Kind == GameContentCollectionOperationKind.Add ||
+                 operation.Kind == GameContentCollectionOperationKind.Replace))
+            {
+                GameContentRecordReferenceValue reference = operation.Value?.RecordReferenceValue;
+                GameContentReferenceEvaluation evaluation = EvaluateReferenceTargetCore(
+                    mapping.Descriptor.FieldId,
+                    reference?.TargetKey);
+                if (!evaluation.IsValid) return GameContentEditOperationResult.Failure(evaluation.Reason);
+            }
+
+            if (!GameContentCollectionMutation.TryApply(
+                    mapping.Descriptor,
+                    currentValue.OrderedCollectionValue,
+                    operation,
+                    out GameContentOrderedCollectionValue proposed,
+                    out string reason))
+                return GameContentEditOperationResult.Failure(reason);
+
+            GameContentFieldValue proposedValue = GameContentFieldValue.FromOrderedRecordReferenceCollection(proposed);
+            if (currentValue.Equals(proposedValue))
+                return GameContentEditOperationResult.Success("The staged Waves sequence is already current.");
+
+            Dictionary<string, GameContentFieldValue> next = CopyValues(CurrentValues);
+            next[mapping.Descriptor.FieldId] = proposedValue;
+            if (!TryValidateReferenceValues(next, out reason))
+                return GameContentEditOperationResult.Failure(reason);
+            return StageValue(mapping, proposedValue, "Staged Waves collection change.");
+        }
+
+        private GameContentEditOperationResult StageValue(
+            IdleAutoDefenseSerializedFieldMapping mapping,
+            GameContentFieldValue value,
+            string message)
+        {
             if (_historyIndex < _history.Count - 1)
                 _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
             Dictionary<string, GameContentFieldValue> next = CopyValues(CurrentValues);
@@ -192,12 +250,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             _history.Add(next);
             _historyIndex++;
             UpdateMutableState();
-            return GameContentEditOperationResult.Success("Staged " + mapping.Descriptor.DisplayName + ".");
+            return GameContentEditOperationResult.Success(message);
         }
 
         public GameContentEditOperationResult Undo()
         {
             if (!CanUndo) return GameContentEditOperationResult.Failure("There is no staged change to undo.");
+            GameContentStaleCheckResult stale = CheckStale();
+            if (stale.IsStale) return GameContentEditOperationResult.Failure(stale.Message);
+            if (!TryValidateReferenceValues(_history[_historyIndex - 1], out string reason))
+                return GameContentEditOperationResult.Failure(reason);
             _historyIndex--;
             UpdateMutableState();
             return GameContentEditOperationResult.Success("Undid the last staged field change.");
@@ -224,7 +286,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             GameContentStaleCheckResult stale = CheckStale();
             if (stale.IsStale) return GameContentValidationPreview.Error("Stale Source", stale.Message);
             if (!TryValidateReferenceValues(CurrentValues, out string reason))
-                return GameContentValidationPreview.Error("Attack Reference", reason);
+                return GameContentValidationPreview.Error("Authored References", reason);
             return IdleAutoDefenseProposedPackValidator.Validate(_source, CurrentValues);
         }
 
@@ -580,7 +642,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             out string reason)
         {
             foreach (IdleAutoDefenseSerializedFieldMapping mapping in _source.Mappings.Where(candidate =>
-                         candidate.Descriptor.FieldType == GameContentFieldType.RecordReference &&
+                         (candidate.Descriptor.FieldType == GameContentFieldType.RecordReference ||
+                          candidate.Descriptor.FieldType == GameContentFieldType.OrderedRecordReferenceCollection) &&
                          !candidate.Descriptor.IsReadOnly))
             {
                 if (!values.TryGetValue(mapping.Descriptor.FieldId, out GameContentFieldValue value))
@@ -590,12 +653,33 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 }
                 if (!mapping.Descriptor.Accepts(value, out reason))
                     return false;
-                GameContentReferenceEvaluation evaluation = EvaluateReferenceTargetCore(
-                    mapping.Descriptor.FieldId,
-                    value.RecordReferenceValue?.TargetKey);
-                if (!evaluation.IsValid)
+
+                if (mapping.Descriptor.FieldType == GameContentFieldType.RecordReference)
                 {
-                    reason = evaluation.Reason;
+                    GameContentReferenceEvaluation evaluation = EvaluateReferenceTargetCore(
+                        mapping.Descriptor.FieldId,
+                        value.RecordReferenceValue?.TargetKey);
+                    if (!evaluation.IsValid)
+                    {
+                        reason = evaluation.Reason;
+                        return false;
+                    }
+                    continue;
+                }
+
+                GameContentOrderedCollectionValue collection = value.OrderedCollectionValue;
+                if (collection == null)
+                {
+                    reason = "The staged Waves collection is unavailable.";
+                    return false;
+                }
+                for (int i = 0; i < collection.Count; i++)
+                {
+                    GameContentReferenceEvaluation evaluation = EvaluateReferenceTargetCore(
+                        mapping.Descriptor.FieldId,
+                        collection.Items[i].Value.RecordReferenceValue?.TargetKey);
+                    if (evaluation.IsValid) continue;
+                    reason = "Wave " + (i + 1) + ": " + evaluation.Reason;
                     return false;
                 }
             }
@@ -608,7 +692,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             string fieldId,
             GameContentRecordKey targetKey)
         {
-            return _provider.EvaluateAttackReferenceTarget(_source, fieldId, targetKey);
+            IdleAutoDefenseSerializedFieldMapping mapping = _source.Mappings.FirstOrDefault(candidate =>
+                string.Equals(candidate.Descriptor.FieldId, fieldId, StringComparison.Ordinal));
+            if (mapping == null)
+                return GameContentReferenceEvaluation.Rejected(targetKey, "The field is not part of this edit session.");
+            if (mapping.Descriptor.FieldType == GameContentFieldType.RecordReference)
+                return _provider.EvaluateAttackReferenceTarget(_source, fieldId, targetKey);
+            if (mapping.Descriptor.FieldType == GameContentFieldType.OrderedRecordReferenceCollection)
+                return _provider.EvaluateWaveReferenceTarget(_source, fieldId, targetKey);
+            return GameContentReferenceEvaluation.Rejected(targetKey, "The field does not accept canonical record references.");
         }
 
         private void UpdateMutableState()
