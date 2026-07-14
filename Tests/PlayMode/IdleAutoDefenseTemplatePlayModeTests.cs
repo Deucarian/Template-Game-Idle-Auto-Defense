@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Deucarian.Attacks.Authoring;
 using Deucarian.IdleProgression;
 using Deucarian.RunUpgrades.Authoring;
@@ -79,6 +80,57 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
 
             UnityEngine.Object.Destroy(host);
             UnityEngine.Object.Destroy(pack);
+            UnityEngine.Object.Destroy(contentSet);
+        }
+
+        [UnityTest]
+        public IEnumerator StrictAuthoredControllerRejectsMissingWaveEntryIdentityWithoutFallback()
+        {
+            AttackDefinitionAsset[] attacks = BasicIdleAutoDefenseGame.CreateAttackRecipes();
+            WeaponDefinitionAsset[] weapons = BasicIdleAutoDefenseGame.CreateWeaponDefinitionAssets(attacks);
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            WaveDefinitionAsset[] waves = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+            waves[0] = WaveDefinitionAsset.CreateTransient(
+                "wave.invalid-entry-identity.playmode",
+                "Invalid Entry Identity",
+                0,
+                new[] { new WaveEntryRecipe(string.Empty, enemies[0], 2, 1, 0, 10, "perimeter-north") });
+            RunUpgradeDefinitionAsset[] upgrades = BasicIdleAutoDefenseGame.CreateRunUpgradeDefinitionAssets(weapons);
+            GameContentSetAsset contentSet = GameContentSetAsset.CreateTransient(
+                "contentset.test.playmode.invalid-entry-identity",
+                "Invalid Entry Identity PlayMode",
+                weapons[0],
+                weapons,
+                enemies,
+                waves,
+                upgrades,
+                10,
+                0,
+                1f,
+                1f,
+                5600,
+                false,
+                "Strict rejection proof for missing wave entry identity.",
+                new[] { "test", "strict-authored", "invalid-entry-identity" });
+
+            GameObject host = new GameObject("idle-auto-defense-invalid-entry-identity-playmode");
+            host.SetActive(false);
+            var controller = host.AddComponent<IdleAutoDefenseTemplateController>();
+            typeof(IdleAutoDefenseTemplateController).GetField("_contentSet", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(controller, contentSet);
+            controller.ConfigureStrictAuthoredStartup(true);
+            LogAssert.Expect(LogType.Error, new Regex("Strict authored startup blocked:"));
+            host.SetActive(true);
+            controller.enabled = false;
+            yield return null;
+
+            Assert.That(controller.StartupBlocked, Is.True);
+            Assert.That(controller.StartupError, Does.Contain("strict").IgnoreCase);
+            Assert.That(controller.FallbackModeActive, Is.False);
+            Assert.That(controller.UsingAuthoredCore, Is.False);
+            Assert.That(controller.SpawnedCount, Is.Zero);
+
+            UnityEngine.Object.Destroy(host);
             UnityEngine.Object.Destroy(contentSet);
         }
 

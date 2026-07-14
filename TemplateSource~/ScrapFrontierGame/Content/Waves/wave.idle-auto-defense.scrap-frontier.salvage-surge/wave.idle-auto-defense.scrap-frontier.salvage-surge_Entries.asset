@@ -13,21 +13,24 @@ MonoBehaviour:
   m_Name: wave.idle-auto-defense.scrap-frontier.salvage-surge_Entries
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
   _entries:
-  - _enemy: {fileID: 11400000, guid: 4effc808fd864b9ab01adc1c697fc3e4, type: 2}
+  - _entryId: 0
+    _enemy: {fileID: 11400000, guid: 4effc808fd864b9ab01adc1c697fc3e4, type: 2}
     _count: 3
     _batchSize: 1
     _initialDelayTicks: 0
     _intervalTicks: 72
     _spawnChannelId: perimeter-south
     _scalingTier: 1
-  - _enemy: {fileID: 11400000, guid: a9f6db94ba884b57bf0b191c138824e2, type: 2}
+  - _entryId: 1
+    _enemy: {fileID: 11400000, guid: a9f6db94ba884b57bf0b191c138824e2, type: 2}
     _count: 2
     _batchSize: 1
     _initialDelayTicks: 100
     _intervalTicks: 92
     _spawnChannelId: perimeter-west
     _scalingTier: 2
-  - _enemy: {fileID: 11400000, guid: 6c9792b3a2a842de83b8574ce3e79e09, type: 2}
+  - _entryId: 2
+    _enemy: {fileID: 11400000, guid: 6c9792b3a2a842de83b8574ce3e79e09, type: 2}
     _count: 6
     _batchSize: 1
     _initialDelayTicks: 180

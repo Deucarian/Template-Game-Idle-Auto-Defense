@@ -13,21 +13,24 @@ MonoBehaviour:
   m_Name: wave.idle-auto-defense.opening_Entries
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
   _entries:
-  - _enemy: {fileID: 11400000, guid: a4faad016e5ca2f4080cbecc93bb55cb, type: 2}
+  - _entryId: 0
+    _enemy: {fileID: 11400000, guid: a4faad016e5ca2f4080cbecc93bb55cb, type: 2}
     _count: 7
     _batchSize: 1
     _initialDelayTicks: 0
     _intervalTicks: 66
     _spawnChannelId: perimeter-north
     _scalingTier: 0
-  - _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
+  - _entryId: 1
+    _enemy: {fileID: 11400000, guid: e713865182a4b224eb6c4e26cf2b206c, type: 2}
     _count: 3
     _batchSize: 1
     _initialDelayTicks: 220
     _intervalTicks: 84
     _spawnChannelId: perimeter-east
     _scalingTier: 0
-  - _enemy: {fileID: 11400000, guid: e22bfeeb5c23be44c8e41a8e66cd779b, type: 2}
+  - _entryId: 2
+    _enemy: {fileID: 11400000, guid: e22bfeeb5c23be44c8e41a8e66cd779b, type: 2}
     _count: 1
     _batchSize: 1
     _initialDelayTicks: 420

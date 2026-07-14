@@ -20,6 +20,7 @@ using Deucarian.TemplateGameIdleAutoDefense.Editor;
 using Deucarian.WeaponSystems;
 using Deucarian.WeaponSystems.Authoring;
 using Deucarian.WeaponSystems.Editor;
+using Deucarian.WorldSpawning;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -66,6 +67,140 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual("wave.idle-auto-defense.runner-pressure", waves[1].Id);
             Assert.AreEqual(7, BasicIdleAutoDefenseGame.CreateEncounterWaves(waves).Length);
             Assert.AreEqual(2, waves[1].Entries.Entries.Count);
+        }
+
+        [Test]
+        public void WaveEntryIdsPreserveLegacyGroupIdsAndDeterministicSpawnPoses()
+        {
+            WaveDefinitionAsset[] authored = BasicIdleAutoDefenseGame.CreateWaveDefinitions();
+            WaveDefinition[] runtime = BasicIdleAutoDefenseGame.CreateEncounterWaves(authored);
+            for (int i = 0; i < authored.Length; i++)
+            {
+                Assert.That(runtime[i].SpawnGroups.Count, Is.EqualTo(authored[i].Entries.Entries.Count));
+                for (int j = 0; j < authored[i].Entries.Entries.Count; j++)
+                {
+                    string legacyGroupId = authored[i].Id + ".group." + j;
+                    Assert.That(authored[i].Entries.Entries[j].EntryId.Value, Is.EqualTo(j.ToString()));
+                    Assert.That(runtime[i].SpawnGroups[j].Id.Value, Is.EqualTo(legacyGroupId));
+                }
+            }
+
+            AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
+            Type resolverType = typeof(IdleAutoDefenseTemplateController).GetNestedType(
+                "TemplateJitteredPerimeterPoseResolver",
+                BindingFlags.NonPublic);
+            Assert.That(resolverType, Is.Not.Null);
+            var resolver = (ISpawnPoseResolver)Activator.CreateInstance(
+                resolverType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new object[] { definition.Objective, definition.SpawnRing },
+                null);
+            WaveEntryRecipe firstEntry = authored[0].Entries.Entries[0];
+            string legacyId = authored[0].Id + ".group.0";
+            string stableId = runtime[0].SpawnGroups[0].Id.Value;
+            var legacyRequest = new WorldSpawnRequest(
+                new WorldSpawnableId(firstEntry.Enemy.Id),
+                new WorldSpawnChannelId(firstEntry.SpawnChannelId),
+                7,
+                new WorldSpawnRequestContext("test", "encounter.test", authored[0].Id, legacyId, 0, 23));
+            var stableRequest = new WorldSpawnRequest(
+                new WorldSpawnableId(firstEntry.Enemy.Id),
+                new WorldSpawnChannelId(firstEntry.SpawnChannelId),
+                7,
+                new WorldSpawnRequestContext("test", "encounter.test", authored[0].Id, stableId, 0, 23));
+
+            SpawnPoseResult legacyPose = resolver.TryResolvePose(legacyRequest);
+            SpawnPoseResult stablePose = resolver.TryResolvePose(stableRequest);
+
+            Assert.That(stableId, Is.EqualTo(legacyId));
+            Assert.That(legacyPose.Succeeded, Is.True, legacyPose.Message);
+            Assert.That(stablePose.Succeeded, Is.True, stablePose.Message);
+            Assert.That(stablePose.Pose.Position, Is.EqualTo(legacyPose.Pose.Position));
+            Assert.That(stablePose.Pose.Rotation, Is.EqualTo(legacyPose.Pose.Rotation));
+        }
+
+        [Test]
+        public void StableWaveEntryIdsSurviveReorderInsertRemoveAndSnapshotRestore()
+        {
+            EnemyDefinitionAsset enemy = EnemyDefinitionAsset.CreateTransient(
+                "enemy.entry-identity",
+                "Entry Identity Enemy",
+                EnemyRole.Basic,
+                8f,
+                2f,
+                1,
+                3f,
+                BasicIdleAutoDefenseGame.DamageType.Value);
+            WaveDefinitionAsset original = WaveDefinitionAsset.CreateTransient(
+                "wave.entry-identity",
+                "Entry Identity",
+                0,
+                new[]
+                {
+                    new WaveEntryRecipe("alpha", enemy, 2, 1, 0, 10, "perimeter-north"),
+                    new WaveEntryRecipe("beta", enemy, 2, 1, 0, 10, "perimeter-east")
+                });
+            WaveDefinitionAsset reorderedAndInserted = WaveDefinitionAsset.CreateTransient(
+                "wave.entry-identity",
+                "Entry Identity",
+                0,
+                new[]
+                {
+                    new WaveEntryRecipe("beta", enemy, 2, 1, 0, 10, "perimeter-east"),
+                    new WaveEntryRecipe("gamma", enemy, 2, 1, 0, 10, "perimeter-south"),
+                    new WaveEntryRecipe("alpha", enemy, 2, 1, 0, 10, "perimeter-north")
+                });
+            WaveDefinitionAsset removed = WaveDefinitionAsset.CreateTransient(
+                "wave.entry-identity",
+                "Entry Identity",
+                0,
+                new[] { new WaveEntryRecipe("beta", enemy, 2, 1, 0, 10, "perimeter-east") });
+            try
+            {
+                WaveDefinition originalRuntimeWave = BasicIdleAutoDefenseGame.CreateEncounterWaves(new[] { original })[0];
+                WaveDefinition changedRuntimeWave = BasicIdleAutoDefenseGame.CreateEncounterWaves(new[] { reorderedAndInserted })[0];
+                WaveDefinition removedRuntimeWave = BasicIdleAutoDefenseGame.CreateEncounterWaves(new[] { removed })[0];
+                Assert.That(changedRuntimeWave.SpawnGroups.Select(group => group.Id.Value), Is.EqualTo(new[]
+                {
+                    "wave.entry-identity.group.beta",
+                    "wave.entry-identity.group.gamma",
+                    "wave.entry-identity.group.alpha"
+                }));
+                Assert.That(removedRuntimeWave.SpawnGroups.Single().Id.Value, Is.EqualTo("wave.entry-identity.group.beta"));
+
+                var originalDefinition = new EncounterDefinition(
+                    new EncounterId("encounter.entry-identity"),
+                    null,
+                    new[] { originalRuntimeWave },
+                    new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves")) });
+                var runtime = new EncounterRuntime(originalDefinition);
+                runtime.Start();
+                var request = new SpawnRequest[1];
+                EncounterDrainResult drain = runtime.DrainSpawnRequests(request);
+                Assert.That(drain.Written, Is.EqualTo(1));
+                Assert.That(request[0].GroupId.Value, Is.EqualTo("wave.entry-identity.group.alpha"));
+                EncounterSnapshot snapshot = runtime.CreateSnapshot();
+
+                var changedDefinition = new EncounterDefinition(
+                    new EncounterId("encounter.entry-identity"),
+                    null,
+                    new[] { changedRuntimeWave },
+                    new[] { ObjectiveDefinition.AllWavesEmitted(new EncounterObjectiveId("all-waves")) });
+                EncounterRuntime restored = EncounterRuntime.FromSnapshot(changedDefinition, snapshot);
+                EncounterSnapshot restoredSnapshot = restored.CreateSnapshot();
+
+                Assert.That(restoredSnapshot.Groups.Single(group => group.GroupId.Value.EndsWith(".alpha", StringComparison.Ordinal)).EmittedCount, Is.EqualTo(1));
+                Assert.That(restoredSnapshot.Groups.Single(group => group.GroupId.Value.EndsWith(".beta", StringComparison.Ordinal)).EmittedCount, Is.EqualTo(0));
+                Assert.That(restoredSnapshot.Groups.Single(group => group.GroupId.Value.EndsWith(".gamma", StringComparison.Ordinal)).EmittedCount, Is.EqualTo(0));
+            }
+            finally
+            {
+                DestroyTransientWave(original);
+                DestroyTransientWave(reorderedAndInserted);
+                DestroyTransientWave(removed);
+                DestroyTransientEnemy(enemy);
+            }
         }
 
         [Test]
@@ -236,6 +371,49 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.AreEqual(7, resolved.Length);
             Assert.AreEqual("wave.idle-auto-defense.opening", resolved[0].Id);
             Assert.AreEqual("wave.idle-auto-defense.runner-pressure", resolved[1].Id);
+        }
+
+        [Test]
+        public void AssignedWaveDefinitionsRejectMissingInvalidAndDuplicateEntryIds()
+        {
+            EnemyDefinitionAsset[] enemies = BasicIdleAutoDefenseGame.CreateEnemyDefinitions();
+            var cases = new[]
+            {
+                new[] { new WaveEntryRecipe(string.Empty, enemies[0], 2, 1, 0, 10, "perimeter-north") },
+                new[] { new WaveEntryRecipe("Invalid ID", enemies[0], 2, 1, 0, 10, "perimeter-north") },
+                new[]
+                {
+                    new WaveEntryRecipe("same", enemies[0], 2, 1, 0, 10, "perimeter-north"),
+                    new WaveEntryRecipe("same", enemies[0], 2, 1, 0, 10, "perimeter-east")
+                }
+            };
+
+            for (int i = 0; i < cases.Length; i++)
+            {
+                WaveDefinitionAsset wave = WaveDefinitionAsset.CreateTransient(
+                    "wave.invalid-entry-id." + i,
+                    "Invalid Entry Identity",
+                    0,
+                    cases[i]);
+                try
+                {
+                    ContentAuthoringValidationReport report = WaveDefinitionValidator.Validate(wave);
+                    WaveDefinitionAsset[] resolved = BasicIdleAutoDefenseGame.ResolveWaveDefinitionsForTemplate(
+                        new[] { wave },
+                        enemies,
+                        out int rejectedDefinitionCount);
+
+                    Assert.That(report.IsValid, Is.False);
+                    Assert.That(report.Issues.Any(issue => issue.Path.EndsWith(".EntryId", StringComparison.Ordinal)), Is.True);
+                    Assert.That(rejectedDefinitionCount, Is.EqualTo(1));
+                    Assert.That(resolved[0].Id, Is.EqualTo("wave.idle-auto-defense.opening"));
+                    Assert.Throws<ArgumentException>(() => BasicIdleAutoDefenseGame.CreateEncounterWaves(new[] { wave }));
+                }
+                finally
+                {
+                    DestroyTransientWave(wave);
+                }
+            }
         }
 
         [Test]
@@ -2191,6 +2369,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string packageRoot = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(BasicIdleAutoDefenseGame).Assembly).resolvedPath;
             string basicRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame");
             string scrapRoot = Path.Combine(packageRoot, "TemplateSource~", "ScrapFrontierGame");
+            AssertTemplateSourceWaveEntryIds(basicRoot);
+            AssertTemplateSourceWaveEntryIds(scrapRoot);
             Assert.That(Directory.GetFiles(basicRoot, "*", SearchOption.AllDirectories).Length, Is.EqualTo(494));
             Assert.That(Directory.GetFiles(scrapRoot, "*", SearchOption.AllDirectories).Length, Is.EqualTo(369));
             AssertFileSha256(
@@ -2391,6 +2571,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(GameContentSetValidator.Validate(basicSet).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(basicSet)));
                 Assert.That(GameContentSetValidator.Validate(scrapSet).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(scrapSet)));
 
+                AssertSequentialWaveEntryIds(basicSet.WaveSet);
+                AssertSequentialWaveEntryIds(scrapSet.WaveSet);
+                AssertWaveGameplayParity(BasicIdleAutoDefenseGame.CreateWaveDefinitions(), basicSet.WaveSet);
+
                 AssertPackNumericParity(basicSet, scrapSet);
                 Assert.That(scrapSet.AvailableWeapons.All(value => value.Id.Contains("scrap-frontier")), Is.True);
                 Assert.That(scrapSet.EnemyPool.All(value => value.Id.Contains("scrap-frontier")), Is.True);
@@ -2491,12 +2675,26 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(noOpRepair.Succeeded, Is.True, noOpRepair.CreateSummary());
                 Assert.That(noOpRepair.CreatedFiles, Is.Empty, "A deterministic repair rerun should not rewrite valid output.");
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
+                ClearWaveEntryIds(basicSet.WaveSet[0]);
+                AssetDatabase.SaveAssets();
+                WaveEntryIdMigrationReport migration = WaveEntryIdMigration.MigrateProjectOwnedWaveAssets(basicContentRoot);
+                WaveEntryIdMigrationReport repeatedMigration = WaveEntryIdMigration.MigrateProjectOwnedWaveAssets(basicContentRoot);
+                Assert.That(migration.Succeeded, Is.True, migration.CreateSummary());
+                Assert.That(migration.MigratedAssetCount, Is.EqualTo(1));
+                Assert.That(migration.UnchangedAssetCount, Is.EqualTo(6));
+                Assert.That(repeatedMigration.MigratedAssetCount, Is.EqualTo(0));
+                Assert.That(repeatedMigration.UnchangedAssetCount, Is.EqualTo(7));
+                AssertSequentialWaveEntryIds(basicSet.WaveSet);
+                AssertSequentialWaveEntryIds(scrapSet.WaveSet);
+
                 Assert.That(AssetDatabase.FindAssets("t:GameContentPackAsset", new[] { contentRoot }).Length, Is.EqualTo(2));
                 Assert.That(File.Exists(AssetPathToFullPath(basicScene)), Is.True);
                 Assert.That(File.Exists(AssetPathToFullPath(scrapScene)), Is.True);
             }
             finally
             {
+                Undo.ClearAll();
                 AssetDatabase.DeleteAsset(targetRoot);
                 AssetDatabase.DeleteAsset(contentRoot);
                 for (int i = 0; i < sceneRoots.Length; i++) RestoreAssetDirectory(sceneRoots[i], backups[i]);
@@ -3769,6 +3967,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 {
                     WaveEntryRecipe left = basic.WaveSet[i].Entries.Entries[j];
                     WaveEntryRecipe right = scrap.WaveSet[i].Entries.Entries[j];
+                    Assert.That(right.EntryId, Is.EqualTo(left.EntryId));
                     Assert.That(right.Count, Is.EqualTo(left.Count));
                     Assert.That(right.BatchSize, Is.EqualTo(left.BatchSize));
                     Assert.That(right.InitialDelayTicks, Is.EqualTo(left.InitialDelayTicks));
@@ -3798,6 +3997,89 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.That(scrap.GameRules.SpawnRingRadius, Is.EqualTo(basic.GameRules.SpawnRingRadius));
             Assert.That(scrap.Progression.Tracks.Count, Is.EqualTo(basic.Progression.Tracks.Count));
             Assert.That(scrap.Progression.ResearchNodes.Count, Is.EqualTo(basic.Progression.ResearchNodes.Count));
+        }
+
+        private static void AssertTemplateSourceWaveEntryIds(string templateSourceRoot)
+        {
+            string wavesRoot = Path.Combine(templateSourceRoot, "Content", "Waves");
+            string[] files = Directory.GetFiles(wavesRoot, "*_Entries.asset", SearchOption.AllDirectories);
+            Assert.That(files.Length, Is.EqualTo(7));
+            int total = 0;
+            for (int i = 0; i < files.Length; i++)
+            {
+                string[] ids = File.ReadAllLines(files[i])
+                    .Select(line => line.Trim())
+                    .Where(line => line.StartsWith("- _entryId:", StringComparison.Ordinal))
+                    .Select(line => line.Substring(line.IndexOf(':') + 1).Trim())
+                    .ToArray();
+                total += ids.Length;
+                for (int j = 0; j < ids.Length; j++)
+                    Assert.That(ids[j], Is.EqualTo(j.ToString()), files[i]);
+            }
+
+            Assert.That(total, Is.EqualTo(20));
+        }
+
+        private static void AssertSequentialWaveEntryIds(IReadOnlyList<WaveDefinitionAsset> waves)
+        {
+            Assert.That(waves.Count, Is.EqualTo(7));
+            for (int i = 0; i < waves.Count; i++)
+            {
+                IReadOnlyList<WaveEntryRecipe> entries = waves[i].Entries.Entries;
+                for (int j = 0; j < entries.Count; j++)
+                    Assert.That(entries[j].EntryId.Value, Is.EqualTo(j.ToString()), waves[i].Id);
+            }
+        }
+
+        private static void AssertWaveGameplayParity(IReadOnlyList<WaveDefinitionAsset> expected, IReadOnlyList<WaveDefinitionAsset> actual)
+        {
+            Assert.That(actual.Count, Is.EqualTo(expected.Count));
+            for (int i = 0; i < expected.Count; i++)
+            {
+                Assert.That(actual[i].Id, Is.EqualTo(expected[i].Id));
+                Assert.That(actual[i].Schedule.StartTick, Is.EqualTo(expected[i].Schedule.StartTick));
+                Assert.That(actual[i].Entries.Entries.Count, Is.EqualTo(expected[i].Entries.Entries.Count));
+                for (int j = 0; j < expected[i].Entries.Entries.Count; j++)
+                {
+                    WaveEntryRecipe left = expected[i].Entries.Entries[j];
+                    WaveEntryRecipe right = actual[i].Entries.Entries[j];
+                    Assert.That(right.EntryId, Is.EqualTo(left.EntryId));
+                    Assert.That(right.Enemy.Id, Is.EqualTo(left.Enemy.Id));
+                    Assert.That(right.Count, Is.EqualTo(left.Count));
+                    Assert.That(right.BatchSize, Is.EqualTo(left.BatchSize));
+                    Assert.That(right.InitialDelayTicks, Is.EqualTo(left.InitialDelayTicks));
+                    Assert.That(right.IntervalTicks, Is.EqualTo(left.IntervalTicks));
+                    Assert.That(right.SpawnChannelId, Is.EqualTo(left.SpawnChannelId));
+                    Assert.That(right.ScalingTier, Is.EqualTo(left.ScalingTier));
+                }
+            }
+        }
+
+        private static void ClearWaveEntryIds(WaveDefinitionAsset wave)
+        {
+            var serialized = new SerializedObject(wave.Entries);
+            SerializedProperty entries = serialized.FindProperty("_entries");
+            Assert.That(entries, Is.Not.Null);
+            for (int i = 0; i < entries.arraySize; i++)
+                entries.GetArrayElementAtIndex(i).FindPropertyRelative("_entryId").stringValue = string.Empty;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(wave.Entries);
+        }
+
+        private static void DestroyTransientWave(WaveDefinitionAsset wave)
+        {
+            if (wave == null) return;
+            if (wave.Schedule != null) UnityEngine.Object.DestroyImmediate(wave.Schedule);
+            if (wave.Entries != null) UnityEngine.Object.DestroyImmediate(wave.Entries);
+            UnityEngine.Object.DestroyImmediate(wave);
+        }
+
+        private static void DestroyTransientEnemy(EnemyDefinitionAsset enemy)
+        {
+            if (enemy == null) return;
+            if (enemy.Stats != null) UnityEngine.Object.DestroyImmediate(enemy.Stats);
+            if (enemy.Presentation != null) UnityEngine.Object.DestroyImmediate(enemy.Presentation);
+            UnityEngine.Object.DestroyImmediate(enemy);
         }
 
         private static void AssertMutationIsolation(

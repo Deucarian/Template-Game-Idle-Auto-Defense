@@ -585,9 +585,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     0,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 7, 1, 0, 66, "perimeter-north"),
-                        new WaveEntryRecipe(enemies[1], 3, 1, 220, 84, "perimeter-east"),
-                        new WaveEntryRecipe(enemies[2], 1, 1, 420, 0, "perimeter-northwest")
+                        new WaveEntryRecipe("0", enemies[0], 7, 1, 0, 66, "perimeter-north"),
+                        new WaveEntryRecipe("1", enemies[1], 3, 1, 220, 84, "perimeter-east"),
+                        new WaveEntryRecipe("2", enemies[2], 1, 1, 420, 0, "perimeter-northwest")
                     },
                     new[] { "idle-auto-defense", "opening" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -596,8 +596,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     620,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[1], 6, 1, 0, 58, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[0], 7, 1, 90, 55, "perimeter-northeast", 1)
+                        new WaveEntryRecipe("0", enemies[1], 6, 1, 0, 58, "perimeter-southeast", 1),
+                        new WaveEntryRecipe("1", enemies[0], 7, 1, 90, 55, "perimeter-northeast", 1)
                     },
                     new[] { "idle-auto-defense", "runner-pressure" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -606,9 +606,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     1180,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[3], 3, 1, 0, 72, "perimeter-south", 1),
-                        new WaveEntryRecipe(enemies[2], 2, 1, 100, 92, "perimeter-west", 2),
-                        new WaveEntryRecipe(enemies[1], 6, 1, 180, 52, "perimeter-northeast", 2)
+                        new WaveEntryRecipe("0", enemies[3], 3, 1, 0, 72, "perimeter-south", 1),
+                        new WaveEntryRecipe("1", enemies[2], 2, 1, 100, 92, "perimeter-west", 2),
+                        new WaveEntryRecipe("2", enemies[1], 6, 1, 180, 52, "perimeter-northeast", 2)
                     },
                     new[] { "idle-auto-defense", "pressure" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -617,9 +617,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     1760,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[0], 9, 1, 0, 42, "perimeter-southwest", 1),
-                        new WaveEntryRecipe(enemies[1], 6, 1, 130, 54, "perimeter-southeast", 1),
-                        new WaveEntryRecipe(enemies[3], 3, 1, 260, 80, "perimeter-west", 2)
+                        new WaveEntryRecipe("0", enemies[0], 9, 1, 0, 42, "perimeter-southwest", 1),
+                        new WaveEntryRecipe("1", enemies[1], 6, 1, 130, 54, "perimeter-southeast", 1),
+                        new WaveEntryRecipe("2", enemies[3], 3, 1, 260, 80, "perimeter-west", 2)
                     },
                     new[] { "idle-auto-defense", "tank-break" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -628,9 +628,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     2450,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[4], 1, 1, 0, 0, "perimeter-northwest", 3),
-                        new WaveEntryRecipe(enemies[1], 7, 1, 140, 52, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[3], 3, 1, 300, 80, "perimeter-south", 2)
+                        new WaveEntryRecipe("0", enemies[4], 1, 1, 0, 0, "perimeter-northwest", 3),
+                        new WaveEntryRecipe("1", enemies[1], 7, 1, 140, 52, "perimeter-east", 2),
+                        new WaveEntryRecipe("2", enemies[3], 3, 1, 300, 80, "perimeter-south", 2)
                     },
                     new[] { "idle-auto-defense", "elite" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -639,9 +639,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     3150,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[2], 3, 1, 0, 100, "perimeter-north", 2),
-                        new WaveEntryRecipe(enemies[3], 4, 1, 170, 74, "perimeter-east", 2),
-                        new WaveEntryRecipe(enemies[1], 8, 1, 300, 48, "perimeter-southwest", 3)
+                        new WaveEntryRecipe("0", enemies[2], 3, 1, 0, 100, "perimeter-north", 2),
+                        new WaveEntryRecipe("1", enemies[3], 4, 1, 170, 74, "perimeter-east", 2),
+                        new WaveEntryRecipe("2", enemies[1], 8, 1, 300, 48, "perimeter-southwest", 3)
                     },
                     new[] { "idle-auto-defense", "final" }),
                 WaveDefinitionAsset.CreateTransient(
@@ -650,9 +650,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                     3900,
                     new[]
                     {
-                        new WaveEntryRecipe(enemies[5], 1, 1, 0, 0, "perimeter-south", 4),
-                        new WaveEntryRecipe(enemies[4], 1, 1, 300, 0, "perimeter-northeast", 3),
-                        new WaveEntryRecipe(enemies[1], 12, 1, 400, 64, "perimeter-northwest", 3)
+                        new WaveEntryRecipe("0", enemies[5], 1, 1, 0, 0, "perimeter-south", 4),
+                        new WaveEntryRecipe("1", enemies[4], 1, 1, 300, 0, "perimeter-northeast", 3),
+                        new WaveEntryRecipe("2", enemies[1], 12, 1, 400, 64, "perimeter-northwest", 3)
                     },
                     new[] { "idle-auto-defense", "boss" })
             };
@@ -720,7 +720,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 {
                     WaveEntryRecipe entry = entries[j];
                     groups[j] = SpawnGroupDefinition.Fixed(
-                        new SpawnGroupId(wave.Id + ".group." + j.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                        new SpawnGroupId(wave.Id + ".group." + entry.EntryId.Value),
                         new SpawnableId(entry.Enemy.Id),
                         entry.Count,
                         entry.BatchSize,
