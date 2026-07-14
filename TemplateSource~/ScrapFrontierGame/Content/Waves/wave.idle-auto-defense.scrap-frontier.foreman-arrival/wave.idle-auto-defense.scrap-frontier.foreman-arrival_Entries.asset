@@ -13,21 +13,24 @@ MonoBehaviour:
   m_Name: wave.idle-auto-defense.scrap-frontier.foreman-arrival_Entries
   m_EditorClassIdentifier: Deucarian.Attacks.Authoring::Deucarian.Attacks.Authoring.WaveEntriesDefinitionAsset
   _entries:
-  - _enemy: {fileID: 11400000, guid: c56ba621a1bd48a7be9f205b5c66b47c, type: 2}
+  - _entryId: 0
+    _enemy: {fileID: 11400000, guid: c56ba621a1bd48a7be9f205b5c66b47c, type: 2}
     _count: 1
     _batchSize: 1
     _initialDelayTicks: 0
     _intervalTicks: 0
     _spawnChannelId: perimeter-northwest
     _scalingTier: 3
-  - _enemy: {fileID: 11400000, guid: 6c9792b3a2a842de83b8574ce3e79e09, type: 2}
+  - _entryId: 1
+    _enemy: {fileID: 11400000, guid: 6c9792b3a2a842de83b8574ce3e79e09, type: 2}
     _count: 7
     _batchSize: 1
     _initialDelayTicks: 140
     _intervalTicks: 52
     _spawnChannelId: perimeter-east
     _scalingTier: 2
-  - _enemy: {fileID: 11400000, guid: 4effc808fd864b9ab01adc1c697fc3e4, type: 2}
+  - _entryId: 2
+    _enemy: {fileID: 11400000, guid: 4effc808fd864b9ab01adc1c697fc3e4, type: 2}
     _count: 3
     _batchSize: 1
     _initialDelayTicks: 300
