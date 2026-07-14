@@ -362,8 +362,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             AttackDefinitionAsset[] attacks = FindPersistedAttackAssets(contentRoot);
             EnemyDefinitionAsset[] enemies = contentSet.EnemyPool.Where(value => value != null)
                 .Distinct().ToArray();
-            WaveDefinitionAsset[] waves = contentSet.WaveSet.Where(value => value != null)
+            WaveDefinitionAsset[] activeWaves = contentSet.WaveSet.Where(value => value != null)
                 .Distinct().ToArray();
+            WaveDefinitionAsset[] waves = activeWaves
+                .Concat(FindPersistedWaveAssets(contentRoot))
+                .Distinct()
+                .ToArray();
             WeaponDefinitionAsset[] weapons = contentSet.AvailableWeapons.Where(value => value != null)
                 .Distinct().ToArray();
             RunUpgradeDefinitionAsset[] upgrades = contentSet.UpgradePool.Where(value => value != null)
@@ -375,7 +379,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             drafts.AddRange(attacks.Select(asset => AttackDraft(asset, order++, library)));
             drafts.AddRange(enemies.Select(asset => EnemyDraft(asset, order++, library)));
             for (int waveIndex = 0; waveIndex < waves.Length; waveIndex++)
-                drafts.Add(WaveDraft(waves[waveIndex], order++, waveIndex, library));
+                drafts.Add(WaveDraft(waves[waveIndex], order++, Array.IndexOf(activeWaves, waves[waveIndex]), library));
             drafts.AddRange(weapons.Select(asset => WeaponDraft(asset, order++, library)));
             drafts.AddRange(upgrades.Select(asset => UpgradeDraft(asset, order++, library)));
             AddAuthoredCoreDrafts(contentSet, drafts, ref order);
@@ -657,7 +661,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 ValidationFor(asset, library),
                 new[]
                 {
-                    Metadata("Wave Order", waveOrder.ToString(CultureInfo.InvariantCulture)),
+                    Metadata("Wave Order", waveOrder < 0
+                        ? "Not in active run profile"
+                        : waveOrder.ToString(CultureInfo.InvariantCulture)),
                     Metadata("Start Tick", asset.Schedule == null ? "Missing" : asset.Schedule.StartTick.ToString(CultureInfo.InvariantCulture)),
                     Metadata("Schedule Unit", "Simulation ticks"),
                     Metadata("Entry Count", entries.Count.ToString(CultureInfo.InvariantCulture)),
@@ -1386,6 +1392,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 objects.Add(attack.Presentation);
             }
 
+            foreach (WaveDefinitionAsset wave in FindPersistedWaveAssets(contentRoot))
+            {
+                objects.Add(wave);
+                objects.Add(wave.Schedule);
+                objects.Add(wave.Entries);
+            }
+
             IdleAutoDefensePlayerExperienceAsset experience = FindFirstAsset<IdleAutoDefensePlayerExperienceAsset>(contentRoot);
             if (experience != null)
             {
@@ -1598,6 +1611,25 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 .Where(path => path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .Select(AssetDatabase.LoadAssetAtPath<AttackDefinitionAsset>)
+                .Where(asset => asset != null && EditorUtility.IsPersistent(asset))
+                .Distinct()
+                .ToArray();
+        }
+
+        private static WaveDefinitionAsset[] FindPersistedWaveAssets(string searchRoot)
+        {
+            string root = NormalizePath(searchRoot).TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(root) ||
+                !root.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) ||
+                !AssetDatabase.IsValidFolder(root))
+                return Array.Empty<WaveDefinitionAsset>();
+
+            return AssetDatabase.FindAssets("t:" + nameof(WaveDefinitionAsset), new[] { root })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Select(NormalizePath)
+                .Where(path => path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Select(AssetDatabase.LoadAssetAtPath<WaveDefinitionAsset>)
                 .Where(asset => asset != null && EditorUtility.IsPersistent(asset))
                 .Distinct()
                 .ToArray();

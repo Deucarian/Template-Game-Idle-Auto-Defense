@@ -293,6 +293,117 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 validationState);
         }
 
+        internal GameContentReferenceEvaluation EvaluateWaveReferenceTarget(
+            IdleAutoDefenseEditableSource source,
+            string fieldId,
+            GameContentRecordKey targetKey)
+        {
+            if (source == null ||
+                !(source.Record.SourceAsset is IdleAutoDefenseRunProfileAsset runProfile) ||
+                !ReferenceEquals(source.SourceAsset, runProfile))
+                return GameContentReferenceEvaluation.Rejected(targetKey, "Only an authored Run Profile's Waves collection is editable.");
+
+            IdleAutoDefenseSerializedFieldMapping mapping = source.Mappings.FirstOrDefault(candidate =>
+                string.Equals(candidate.Descriptor.FieldId, fieldId, StringComparison.Ordinal));
+            GameContentRecordReferenceFieldDescriptor referenceDescriptor =
+                mapping?.Descriptor.Collection?.ItemDescriptor?.RecordReference;
+            if (mapping == null ||
+                mapping.Descriptor.FieldType != GameContentFieldType.OrderedRecordReferenceCollection ||
+                referenceDescriptor == null)
+                return GameContentReferenceEvaluation.Rejected(targetKey, "The field is not the approved run-profile Waves collection.");
+            if (targetKey == null || !targetKey.IsValid)
+                return GameContentReferenceEvaluation.Rejected(targetKey, "A valid canonical Wave target is required.");
+
+            bool sameOwner = string.Equals(
+                targetKey.OwningPackageId,
+                source.Record.CanonicalKey.OwningPackageId,
+                StringComparison.OrdinalIgnoreCase);
+            bool samePack = string.Equals(
+                targetKey.PackId,
+                source.Record.CanonicalKey.PackId,
+                StringComparison.OrdinalIgnoreCase);
+            if (!sameOwner || !samePack)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The Wave target must belong to the currently selected Idle Auto Defense named pack.",
+                    samePackPolicySatisfied: false);
+            }
+
+            GameContentRecordDescriptor targetRecord = source.Index.Records.FirstOrDefault(candidate =>
+                candidate?.CanonicalKey != null && candidate.CanonicalKey.Equals(targetKey));
+            if (targetRecord == null)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The Wave target is absent from the selected named pack's persistent authored index.",
+                    sourceClaimValid: false);
+            }
+            if (!referenceDescriptor.RequiredCapabilities.All(targetRecord.HasCapability))
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected canonical record is not a Wave.",
+                    requiredCapabilitiesSatisfied: false);
+            }
+            if (!IdleAutoDefenseWaveReferencePolicy.TryResolveTarget(
+                    source.Index,
+                    targetKey,
+                    out targetRecord,
+                    out WaveDefinitionAsset wave,
+                    out string reason))
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    reason,
+                    sourceClaimValid: false);
+            }
+
+            string targetPath = AssetDatabase.GetAssetPath(wave);
+            if (!GameContentSourceIdentity.TryCreate(wave, targetPath, out GameContentSourceIdentity identity))
+                return GameContentReferenceEvaluation.Rejected(targetKey, "The Wave target has no stable source identity.", sourceClaimValid: false);
+            EnsureContentPackIndexes();
+            int claimantCount = _contentPackIndexes.Values.Count(candidate => candidate.SourceClaims.Any(claim =>
+                claim?.SourceIdentity != null && claim.SourceIdentity.Equals(identity)));
+            if (claimantCount != 1)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    claimantCount == 0
+                        ? "The Wave target is not claimed by the selected named pack."
+                        : "The Wave target is claimed by multiple named packs.",
+                    sourceClaimValid: false);
+            }
+
+            if (targetRecord.Validation == null || !targetRecord.Validation.IsValid || targetRecord.HasBrokenReferences)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected Wave has blocking authored validation errors or broken references.",
+                    validationState: GameContentEditValidationState.Invalid);
+            }
+
+            ContentAuthoringValidationReport waveReport = WaveDefinitionValidator.Validate(
+                wave,
+                WaveDefinitionValidationOptions.RuntimeFriendly);
+            if (!waveReport.IsValid)
+            {
+                return GameContentReferenceEvaluation.Rejected(
+                    targetKey,
+                    "The selected Wave fails the current Wave definition validator.",
+                    validationState: GameContentEditValidationState.Invalid);
+            }
+
+            GameContentEditValidationState validationState = waveReport.WarningCount > 0 ||
+                                                               targetRecord.Validation.WarningCount > 0
+                ? GameContentEditValidationState.Warning
+                : GameContentEditValidationState.Valid;
+            return GameContentReferenceEvaluation.Approved(
+                targetRecord.CanonicalKey,
+                mapping.Descriptor.Collection.RuntimeImpact,
+                validationState);
+        }
+
         private static bool TryValidateProposedWeaponReference(
             WeaponDefinitionAsset weapon,
             WeaponStatsDefinitionAsset stats,
@@ -476,6 +587,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 return;
             }
 
+            if (source.Record.SourceAsset is IdleAutoDefenseRunProfileAsset runProfile)
+            {
+                replacements[runProfile] = scalarClone;
+                return;
+            }
+
             throw new InvalidOperationException("The selected record type has no proposed-pack substitution rule.");
         }
 
@@ -489,6 +606,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             ReplaceArrayReferences(serialized.FindProperty("_availableWeapons"), replacements);
             ReplaceArrayReferences(serialized.FindProperty("_enemyPool"), replacements);
             ReplaceArrayReferences(serialized.FindProperty("_upgradePool"), replacements);
+            ReplaceReference(serialized.FindProperty("_runProfile"), replacements);
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

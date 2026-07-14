@@ -20,6 +20,7 @@ This template must always generate and open as a complete playable vertical slic
 - A duplicate JSON gameplay mirror is not permitted. ScriptableObjects are the single editable source of truth.
 - Asset-flip-critical UI, tutorial, theme, and audio values come from the generated `Presentation` ScriptableObjects.
 - Repointing a mounted weapon through Game Content Authoring must resolve to a canonical compatible Attack owned by the same generated named pack; no fallback, mirror, or foreign-pack reference may satisfy the normal path.
+- Reordering a Run Profile through Game Content Authoring must preserve its persistent asset and resolve only canonical Waves owned by the same generated named pack. At least one Wave is required, duplicates/nulls are forbidden, and changing references must never create or delete Wave records.
 
 ## Intentional Fallback
 
