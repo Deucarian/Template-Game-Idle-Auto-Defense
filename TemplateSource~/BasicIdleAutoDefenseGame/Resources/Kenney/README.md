@@ -15,4 +15,4 @@ Curated Kenney starter assets in this folder are used by the Basic Idle Auto Def
 
 Only sample-used 3D models, sprites, UI images, and audio clips are included. Attribution is not required, but credit is appreciated by Kenney.
 
-The 3D gameplay art lives under `IdleAutoDefense/Models/TowerDefenseKit` and contains the curated FBX subset used by the playable scene: modular tower bases, weapons, UFO enemies, ammo/projectiles, arena tiles, and small environment details. The original Kenney `License.txt`, preview, and overview files are preserved next to the imported models.
+The 3D gameplay art lives under `IdleAutoDefense/Models/TowerDefenseKit` and contains the curated FBX subset used by the playable scene: modular tower bases, weapons, UFO enemies, ammo/projectiles, arena tiles, and small environment details. The original Kenney `License.txt` is preserved next to the imported models. Unused gallery previews and the generated pack overview are intentionally excluded.
