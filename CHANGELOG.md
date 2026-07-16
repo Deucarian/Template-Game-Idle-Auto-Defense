@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Removed unused Kenney gallery preview, sample, and generated overview files from both the runtime resources and generated-game template source so the package contents match the third-party notice.
 - Added safe ordered Run Profile Waves editing for generated Basic Idle Auto Defense and Scrap Frontier named packs.
 - Added exact-root persistent Wave discovery, canonical same-pack target checks, minimum/no-duplicate rules, staged collection operations, cloned-profile validation, and run restart/rebind guidance.
 - Proved collection Commit, strict runtime order consumption, Unity Undo/Redo, stale-aware exact Rollback, and Basic/Scrap isolation without changing shipped Wave assets or sequences.
