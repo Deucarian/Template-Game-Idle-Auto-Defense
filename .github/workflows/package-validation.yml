@@ -10,7 +10,7 @@ on:
 jobs:
   validate:
     name: Shared package validation
-    uses: Deucarian/Package-Registry/.github/workflows/deucarian-package-validation.yml@7e6a1f8041c9ec35cd1307abaf28692c0edb4bf0 # Package Registry main
+    uses: Deucarian/Package-Registry/.github/workflows/deucarian-package-validation.yml@98eda5c49db55b326a037ddb36ca1b5f4c523b5c # Package Registry main
     with:
-      registry-ref: 7e6a1f8041c9ec35cd1307abaf28692c0edb4bf0 # Package Registry main
+      registry-ref: 98eda5c49db55b326a037ddb36ca1b5f4c523b5c # Package Registry main
       package-config: deucarian-package.json
