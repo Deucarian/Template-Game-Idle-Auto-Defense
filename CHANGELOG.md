@@ -2,6 +2,7 @@
 
 ## 0.1.2 - 2026-07-17
 
+- Declared the built-in Particle System module required by runtime presentation effects in minimal Unity hosts.
 - Added explicit Persistence and World Navigation dependencies, shortened template asset paths, and synchronized the complete template stack to the coordinated portfolio versions.
 - Replaced duplicated content-pack and content-set provider state, validation, reference, and summary code with shared Game Content Authoring primitives.
 - Added safe ordered Run Profile Waves editing for generated Basic Idle Auto Defense and Scrap Frontier named packs.

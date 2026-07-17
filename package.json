@@ -39,6 +39,7 @@
     "com.deucarian.run-upgrades": "0.1.1",
     "com.deucarian.weapon-systems": "0.1.1",
     "com.deucarian.world-navigation": "0.1.1",
-    "com.deucarian.world-spawning": "0.2.1"
+    "com.deucarian.world-spawning": "0.2.1",
+    "com.unity.modules.particlesystem": "1.0.0"
   }
 }

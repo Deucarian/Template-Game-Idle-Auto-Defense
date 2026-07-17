@@ -31,6 +31,7 @@ Required dependencies and why:
 - `com.deucarian.game-content-authoring`: content authoring provider integration for starter content.
 - `com.deucarian.gameplay-foundation`: shared IDs, validation, and gameplay primitives used by template glue.
 - `com.deucarian.monetization`: SDK-free placement and mock/no-op monetization abstractions.
+- `com.unity.modules.particlesystem`: built-in Particle System module used by runtime presentation effects.
 
 Optional/version-defined dependencies:
 
