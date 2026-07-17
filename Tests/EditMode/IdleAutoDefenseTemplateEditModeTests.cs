@@ -2522,6 +2522,74 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         }
 
         [Test]
+        public void SetupWizardDefaultBothDestinationsStayBelowWindowsPathLimitAtHundredCharacterProjectRoot()
+        {
+            const int simulatedProjectRootLength = 100;
+            const int maximumGeneratedPathLengthExclusive = 240;
+            const string basicSceneRoot = "Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame";
+            const string scrapSceneRoot = "Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame";
+            const string shortenedOfflineProgressionMetaPath =
+                "Assets/GameContent/IdleAutoDefense/ScrapFrontier/OfflineProgression/" +
+                "offline-progression.idle-auto-defense.scrap-frontier.asset.meta";
+            var request = new IdleAutoDefenseTemplateSetupRequest
+            {
+                PackSelection = IdleAutoDefenseTemplatePackSelection.Both,
+                RefreshAssetDatabase = false
+            };
+            Assert.That(request.TargetRootAssetPath, Is.EqualTo("Assets/IdleAutoDefense"));
+            Assert.That(request.ContentRootAssetPath, Is.EqualTo("Assets/GameContent/IdleAutoDefense"));
+
+            string[] outputRoots =
+            {
+                request.TargetRootAssetPath,
+                request.ContentRootAssetPath,
+                basicSceneRoot,
+                scrapSceneRoot
+            };
+            string[] backups = outputRoots.Select(BackupAssetDirectory).ToArray();
+
+            try
+            {
+                IdleAutoDefenseTemplateSetupResult setup = IdleAutoDefenseTemplateSetupService.CreateGameFromTemplate(request);
+                Assert.That(setup.Succeeded, Is.True, setup.CreateSummary());
+
+                string simulatedProjectRoot = new string('R', simulatedProjectRootLength);
+                string[] generatedAssetPaths = setup.CreatedDirectories
+                    .Concat(setup.CreatedFiles)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                var generatedDestinations = generatedAssetPaths
+                    .Select(assetPath => new
+                    {
+                        AssetPath = assetPath.Replace('\\', '/'),
+                        FullPath = simulatedProjectRoot + "/" + assetPath.Replace('\\', '/')
+                    })
+                    .ToArray();
+                var excessivePaths = generatedDestinations
+                    .Where(path => path.FullPath.Length >= maximumGeneratedPathLengthExclusive)
+                    .ToArray();
+
+                Assert.That(simulatedProjectRoot.Length, Is.EqualTo(simulatedProjectRootLength));
+                Assert.That(generatedAssetPaths, Does.Contain(shortenedOfflineProgressionMetaPath));
+                Assert.That(
+                    excessivePaths,
+                    Is.Empty,
+                    "Default Both-pack destinations must stay below " + maximumGeneratedPathLengthExclusive +
+                    " characters under a " + simulatedProjectRootLength + "-character project root.\n" +
+                    string.Join("\n", excessivePaths.Select(path => path.FullPath.Length + ": " + path.AssetPath)));
+                Assert.That(
+                    generatedDestinations.Max(path => path.FullPath.Length),
+                    Is.LessThan(maximumGeneratedPathLengthExclusive));
+            }
+            finally
+            {
+                for (int i = 0; i < outputRoots.Length; i++)
+                    RestoreAssetDirectory(outputRoots[i], backups[i]);
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            }
+        }
+
+        [Test]
         public void SetupWizardGeneratesBothIndependentPacksWithParityIsolationStrictBindingAndRepair()
         {
             string targetRoot = "Assets/T/A" + Guid.NewGuid().ToString("N").Substring(0, 8);
