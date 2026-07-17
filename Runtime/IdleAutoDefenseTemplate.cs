@@ -6,6 +6,7 @@ using Deucarian.Attacks;
 using Deucarian.Attacks.Authoring;
 using Deucarian.AutoDefense;
 using Deucarian.Combat;
+using Deucarian.Common;
 using Deucarian.DefenseGames;
 using Deucarian.Encounters;
 using Deucarian.IdleProgression;
@@ -4149,7 +4150,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 visual.ElapsedSeconds += safeDelta;
                 if (visual.Instance == null || visual.ElapsedSeconds >= visual.DurationSeconds)
                 {
-                    DestroyTemplateObject(visual.Instance);
+                    UnityObjectUtility.DestroySafely(visual.Instance);
                     _activeBeamVisuals.RemoveAt(i);
                     continue;
                 }
@@ -4160,7 +4161,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 if (!AlignBeamInstance(visual.Instance, visual.Prefab, ResolveTowerMuzzlePosition(visual.Attack), impactPosition))
                 {
                     BeamVisualInvalidEndpointCount++;
-                    DestroyTemplateObject(visual.Instance);
+                    UnityObjectUtility.DestroySafely(visual.Instance);
                     _activeBeamVisuals.RemoveAt(i);
                     continue;
                 }
@@ -4205,7 +4206,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             AttackVfxSpawnCount++;
             if (string.Equals(effectRole, AttackPresentationEventKind.OnFire.ToString(), StringComparison.OrdinalIgnoreCase))
                 MuzzleFlashSpawnCount++;
-            DestroyPresentationObject(instance, 2f);
+            UnityObjectUtility.DestroySafely(instance, 2f);
             return true;
         }
 
@@ -4227,7 +4228,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             ApplyColor(instance, color);
             DisableColliders(instance);
             AttackVfxSpawnCount++;
-            DestroyPresentationObject(instance, 0.45f);
+            UnityObjectUtility.DestroySafely(instance, 0.45f);
         }
 
         private void EmitAttackTracer(Vector3 origin, Vector3 destination, Color color)
@@ -4249,7 +4250,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             line.endColor = new Color(color.r, color.g, color.b, 0.2f);
             AttackVfxSpawnCount++;
             DebugAimTracerSpawnCount++;
-            DestroyPresentationObject(tracer, 0.32f);
+            UnityObjectUtility.DestroySafely(tracer, 0.32f);
         }
 
         private void EmitKenneyEnemyEventBurst(Vector3 position, EnemyPresentationEventKind eventKind)
@@ -4308,7 +4309,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             billboard.Configure(true);
             var burst = instance.AddComponent<KenneySpriteBurstVisual>();
             burst.Configure(renderer, Mathf.Max(0.1f, duration), Mathf.Max(0f, rise), instance.transform.localScale);
-            DestroyPresentationObject(instance, Mathf.Max(0.12f, duration) + 0.08f);
+            UnityObjectUtility.DestroySafely(instance, Mathf.Max(0.12f, duration) + 0.08f);
             return true;
         }
 
@@ -5043,13 +5044,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             MeshRenderer[] renderers = instance.GetComponentsInChildren<MeshRenderer>(true);
             for (int i = 0; i < renderers.Length; i++)
                 renderers[i].enabled = false;
-        }
-
-        private static void DestroyPresentationObject(GameObject instance, float delaySeconds)
-        {
-            if (instance == null) return;
-            if (Application.isPlaying) Destroy(instance, delaySeconds);
-            else DestroyImmediate(instance);
         }
 
         private void AwardRuntimeCurrencyForKills(int kills)
@@ -6407,19 +6401,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 _enemySpawning?.Dispose();
                 _projectileSpawning?.Dispose();
                 foreach (GameObject prefab in _runtimeEnemyPrefabs.Values)
-                    DestroyTemplateObject(prefab);
+                    UnityObjectUtility.DestroySafely(prefab);
                 foreach (GameObject prefab in _runtimeProjectilePrefabs.Values)
-                    DestroyTemplateObject(prefab);
+                    UnityObjectUtility.DestroySafely(prefab);
                 _runtimeEnemyPrefabs.Clear();
                 _runtimeProjectilePrefabs.Clear();
-                DestroyTemplateObject(_enemyPrefab);
-                DestroyTemplateObject(_projectilePrefab);
+                UnityObjectUtility.DestroySafely(_enemyPrefab);
+                UnityObjectUtility.DestroySafely(_projectilePrefab);
                 if (_fallbackPresentationClipIsRuntimeOwned)
-                    DestroyTemplateObject(_fallbackPresentationClip);
-                DestroyTemplateObject(_runtimePanelSettings);
-                DestroyTemplateObject(_runtimeThemeStyleSheet);
-                DestroyTemplateObject(_runtimeUiObject);
-                DestroyTemplateObject(_root);
+                    UnityObjectUtility.DestroySafely(_fallbackPresentationClip);
+                UnityObjectUtility.DestroySafely(_runtimePanelSettings);
+                UnityObjectUtility.DestroySafely(_runtimeThemeStyleSheet);
+                UnityObjectUtility.DestroySafely(_runtimeUiObject);
+                UnityObjectUtility.DestroySafely(_root);
             }
             else
             {
@@ -6483,7 +6477,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private void ClearActiveBeamVisuals()
         {
             for (int i = _activeBeamVisuals.Count - 1; i >= 0; i--)
-                DestroyTemplateObject(_activeBeamVisuals[i].Instance);
+                UnityObjectUtility.DestroySafely(_activeBeamVisuals[i].Instance);
             _activeBeamVisuals.Clear();
         }
 
@@ -6634,12 +6628,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             public float ElapsedSeconds;
         }
 
-        private static void DestroyTemplateObject(UnityEngine.Object instance)
-        {
-            if (instance == null) return;
-            if (Application.isPlaying) Destroy(instance);
-            else DestroyImmediate(instance);
-        }
     }
 
     public static class IdleAutoDefenseTemplateSaveProgressionComposition

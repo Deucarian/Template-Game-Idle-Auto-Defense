@@ -1,6 +1,7 @@
 {
   "packageId": "com.deucarian.template.game.idle-auto-defense",
   "displayName": "Deucarian Template Game - Idle Auto Defense",
+  "samplePolicy": "template",
   "ownedCapabilities": [],
   "runtimeAssemblies": [
     "Deucarian.TemplateGameIdleAutoDefense"
@@ -14,11 +15,26 @@
     "Deucarian.TemplateGameIdleAutoDefense.Tests"
   ],
   "requiredDependencies": [
+    "com.deucarian.attacks",
+    "com.deucarian.auto-defense",
     "com.deucarian.auto-defense-suite",
+    "com.deucarian.combat",
+    "com.deucarian.common",
+    "com.deucarian.defense-games",
     "com.deucarian.editor",
+    "com.deucarian.encounters",
     "com.deucarian.game-content-authoring",
     "com.deucarian.gameplay-foundation",
-    "com.deucarian.monetization"
+    "com.deucarian.idle-progression",
+    "com.deucarian.monetization",
+    "com.deucarian.persistence",
+    "com.deucarian.progression",
+    "com.deucarian.projectiles",
+    "com.deucarian.run-upgrades",
+    "com.deucarian.weapon-systems",
+    "com.deucarian.world-navigation",
+    "com.deucarian.world-spawning",
+    "com.unity.modules.particlesystem"
   ],
   "optionalVersionDefinedDependencies": [],
   "allowedDirectDebugCalls": [
