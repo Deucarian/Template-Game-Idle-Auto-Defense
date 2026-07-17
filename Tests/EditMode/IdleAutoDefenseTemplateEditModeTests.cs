@@ -2371,8 +2371,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             string scrapRoot = Path.Combine(packageRoot, "TemplateSource~", "ScrapFrontierGame");
             AssertTemplateSourceWaveEntryIds(basicRoot);
             AssertTemplateSourceWaveEntryIds(scrapRoot);
-            Assert.That(Directory.GetFiles(basicRoot, "*", SearchOption.AllDirectories).Length, Is.EqualTo(494));
-            Assert.That(Directory.GetFiles(scrapRoot, "*", SearchOption.AllDirectories).Length, Is.EqualTo(369));
+            Assert.That(GetFiles(basicRoot, "*").Length, Is.EqualTo(494));
+            Assert.That(GetFiles(scrapRoot, "*").Length, Is.EqualTo(369));
             AssertFileSha256(
                 Path.Combine(basicRoot, "Content", "ContentPacks", "playable", "ContentPack.asset"),
                 "61d1490594fe78925d5d7c0c351bd9f548b28fc49c954061f917014f6f05a45c");
@@ -2404,16 +2404,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Path.Combine(basicRoot, "Scenes", "OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity"),
                 "67469ac3217fea4f5c329c0cd4b5935a6c709f80b8b4d779236b21b622143e2c");
 
-            Dictionary<string, string> basicGuids = Directory.GetFiles(basicRoot, "*.meta", SearchOption.AllDirectories)
+            Dictionary<string, string> basicGuids = GetFiles(basicRoot, "*.meta")
                 .Select(path => new { Path = path, Guid = ReadMetaGuid(path) })
                 .Where(value => !string.IsNullOrWhiteSpace(value.Guid))
                 .ToDictionary(value => value.Guid, value => value.Path, StringComparer.OrdinalIgnoreCase);
             string sharedBootstrapGuid = ReadMetaGuid(Path.Combine(basicRoot, "Scripts", "BasicIdleAutoDefenseGameBootstrap.cs.meta"));
             var leaked = new List<string>();
-            foreach (string scrapFile in Directory.GetFiles(scrapRoot, "*", SearchOption.AllDirectories)
+            foreach (string scrapFile in GetFiles(scrapRoot, "*")
                          .Where(CanContainGuidReference))
             {
-                string text = File.ReadAllText(scrapFile);
+                string text = ReadAllText(scrapFile);
                 foreach (KeyValuePair<string, string> pair in basicGuids)
                 {
                     if (!text.Contains(pair.Key) || string.Equals(pair.Key, sharedBootstrapGuid, StringComparison.OrdinalIgnoreCase)) continue;
@@ -2422,20 +2422,20 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             Assert.That(leaked, Is.Empty, string.Join("\n", leaked));
-            Dictionary<string, string> scrapGuids = Directory.GetFiles(scrapRoot, "*.meta", SearchOption.AllDirectories)
+            Dictionary<string, string> scrapGuids = GetFiles(scrapRoot, "*.meta")
                 .Select(path => new { Path = path, Guid = ReadMetaGuid(path) })
                 .Where(value => !string.IsNullOrWhiteSpace(value.Guid))
                 .ToDictionary(value => value.Guid, value => value.Path, StringComparer.OrdinalIgnoreCase);
             var reverseLeaks = new List<string>();
-            foreach (string basicFile in Directory.GetFiles(basicRoot, "*", SearchOption.AllDirectories)
+            foreach (string basicFile in GetFiles(basicRoot, "*")
                          .Where(CanContainGuidReference))
             {
-                string text = File.ReadAllText(basicFile);
+                string text = ReadAllText(basicFile);
                 foreach (KeyValuePair<string, string> pair in scrapGuids)
                     if (text.Contains(pair.Key)) reverseLeaks.Add(basicFile + " -> " + pair.Value);
             }
             Assert.That(reverseLeaks, Is.Empty, string.Join("\n", reverseLeaks));
-            string[] duplicateGuids = Directory.GetFiles(Path.Combine(packageRoot, "TemplateSource~"), "*.meta", SearchOption.AllDirectories)
+            string[] duplicateGuids = GetFiles(Path.Combine(packageRoot, "TemplateSource~"), "*.meta")
                 .Select(ReadMetaGuid)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
@@ -2923,8 +2923,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(GameContentSetValidator.Validate(generatedContentSet).IsValid, Is.True, FormatIssues(GameContentSetValidator.Validate(generatedContentSet)));
                 string authoredValidation = IdleAutoDefenseAuthoredContentValidationMenu.BuildReport();
                 Assert.That(authoredValidation, Does.StartWith("Idle Auto Defense authored content validation: PASS"), authoredValidation);
-                Assert.That(authoredValidation, Does.Contain("player-experiences=1"), authoredValidation);
-                Assert.That(authoredValidation, Does.Contain("PASS contentset.idle-auto-defense.playable"), authoredValidation);
+                Assert.That(authoredValidation, Does.Contain(
+                    "PASS contentset.idle-auto-defense.playable (" +
+                    contentRoot + "/ContentSets/playable/GameContentSet.asset)"), authoredValidation);
+                Assert.That(authoredValidation, Does.Contain(
+                    "PASS player-experience.idle-auto-defense.playable (" +
+                    contentRoot + "/Presentation/player-experience.idle-auto-defense.playable.asset)"), authoredValidation);
                 AssertGeneratedContentIsDiscoverableInGameContentLibrary(contentRoot);
                 AssertGeneratedContentPackAppearsInGameContentAuthoring(contentRoot, generatedSceneAssetPath);
 
@@ -4070,12 +4074,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         private static void AssertTemplateSourceWaveEntryIds(string templateSourceRoot)
         {
             string wavesRoot = Path.Combine(templateSourceRoot, "Content", "Waves");
-            string[] files = Directory.GetFiles(wavesRoot, "Entries.asset", SearchOption.AllDirectories);
+            string[] files = GetFiles(wavesRoot, "Entries.asset");
             Assert.That(files.Length, Is.EqualTo(7));
             int total = 0;
             for (int i = 0; i < files.Length; i++)
             {
-                string[] ids = File.ReadAllLines(files[i])
+                string[] ids = ReadAllLines(files[i])
                     .Select(line => line.Trim())
                     .Where(line => line.StartsWith("- _entryId:", StringComparison.Ordinal))
                     .Select(line => line.Substring(line.IndexOf(':') + 1).Trim())
@@ -4337,7 +4341,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         {
             using (SHA256 sha = SHA256.Create())
             {
-                string actual = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(path))).Replace("-", string.Empty).ToLowerInvariant();
+                string actual = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(ToLongPath(path)))).Replace("-", string.Empty).ToLowerInvariant();
                 Assert.That(actual, Is.EqualTo(expected), path);
             }
         }
