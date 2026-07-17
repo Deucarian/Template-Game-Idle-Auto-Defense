@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 - 2026-07-17
 
+- Added explicit Persistence and World Navigation dependencies, shortened template asset paths, and synchronized the complete template stack to the coordinated portfolio versions.
+- Replaced duplicated content-pack and content-set provider state, validation, reference, and summary code with shared Game Content Authoring primitives.
 - Added safe ordered Run Profile Waves editing for generated Basic Idle Auto Defense and Scrap Frontier named packs.
 - Added exact-root persistent Wave discovery, canonical same-pack target checks, minimum/no-duplicate rules, staged collection operations, cloned-profile validation, and run restart/rebind guidance.
 - Proved collection Commit, strict runtime order consumption, Unity Undo/Redo, stale-aware exact Rollback, and Basic/Scrap isolation without changing shipped Wave assets or sequences.

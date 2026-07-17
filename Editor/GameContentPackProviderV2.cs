@@ -12,35 +12,9 @@ using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 {
-    internal sealed class GameContentPackProviderV2State
+    internal sealed class GameContentPackProviderV2State : GameContentAuthoringProviderSessionState<GameContentPackAuthoringState>
     {
-        public string SearchText = string.Empty;
-        public bool Creating;
-        public int DetailPage;
-        public int WizardStep;
-        public Vector2 ListScroll;
-        public Vector2 DetailScroll;
-        public Vector2 PreviewScroll;
-        public bool PreviewLoop = true;
-        public bool PreviewPlaying = true;
-        public float PreviewSpeed = 1f;
-        public GameContentAuthoringActionPreviewRenderMode PreviewRenderMode = GameContentAuthoringActionPreviewRenderMode.Game;
-        public double PreviewStartTime;
-        public float PausedNormalizedTime = 0.5f;
-        public string ActivePreviewKey = string.Empty;
-        public string PreviewStatus = "Preview idle";
-        public GameContentPackAuthoringState EditingState;
-        public GameContentAuthoringObjectEditorContext EditingContext;
-        public GameContentCreationResult LastEditResult;
         public readonly GameContentPackSceneSetupState SceneSetup = new GameContentPackSceneSetupState();
-
-        public void StopPreview()
-        {
-            PreviewPlaying = false;
-            PreviewStartTime = 0d;
-            PausedNormalizedTime = 0.5f;
-            PreviewStatus = "Preview stopped";
-        }
 
         public void BeginCreate()
         {
@@ -55,40 +29,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             PreviewStatus = "Previewing draft content pack";
         }
 
-        public void ResetProviderSession()
+        protected override void OnProviderSessionReset()
         {
-            Creating = false;
-            DetailPage = 0;
-            WizardStep = 0;
-            ListScroll = Vector2.zero;
-            DetailScroll = Vector2.zero;
-            PreviewScroll = Vector2.zero;
-            ActivePreviewKey = string.Empty;
-            PreviewStatus = "Preview idle";
             SceneSetup.ContentPack = null;
             SceneSetup.SelectedContentSet = null;
             SceneSetup.LastMessage = string.Empty;
-            ClearEditingState();
-        }
-
-        public void SetPreviewSource(string key)
-        {
-            key = key ?? string.Empty;
-            if (string.Equals(ActivePreviewKey, key, StringComparison.Ordinal))
-                return;
-
-            ActivePreviewKey = key;
-            PreviewPlaying = true;
-            PreviewStartTime = EditorApplication.timeSinceStartup;
-            PausedNormalizedTime = 0f;
-            PreviewStatus = "Previewing";
-        }
-
-        public void ClearEditingState()
-        {
-            EditingState = null;
-            EditingContext = null;
-            LastEditResult = null;
         }
     }
 
@@ -324,7 +269,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     break;
             }
 
-            DrawValidationIssues(validation);
+            GameContentAuthoringProviderGUI.DrawValidationIssues(validation);
         }
 
         private static void HandleEditCommand(GameContentAuthoringSurfaceContext context, GameContentPackProviderV2State state, GameContentPackAsset asset, GameContentAuthoringCommand command)
@@ -411,7 +356,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     break;
             }
 
-            DrawValidationIssues(validation);
+            GameContentAuthoringProviderGUI.DrawValidationIssues(validation);
         }
 
         private static void DrawHeader(string title, string subtitle, IReadOnlyList<DeucarianEditorStatusChip> chips)
@@ -434,7 +379,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             state.TagsCsv = context.Authoring.DrawTextField("Tags", state.TagsCsv);
 
             DrawSummaryRows(
-                Row("Readiness", BuildValidationSummary(validation)),
+                Row("Readiness", new GameContentAuthoringValidationSummary(validation).ReadinessLabel),
                 Row("Default Set", GetAssetName(state.DefaultContentSet, "Missing")),
                 Row("Included Sets", CountAssigned(state.ContentSets).ToString(CultureInfo.InvariantCulture)),
                 Row("Dependencies", BuildDependencyTotalSummary(state)),
@@ -567,7 +512,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             GameContentPackDependencySummary dependencies = BuildDependencySummary(state);
             DrawSummaryRows(
-                Row("Readiness", BuildValidationSummary(validation)),
+                Row("Readiness", new GameContentAuthoringValidationSummary(validation).ReadinessLabel),
                 Row("Content Sets", dependencies.ContentSetCount.ToString(CultureInfo.InvariantCulture)),
                 Row("Attacks", dependencies.AttackCount.ToString(CultureInfo.InvariantCulture)),
                 Row("Enemies", dependencies.EnemyCount.ToString(CultureInfo.InvariantCulture)),
@@ -620,7 +565,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 EditorGUILayout.LabelField(lines[i], DeucarianEditorStyles.MutedLabel);
 
             DrawSummaryRows(
-                Row("Readiness", BuildValidationSummary(validation)),
+                Row("Readiness", new GameContentAuthoringValidationSummary(validation).ReadinessLabel),
                 Row("Default Set", GetAssetName(state.DefaultContentSet, "Missing")),
                 Row("Included Sets", CountAssigned(state.ContentSets).ToString(CultureInfo.InvariantCulture)),
                 Row("Dependencies", BuildDependencyTotalSummary(state)));
@@ -934,7 +879,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             GameContentPackDependencySummary dependencies = BuildDependencySummary(state);
             return new[]
             {
-                new DeucarianEditorStatusChip(BuildValidationSummary(validation), validation != null && validation.ErrorCount > 0 ? DeucarianEditorStatus.Error : validation != null && validation.WarningCount > 0 ? DeucarianEditorStatus.Warning : DeucarianEditorStatus.Success),
+                new DeucarianEditorStatusChip(new GameContentAuthoringValidationSummary(validation).ReadinessLabel, validation != null && validation.ErrorCount > 0 ? DeucarianEditorStatus.Error : validation != null && validation.WarningCount > 0 ? DeucarianEditorStatus.Warning : DeucarianEditorStatus.Success),
                 new DeucarianEditorStatusChip(state.DefaultContentSet == null ? "NoDefault" : "Default", state.DefaultContentSet == null ? DeucarianEditorStatus.Error : DeucarianEditorStatus.Success),
                 new DeucarianEditorStatusChip(CountAssigned(state.ContentSets).ToString(CultureInfo.InvariantCulture) + " set(s)", CountAssigned(state.ContentSets) > 0 ? DeucarianEditorStatus.Success : DeucarianEditorStatus.Error),
                 new DeucarianEditorStatusChip(BuildDependencyTotalSummary(dependencies), dependencies.ContentSetCount > 0 ? DeucarianEditorStatus.Success : DeucarianEditorStatus.Warning),
@@ -964,27 +909,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             };
         }
 
-        private static void DrawValidationIssues(GameContentAuthoringValidationResult validation)
-        {
-            if (validation == null || validation.Issues.Count == 0)
-                return;
-
-            var messages = new List<string>();
-            for (int i = 0; i < validation.Issues.Count; i++)
-            {
-                GameContentAuthoringValidationIssue issue = validation.Issues[i];
-                string prefix = string.IsNullOrWhiteSpace(issue.Path) ? string.Empty : issue.Path + ": ";
-                messages.Add(prefix + issue.Message);
-            }
-
-            DeucarianEditorStatus status = validation.ErrorCount > 0
-                ? DeucarianEditorStatus.Error
-                : validation.WarningCount > 0
-                    ? DeucarianEditorStatus.Warning
-                    : DeucarianEditorStatus.Info;
-            DeucarianEditorStatusPanel.DrawValidationCard(BuildValidationSummary(validation), messages, status);
-        }
-
         private static void DrawWarnings(IReadOnlyList<string> warnings)
         {
             if (warnings == null || warnings.Count == 0) return;
@@ -1012,35 +936,17 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static void DrawSummaryRows(params GameContentAuthoringPreviewRow[] rows)
         {
-            DrawSummaryRows((IReadOnlyList<GameContentAuthoringPreviewRow>)rows);
+            GameContentAuthoringProviderGUI.DrawSummaryRows((IReadOnlyList<GameContentAuthoringPreviewRow>)rows);
         }
 
         private static void DrawSummaryRows(IReadOnlyList<GameContentAuthoringPreviewRow> rows)
         {
-            if (rows == null)
-                return;
-
-            for (int i = 0; i < rows.Count; i++)
-            {
-                GameContentAuthoringPreviewRow row = rows[i];
-                DeucarianEditorFieldRow.Draw(row.Label, () => EditorGUILayout.LabelField(row.Value, EditorStyles.label));
-            }
+            GameContentAuthoringProviderGUI.DrawSummaryRows(rows);
         }
 
         private static GameContentAuthoringPreviewRow Row(string label, string value)
         {
             return new GameContentAuthoringPreviewRow(label, value);
-        }
-
-        private static string BuildValidationSummary(GameContentAuthoringValidationResult validation)
-        {
-            if (validation == null)
-                return "Pending";
-            if (validation.ErrorCount > 0)
-                return validation.ErrorCount.ToString(CultureInfo.InvariantCulture) + " blocker(s)";
-            if (validation.WarningCount > 0)
-                return validation.WarningCount.ToString(CultureInfo.InvariantCulture) + " warning(s)";
-            return "Ready";
         }
 
         private static string BuildUsageSummary(GameContentLibraryItem item)
