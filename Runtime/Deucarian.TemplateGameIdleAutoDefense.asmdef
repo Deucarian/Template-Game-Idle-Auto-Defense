@@ -6,6 +6,7 @@
     "Deucarian.GameplayFoundation",
     "Deucarian.Encounters",
     "Deucarian.Combat",
+    "Deucarian.Common",
     "Deucarian.DefenseGames",
     "Deucarian.WorldSpawning",
     "Deucarian.WorldNavigation",

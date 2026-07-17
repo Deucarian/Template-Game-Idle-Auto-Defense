@@ -23,6 +23,7 @@ ScrapFrontierGame
 |   |-- Enemies
 |   |-- GameRules
 |   |-- OfflineProgression
+|   |   `-- offline-progression.idle-auto-defense.scrap-frontier.asset
 |   |-- Presentation
 |   |-- Progression
 |   |-- Rewards

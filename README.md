@@ -2,7 +2,7 @@
 
 Package ID: `com.deucarian.template.game.idle-auto-defense`
 
-Version: `0.1.1`
+Version: `0.1.2`
 
 This package creates a product-owned idle auto-defense game folder. It owns template glue, setup helpers, starter authored content, and smoke coverage. Reusable gameplay systems stay in lower Deucarian packages.
 

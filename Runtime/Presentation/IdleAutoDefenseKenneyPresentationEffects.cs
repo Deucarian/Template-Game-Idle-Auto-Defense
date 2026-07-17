@@ -1,3 +1,4 @@
+using Deucarian.Common;
 using UnityEngine;
 
 namespace Deucarian.TemplateGameIdleAutoDefense
@@ -16,7 +17,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             float delta = Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
             _remainingSeconds -= delta;
             if (_remainingSeconds <= 0f)
-                Destroy(gameObject);
+                UnityObjectUtility.DestroySafely(gameObject);
         }
     }
 
@@ -73,7 +74,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
 
             if (t >= 1f)
-                Destroy(gameObject);
+                UnityObjectUtility.DestroySafely(gameObject);
         }
     }
 }
