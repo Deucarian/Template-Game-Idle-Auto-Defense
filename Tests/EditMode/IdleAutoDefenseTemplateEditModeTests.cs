@@ -1018,7 +1018,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         [Test]
         public void GameContentSetProviderRegistersWithSharedAuthoringWindow()
         {
-            Assert.AreEqual("Tools/Deucarian/Tools & Quality/Game Content Authoring", GameContentAuthoringWindow.MenuPath);
+            Assert.AreEqual("Tools/Deucarian/Tools and Quality/Game Content Authoring", GameContentAuthoringWindow.MenuPath);
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.attack"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.enemy"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.wave"));
