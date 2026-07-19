@@ -1018,7 +1018,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         [Test]
         public void GameContentSetProviderRegistersWithSharedAuthoringWindow()
         {
-            Assert.AreEqual("Tools/Deucarian/Game Content Authoring", GameContentAuthoringWindow.MenuPath);
+            Assert.AreEqual("Tools/Deucarian/Tools and Quality/Game Content Authoring", GameContentAuthoringWindow.MenuPath);
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.attack"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.enemy"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.wave"));
@@ -1931,10 +1931,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             Assert.That(offenders, Is.Empty, "Root-level Deucarian editor menus are forbidden. Use Tools/Deucarian/...");
-            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Validate Playable Content", IdleAutoDefensePlayableContentAuditMenu.ValidateMenuPath);
-            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Open Main Content Set", IdleAutoDefensePlayableContentAuditMenu.OpenContentSetMenuPath);
-            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Generate Runtime Content Audit", IdleAutoDefensePlayableContentAuditMenu.RuntimeAuditMenuPath);
-            Assert.AreEqual("Tools/Deucarian/Idle Auto Defense/Validate Authored Content", IdleAutoDefenseAuthoredContentValidationMenu.MenuPath);
+            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Validate Playable Content", IdleAutoDefensePlayableContentAuditMenu.ValidateMenuPath);
+            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Open Main Content Set", IdleAutoDefensePlayableContentAuditMenu.OpenContentSetMenuPath);
+            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Generate Runtime Content Audit", IdleAutoDefensePlayableContentAuditMenu.RuntimeAuditMenuPath);
+            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Validate Authored Content", IdleAutoDefenseAuthoredContentValidationMenu.MenuPath);
         }
 
         [Test]
