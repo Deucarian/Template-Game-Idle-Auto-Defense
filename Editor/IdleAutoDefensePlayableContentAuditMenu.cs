@@ -15,11 +15,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 {
     public static class IdleAutoDefensePlayableContentAuditMenu
     {
-        public const string ValidateMenuPath = "Tools/Deucarian/Idle Auto Defense/Validate Playable Content";
-        public const string RuntimeAuditMenuPath = "Tools/Deucarian/Idle Auto Defense/Generate Runtime Content Audit";
-        public const string ParityReportMenuPath = "Tools/Deucarian/Idle Auto Defense/Generate Authoring Runtime Parity Report";
-        public const string OpenContentSetMenuPath = "Tools/Deucarian/Idle Auto Defense/Open Main Content Set";
-        public const string FindUnauthoredMenuPath = "Tools/Deucarian/Idle Auto Defense/Find Unauthored Visible Assets";
+        public const string ValidateMenuPath = IdleAutoDefenseTemplateMenu.MenuRoot + "Validate Playable Content";
+        public const string RuntimeAuditMenuPath = IdleAutoDefenseTemplateMenu.MenuRoot + "Generate Runtime Content Audit";
+        public const string ParityReportMenuPath = IdleAutoDefenseTemplateMenu.MenuRoot + "Generate Authoring Runtime Parity Report";
+        public const string OpenContentSetMenuPath = IdleAutoDefenseTemplateMenu.MenuRoot + "Open Main Content Set";
+        public const string FindUnauthoredMenuPath = IdleAutoDefenseTemplateMenu.MenuRoot + "Find Unauthored Visible Assets";
 
         private const string RuntimeAuditFileName = "idle-auto-defense-runtime-content-audit.md";
         private const string ParityReportFileName = "idle-auto-defense-authoring-runtime-parity.md";

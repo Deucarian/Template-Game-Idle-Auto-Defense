@@ -8,7 +8,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 {
     public static class IdleAutoDefenseTemplateMenu
     {
-        private const string MenuRoot = "Tools/Deucarian/Templates/Idle Auto Defense/";
+        public const string MenuRoot = "Tools/Deucarian/Templates/Games/Idle Auto Defense/";
 
         [MenuItem(MenuRoot + "Create Playable Game", priority = 5)]
         public static void CreateGameFromTemplate()
