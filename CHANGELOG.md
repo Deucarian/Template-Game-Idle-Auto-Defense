@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Moved setup, validation, documentation, audit, inspection, and report actions into explicit Deucarian Control Center Authoring and Developer contributions.
+
 ## 0.1.2 - 2026-07-17
 
 - Declared the built-in Particle System module required by runtime presentation effects in minimal Unity hosts.

@@ -29,7 +29,7 @@ runtime ignores.
 The setup wizard copies these files into product-owned folders under
 `Assets/GameContent`, creates fresh GUIDs, and rewrites the generated scene to
 reference the copied assets.
-Use `Tools > Deucarian > Game Content Authoring` to inspect the pack, validate
+Use `Tools > Deucarian > Authoring > Game Content...` to inspect the pack, validate
 dependencies, and apply a selected content set to an open scene controller.
 The generated bootstrap uses strict authored startup: invalid required content blocks
 play with an actionable error, while transient fallback remains limited to explicit

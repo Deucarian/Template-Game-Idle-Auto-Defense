@@ -6,9 +6,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 {
     internal static class IdleAutoDefenseAuthoredContentValidationMenu
     {
-        public const string MenuPath = IdleAutoDefenseTemplateMenu.MenuRoot + "Validate Authored Content";
-
-        [MenuItem(MenuPath)]
         public static void ValidateAuthoredContent()
         {
             string report = BuildReport();
