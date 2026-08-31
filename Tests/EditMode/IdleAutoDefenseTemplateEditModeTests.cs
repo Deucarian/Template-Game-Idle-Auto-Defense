@@ -1018,7 +1018,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
         [Test]
         public void GameContentSetProviderRegistersWithSharedAuthoringWindow()
         {
-            Assert.AreEqual("Tools/Deucarian/Tools and Quality/Game Content Authoring", GameContentAuthoringWindow.MenuPath);
+            Assert.AreEqual("Tools/Deucarian/Authoring/Game Content...", GameContentAuthoringWindow.MenuPath);
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.attack"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.enemy"));
             Assert.IsTrue(GameContentAuthoringProviderRegistry.IsProviderRegistered("com.deucarian.attacks.wave"));
@@ -1842,11 +1842,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             Assert.IsFalse(Directory.Exists(Path.Combine(packageRoot, "Samples~")), "The template should not expose a public UPM sample.");
 
             string menuPath = Path.Combine(packageRoot, "Editor", "IdleAutoDefenseTemplateMenu.cs");
-            AssertFileContains(menuPath, "Create Playable Game");
-            AssertFileContains(menuPath, "Open Template Docs");
+            AssertFileContains(menuPath, "CreateGameFromTemplate");
+            AssertFileContains(menuPath, "OpenTemplateDocs");
             AssertFileDoesNotContain(menuPath, "Open Starter Scene");
             AssertFileDoesNotContain(menuPath, "Reset Sample Save");
-            AssertFileContains(Path.Combine(packageRoot, "Editor", "IdleAutoDefenseAuthoredContentValidationMenu.cs"), "Validate Authored Content");
+            AssertFileContains(Path.Combine(packageRoot, "Editor", "IdleAutoDefenseAuthoredContentValidationMenu.cs"), "ValidateAuthoredContent");
 
             string contentRoot = Path.Combine(packageRoot, "TemplateSource~", "BasicIdleAutoDefenseGame", "Content");
             AssertDirectoryExists(Path.Combine(contentRoot, "Attacks"));
@@ -1931,10 +1931,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             Assert.That(offenders, Is.Empty, "Root-level Deucarian editor menus are forbidden. Use Tools/Deucarian/...");
-            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Validate Playable Content", IdleAutoDefensePlayableContentAuditMenu.ValidateMenuPath);
-            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Open Main Content Set", IdleAutoDefensePlayableContentAuditMenu.OpenContentSetMenuPath);
-            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Generate Runtime Content Audit", IdleAutoDefensePlayableContentAuditMenu.RuntimeAuditMenuPath);
-            Assert.AreEqual("Tools/Deucarian/Templates/Games/Idle Auto Defense/Validate Authored Content", IdleAutoDefenseAuthoredContentValidationMenu.MenuPath);
         }
 
         [Test]
@@ -2097,9 +2093,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "AuthoredContentInstance.cs"), "public string OriginSocketId");
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "AuthoredContentInstance.cs"), "public bool FallbackUsed");
             string playableAuditMenuPath = Path.Combine(packageRoot, "Editor", "IdleAutoDefensePlayableContentAuditMenu.cs");
-            AssertFileContains(playableAuditMenuPath, "Validate Playable Content");
-            AssertFileContains(playableAuditMenuPath, "Generate Runtime Content Audit");
-            AssertFileContains(playableAuditMenuPath, "Generate Authoring Runtime Parity Report");
+            AssertFileContains(playableAuditMenuPath, "ValidatePlayableContent");
+            AssertFileContains(playableAuditMenuPath, "GenerateRuntimeContentAudit");
+            AssertFileContains(playableAuditMenuPath, "GenerateAuthoringRuntimeParityReport");
             AssertFileContains(playableAuditMenuPath, "GenerateFreshSampleReportsForBatch");
             AssertFileContains(playableAuditMenuPath, "FindVisibleObjectsWithoutAuthoredStamp");
             AssertFileContains(runtimePath, "EnvironmentPresentation");

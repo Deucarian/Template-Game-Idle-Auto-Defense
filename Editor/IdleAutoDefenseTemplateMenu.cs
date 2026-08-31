@@ -8,15 +8,11 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 {
     public static class IdleAutoDefenseTemplateMenu
     {
-        public const string MenuRoot = "Tools/Deucarian/Templates/Games/Idle Auto Defense/";
-
-        [MenuItem(MenuRoot + "Create Playable Game", priority = 5)]
         public static void CreateGameFromTemplate()
         {
             IdleAutoDefenseTemplateSetupWizardWindow.Open();
         }
 
-        [MenuItem(MenuRoot + "Open Template Docs", priority = 20)]
         public static void OpenTemplateDocs()
         {
             if (!TryFindTemplateDocs(out string docsPath))

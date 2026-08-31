@@ -12,7 +12,7 @@ Scrap Frontier proves that the Idle Auto Defense vertical slice can become a vis
 - Default generated content root for Scrap-only setup: `Assets/GameContent/IdleAutoDefense`
 - Generated content root when Both is selected: `Assets/GameContent/IdleAutoDefense/ScrapFrontier`
 
-Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game`, select `Scrap Frontier Only` or `Both`, create the game, open the Scrap Frontier scene, and press Play. The scene starts at the same menu-first player flow as Basic and binds Scrap Frontier before runtime startup.
+From Deucarian Control Center > Authoring, run `Create Playable Game`, select `Scrap Frontier Only` or `Both`, create the game, open the Scrap Frontier scene, and press Play. The scene starts at the same menu-first player flow as Basic and binds Scrap Frontier before runtime startup.
 
 ## Shared Runtime
 
