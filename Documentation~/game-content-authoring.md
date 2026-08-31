@@ -2,7 +2,7 @@
 
 ## Named Pack
 
-Running the existing Idle Auto Defense setup wizard generates project-owned authored graphs under `Assets/GameContent/IdleAutoDefense`. In `Tools > Deucarian > Game Content Authoring`, two named pack identities are available:
+Running the existing Idle Auto Defense setup wizard generates project-owned authored graphs under `Assets/GameContent/IdleAutoDefense`. In `Tools > Deucarian > Authoring > Game Content...`, two named pack identities are available:
 
 - Display name: `Basic Idle Auto Defense`
 - Pack ID: `contentpack.idle-auto-defense.playable`

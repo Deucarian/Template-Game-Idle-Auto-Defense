@@ -3,7 +3,7 @@
 Use the setup wizard to create the product-owned starter:
 
 ```text
-Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game
+Deucarian Control Center > Authoring > Idle Auto Defense > Create Playable Game
 ```
 
 The wizard can create Basic, Scrap Frontier, or both. Basic opens at `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`; Scrap opens at `Assets/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame/OPEN_THIS_TO_TEST_ScrapFrontier_PlayableGame.unity`. Both scenes use one generated bootstrap and the same package runtime while their authored graphs and presentation remain independent.
@@ -29,7 +29,7 @@ After an asset flip, run content validation and press Play. A valid generated sc
 
 ## Staged Tuning In GCA
 
-For a small tuning change, select the generated Basic or Scrap named pack in `Tools > Deucarian > Game Content Authoring`, open an Attack, Enemy, Weapon/Tower, Upgrade, or Run Profile record, and choose **Edit Existing**. Apply values and use the workbench Undo/Redo freely; the generated ScriptableObject is untouched until Commit. A Weapon/Tower may be repointed to a canonical compatible Attack, and a Run Profile's ordered Waves may be added, removed, moved, or replaced using canonical Waves from that same selected pack. Review the cloned-pack validation result, confirm warnings deliberately, then Commit. Cancel is byte-neutral.
+For a small tuning change, select the generated Basic or Scrap named pack in `Tools > Deucarian > Authoring > Game Content...`, open an Attack, Enemy, Weapon/Tower, Upgrade, or Run Profile record, and choose **Edit Existing**. Apply values and use the workbench Undo/Redo freely; the generated ScriptableObject is untouched until Commit. A Weapon/Tower may be repointed to a canonical compatible Attack, and a Run Profile's ordered Waves may be added, removed, moved, or replaced using canonical Waves from that same selected pack. Review the cloned-pack validation result, confirm warnings deliberately, then Commit. Cancel is byte-neutral.
 
 After Commit, Unity Undo/Redo is available and GCA reindexes automatically. The workbench Rollback action restores the exact pre-edit source only if no later source change occurred. If the setup wizard repairs/regenerates content or another tool edits the asset, the session becomes stale; cancel it and reopen the current record instead of forcing an overwrite.
 
