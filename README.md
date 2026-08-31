@@ -11,7 +11,7 @@ No Unity Package Manager sample import is required. The private template sources
 ## Quick Start
 
 1. Install the template package.
-2. Run `Tools > Deucarian > Templates > Idle Auto Defense > Create Playable Game`.
+2. Open Deucarian Control Center > Authoring and run `Create Playable Game`.
 3. Choose Basic only, Scrap Frontier only, or Both, plus a target folder under `Assets`, a content folder under `Assets/GameContent`, a namespace, and a game prefix.
 4. Open `Assets/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame/OPEN_THIS_TO_TEST_IdleAutoDefense_PlayableGame.unity`.
 5. Press Play.
@@ -50,7 +50,7 @@ The authored gameplay data is created separately under `Assets/GameContent/IdleA
 
 The generated scene references the generated content pack and content set. Its bootstrap enables strict authored startup. A valid run reports `UsingAssignedContentSet == true`, `UsingAuthoredCore == true`, and `FallbackModeActive == false`; incomplete required content blocks startup instead of substituting hidden balance.
 
-The generated graphs also appear in `Tools > Deucarian > Game Content Authoring` as the named packs `Basic Idle Auto Defense` and `Scrap Frontier`. Each exposes 124 records including gameplay, Player Experience, Themes, Audio Events, Tutorial Steps, and UI Settings. A narrow set of direct attack, enemy, mounted-weapon, and run-upgrade scalars can be staged and committed on claimed project assets; all other records and structural fields remain read-only. See [Game Content Authoring](Documentation~/game-content-authoring.md) and the [Scrap Frontier asset-flip proof](Documentation~/scrap-frontier-asset-flip.md).
+The generated graphs also appear in `Tools > Deucarian > Authoring > Game Content...` as the named packs `Basic Idle Auto Defense` and `Scrap Frontier`. Each exposes 124 records including gameplay, Player Experience, Themes, Audio Events, Tutorial Steps, and UI Settings. A narrow set of direct attack, enemy, mounted-weapon, and run-upgrade scalars can be staged and committed on claimed project assets; all other records and structural fields remain read-only. See [Game Content Authoring](Documentation~/game-content-authoring.md) and the [Scrap Frontier asset-flip proof](Documentation~/scrap-frontier-asset-flip.md).
 
 ## Template Source
 
@@ -90,7 +90,7 @@ This source is not a public package sample. It is copied by the setup wizard wit
 
 ## Editing Content
 
-Open `Tools > Deucarian > Game Content Authoring` to browse, validate, reveal, navigate, and safely stage approved edits on generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Select `Basic Idle Auto Defense` or `Scrap Frontier` directly, then open an Attack, Enemy, Weapon/Tower, Upgrade, or Run Profile record. The workbench keeps Apply and its in-session Undo/Redo outside the live asset until Commit, validates a cloned proposed pack, and commits only the physical source asset in one Unity Undo group.
+Open `Tools > Deucarian > Authoring > Game Content...` to browse, validate, reveal, navigate, and safely stage approved edits on generated assets under `Assets/GameContent/IdleAutoDefense` or the content root chosen in the setup wizard. Select `Basic Idle Auto Defense` or `Scrap Frontier` directly, then open an Attack, Enemy, Weapon/Tower, Upgrade, or Run Profile record. The workbench keeps Apply and its in-session Undo/Redo outside the live asset until Commit, validates a cloned proposed pack, and commits only the physical source asset in one Unity Undo group.
 
 Cancel changes no source bytes. After Commit, normal Unity Undo/Redo reindexes the named pack, and the workbench's explicit Rollback restores the captured original source only while the committed revision is still current. Setup repair, regeneration, manual Inspector edits, or any other source/dependency change makes the session stale and blocks Commit or Rollback; cancel and reopen the record after that operation.
 
