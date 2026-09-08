@@ -25,3 +25,5 @@ Deucarian.TestAutomation.BatchTestRunner.RunPlayMode
 Also run `git diff --check`, the shared package validator, authored content validation, a fresh setup smoke, generated-scene strict binding smoke, and the manual checks in [playtesting.md](playtesting.md) and [mobile-testing.md](mobile-testing.md).
 
 Mutation tests operate only on disposable generated packs and restore or delete every source. Final validation must confirm no fixture remains under `Assets`, no template-source asset changed, both named packs still validate, and package/dependency versions are unchanged.
+
+Player composition coverage additionally checks simulation eligibility without menus or scenes, one terminal summary per run, menu/tutorial transitions, profile load/restore/save failure and idempotent teardown, failed initialization cleanup, authored audio throttling with live volume changes, and same-frame legacy gameplay commands followed by player actions. Keep the original generated bootstrap and component GUID compatibility while extending these tests.

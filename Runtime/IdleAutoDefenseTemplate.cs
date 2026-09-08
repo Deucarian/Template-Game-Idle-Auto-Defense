@@ -1523,7 +1523,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private IdleAutoDefenseProgressionAsset _activeProgression;
         private IdleAutoDefenseOfflineProgressionAsset _activeOfflineProgression;
         private IdleAutoDefenseGameRulesAsset _activeGameRules;
-        private float _simulationTickAccumulator;
+        private IdleAutoDefenseFrameClock _simulationClock;
         private int _sessionElapsedTicks;
         private int _runSequence;
         private bool _endlessRestartPending;
@@ -1548,7 +1548,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private readonly HashSet<string> _selectedRewardIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _baseRewardRanks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly List<DamageNumberView> _damageNumbers = new List<DamageNumberView>();
-        private readonly List<ActiveBeamVisual> _activeBeamVisuals = new List<ActiveBeamVisual>();
+        private IdleAutoDefenseBeamVisuals _beamVisuals;
         private readonly Dictionary<long, Vector3> _lastProjectileAgentPositions = new Dictionary<long, Vector3>();
         private UIDocument _runtimeUiDocument;
         private PanelSettings _runtimePanelSettings;
@@ -1559,12 +1559,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private AudioSource _runtimeAudioSource;
         private AudioClip _fallbackPresentationClip;
         private bool _fallbackPresentationClipIsRuntimeOwned;
-        private Camera _shakeCamera;
-        private Vector3 _shakeCameraBaseLocalPosition;
-        private bool _shakeCameraBaseCaptured;
-        private float _cameraShakeSecondsRemaining;
-        private float _cameraShakeDuration;
-        private float _cameraShakeMagnitude;
+        private IdleAutoDefenseCameraShake _cameraShake;
         private MonetizationSession _monetizationSession;
         private int _manualTowerCooldownTicks;
         private int _passiveIncomeTicks;
@@ -1934,7 +1929,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             element.style.overflow = Overflow.Visible;
         }
 
-        protected static void ApplyRuntimeUiFont(VisualElement element)
+        protected internal static void ApplyRuntimeUiFont(VisualElement element)
         {
             if (element == null) return;
             Font font = ResolveRuntimeUiFont();
@@ -2000,7 +1995,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _rewardDraftCatalog = catalog ?? IdleAutoDefenseRewardDraftCatalog.CreateDefault();
         }
 
-        protected virtual void Update()
+        protected virtual void Update() => AdvanceFrame(Time.deltaTime);
+
+        /// <summary>Advances the existing run clock explicitly for composed player experiences.</summary>
+        public void AdvanceFrame(float deltaSeconds)
         {
             if (StartupBlocked) return;
             if (_endlessRestartPending)
@@ -2010,21 +2008,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 return;
             }
 
-            float deltaSeconds = Time.deltaTime <= 0f ? 1f / 60f : Time.deltaTime;
-            if (_activeRunProfile == null || _activeRunProfile.TickSemantics != IdleAutoDefenseTickSemantics.FixedRate)
-            {
-                Step(1, deltaSeconds);
-                return;
-            }
+            _simulationClock ??= new IdleAutoDefenseFrameClock(AdvanceSimulationTick);
+            bool fixedRate = _activeRunProfile != null && _activeRunProfile.TickSemantics == IdleAutoDefenseTickSemantics.FixedRate;
+            _simulationClock.Advance(deltaSeconds, fixedRate, fixedRate ? _activeRunProfile.SecondsPerSimulationTick : 0f);
+        }
 
-            float secondsPerTick = _activeRunProfile.SecondsPerSimulationTick;
-            _simulationTickAccumulator += deltaSeconds;
-            while (_simulationTickAccumulator + 0.000001f >= secondsPerTick)
-            {
-                _simulationTickAccumulator -= secondsPerTick;
-                Step(1, secondsPerTick);
-                if (_runtime == null || _runtime.State != AutoDefenseRuntimeState.Running) break;
-            }
+        private bool AdvanceSimulationTick(float secondsPerTick)
+        {
+            Step(1, secondsPerTick);
+            return _runtime != null && _runtime.State == AutoDefenseRuntimeState.Running;
         }
 
         public void Build()
@@ -3962,7 +3954,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             AttackVfxSpawnCount++;
             BeamVisualSpawnCount++;
-            _activeBeamVisuals.Add(new ActiveBeamVisual(instance, prefab, attack, targetEnemyId, impactPosition, ResolveBeamDurationSeconds(attack)));
+            BeamVisuals.Add(instance, prefab, attack, targetEnemyId, impactPosition, ResolveBeamDurationSeconds(attack));
             return true;
         }
 
@@ -4140,35 +4132,18 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             }
         }
 
+        private IdleAutoDefenseBeamVisuals BeamVisuals => _beamVisuals ??= new IdleAutoDefenseBeamVisuals(
+            ResolveBeamTargetPosition, ResolveTowerMuzzlePosition, AlignBeamInstance);
+
+        private Vector3? ResolveBeamTargetPosition(long targetEnemyId)
+        {
+            return TryFindActiveEnemy(targetEnemyId, out AutoDefenseEnemySnapshot enemy)
+                ? CreateEnemyAimPosition(enemy.Position) : (Vector3?)null;
+        }
+
         private void UpdateActiveBeamVisuals(float deltaSeconds)
         {
-            if (_activeBeamVisuals.Count == 0) return;
-            float safeDelta = Mathf.Max(0.016f, deltaSeconds);
-            for (int i = _activeBeamVisuals.Count - 1; i >= 0; i--)
-            {
-                ActiveBeamVisual visual = _activeBeamVisuals[i];
-                visual.ElapsedSeconds += safeDelta;
-                if (visual.Instance == null || visual.ElapsedSeconds >= visual.DurationSeconds)
-                {
-                    UnityObjectUtility.DestroySafely(visual.Instance);
-                    _activeBeamVisuals.RemoveAt(i);
-                    continue;
-                }
-
-                Vector3 impactPosition = visual.LastImpactPosition;
-                if (visual.TargetEnemyId > 0 && TryFindActiveEnemy(visual.TargetEnemyId, out AutoDefenseEnemySnapshot enemy))
-                    impactPosition = CreateEnemyAimPosition(enemy.Position);
-                if (!AlignBeamInstance(visual.Instance, visual.Prefab, ResolveTowerMuzzlePosition(visual.Attack), impactPosition))
-                {
-                    BeamVisualInvalidEndpointCount++;
-                    UnityObjectUtility.DestroySafely(visual.Instance);
-                    _activeBeamVisuals.RemoveAt(i);
-                    continue;
-                }
-
-                visual.LastImpactPosition = impactPosition;
-                _activeBeamVisuals[i] = visual;
-            }
+            if (_beamVisuals != null) BeamVisualInvalidEndpointCount += _beamVisuals.Update(deltaSeconds);
         }
 
         private static bool IsFiniteVector(Vector3 value)
@@ -4504,62 +4479,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 Mathf.Clamp(y, 16f, Mathf.Max(16f, panelSize.y - 16f)));
         }
 
-        private void TriggerCameraShake(float durationSeconds, float magnitude)
-        {
-            if (durationSeconds <= 0f || magnitude <= 0f) return;
-            _cameraShakeSecondsRemaining = Mathf.Max(_cameraShakeSecondsRemaining, durationSeconds);
-            _cameraShakeDuration = Mathf.Max(_cameraShakeDuration, durationSeconds);
-            _cameraShakeMagnitude = Mathf.Max(_cameraShakeMagnitude, magnitude);
-        }
+        private IdleAutoDefenseCameraShake CameraShake => _cameraShake ??= new IdleAutoDefenseCameraShake(
+            () => Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>());
 
-        private void UpdateCameraShake(float deltaSeconds)
-        {
-            if (_cameraShakeSecondsRemaining <= 0f)
-            {
-                RestoreShakenCamera();
-                return;
-            }
+        private void TriggerCameraShake(float durationSeconds, float magnitude) => CameraShake.Trigger(durationSeconds, magnitude);
 
-            Camera camera = ResolveShakeCamera();
-            if (camera == null) return;
-            float safeDelta = Mathf.Max(0.016f, deltaSeconds);
-            _cameraShakeSecondsRemaining = Mathf.Max(0f, _cameraShakeSecondsRemaining - safeDelta);
-            float duration = Mathf.Max(0.001f, _cameraShakeDuration);
-            float normalized = Mathf.Clamp01(_cameraShakeSecondsRemaining / duration);
-            float magnitude = _cameraShakeMagnitude * normalized * normalized;
-            float phase = SurvivalSeconds * 58.7f + _cameraShakeSecondsRemaining * 19.3f;
-            Vector3 offset = new Vector3(
-                Mathf.Sin(phase) * magnitude,
-                Mathf.Cos(phase * 0.7f) * magnitude * 0.35f,
-                Mathf.Sin(phase * 1.37f) * magnitude * 0.45f);
-            camera.transform.localPosition = _shakeCameraBaseLocalPosition + offset;
-            if (_cameraShakeSecondsRemaining <= 0f)
-            {
-                _cameraShakeMagnitude = 0f;
-                _cameraShakeDuration = 0f;
-                RestoreShakenCamera();
-            }
-        }
-
-        private Camera ResolveShakeCamera()
-        {
-            if (_shakeCamera == null)
-                _shakeCamera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
-            if (_shakeCamera == null) return null;
-            if (!_shakeCameraBaseCaptured)
-            {
-                _shakeCameraBaseLocalPosition = _shakeCamera.transform.localPosition;
-                _shakeCameraBaseCaptured = true;
-            }
-
-            return _shakeCamera;
-        }
-
-        private void RestoreShakenCamera()
-        {
-            if (_shakeCamera == null || !_shakeCameraBaseCaptured) return;
-            _shakeCamera.transform.localPosition = _shakeCameraBaseLocalPosition;
-        }
+        private void UpdateCameraShake(float deltaSeconds) => _cameraShake?.Update(deltaSeconds, SurvivalSeconds);
 
         private Vector2 ResolveRuntimePanelSize()
         {
@@ -6077,9 +6002,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 120f;
-            _shakeCamera = camera;
-            _shakeCameraBaseLocalPosition = camera.transform.localPosition;
-            _shakeCameraBaseCaptured = true;
+            CameraShake.Bind(camera);
         }
 
         private void ConfigureGameplayLighting()
@@ -6332,7 +6255,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             RuntimeCurrencySpent = 0;
             SurvivalSeconds = 0f;
             _sessionElapsedTicks = 0;
-            _simulationTickAccumulator = 0f;
+            _simulationClock?.Reset();
             _endlessRestartPending = false;
             RunProfileVictoryReached = false;
             DamageUpgradeRank = 0;
@@ -6381,9 +6304,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _overdriveCooldownSecondsRemaining = 0f;
             _minimumEnemySpawnDistance = float.MaxValue;
             _closestEnemyDistanceToObjective = float.MaxValue;
-            _cameraShakeSecondsRemaining = 0f;
-            _cameraShakeDuration = 0f;
-            _cameraShakeMagnitude = 0f;
+            _cameraShake?.ResetEnvelope();
             ClearActiveBeamVisuals();
             ClearDamageNumbers();
         }
@@ -6458,12 +6379,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _starterRewardDraftOffered = false;
             _overdriveSecondsRemaining = 0f;
             _overdriveCooldownSecondsRemaining = 0f;
-            RestoreShakenCamera();
-            _shakeCamera = null;
-            _shakeCameraBaseCaptured = false;
-            _cameraShakeSecondsRemaining = 0f;
-            _cameraShakeDuration = 0f;
-            _cameraShakeMagnitude = 0f;
+            _cameraShake?.Dispose();
+            _cameraShake = null;
             ClearDamageNumbers();
         }
 
@@ -6474,12 +6391,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _damageNumbers.Clear();
         }
 
-        private void ClearActiveBeamVisuals()
-        {
-            for (int i = _activeBeamVisuals.Count - 1; i >= 0; i--)
-                UnityObjectUtility.DestroySafely(_activeBeamVisuals[i].Instance);
-            _activeBeamVisuals.Clear();
-        }
+        private void ClearActiveBeamVisuals() => _beamVisuals?.Clear();
 
         private sealed class TemplateJitteredPerimeterPoseResolver : IAutoDefensePoseResolver, ISpawnPoseResolver
         {
@@ -6603,28 +6515,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
             public Label Label;
             public Vector3 WorldPosition;
-            public float ElapsedSeconds;
-        }
-
-        private struct ActiveBeamVisual
-        {
-            public ActiveBeamVisual(GameObject instance, GameObject prefab, AttackDefinitionAsset attack, long targetEnemyId, Vector3 lastImpactPosition, float durationSeconds)
-            {
-                Instance = instance;
-                Prefab = prefab;
-                Attack = attack;
-                TargetEnemyId = targetEnemyId;
-                LastImpactPosition = lastImpactPosition;
-                DurationSeconds = Mathf.Max(0.05f, durationSeconds);
-                ElapsedSeconds = 0f;
-            }
-
-            public GameObject Instance;
-            public GameObject Prefab;
-            public AttackDefinitionAsset Attack;
-            public long TargetEnemyId;
-            public Vector3 LastImpactPosition;
-            public float DurationSeconds;
             public float ElapsedSeconds;
         }
 

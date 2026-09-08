@@ -2017,9 +2017,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileDoesNotContain(bootstrapPath, "GUILayout");
 
             string runtimePath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseTemplate.cs");
-            string playerUiPath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefensePlayerExperienceController.Ui.cs");
+            string playerUiPath = Path.Combine(packageRoot, "Runtime", "PlayerExperience", "IdleAutoDefensePlayerView.cs");
             AssertFileContains(playerUiPath, "BuildMainMenu");
-            AssertFileContains(playerUiPath, "BuildModuleBar");
+            AssertFileContains(Path.Combine(packageRoot, "Runtime", "PlayerExperience", "IdleAutoDefenseHudPresenter.cs"), "BuildModuleBar");
             AssertFileContains(playerUiPath, "BuildRewardDraft");
             AssertFileContains(playerUiPath, "ApplySafeArea");
             AssertFileContains(playerUiPath, "BuildRunSummary");

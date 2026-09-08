@@ -638,6 +638,41 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             public VisualElement Root => RuntimeUiRoot;
         }
 
+        [UnityTest]
+        public IEnumerator LegacyRunCommandImmediatelyFollowedByPlayerActionUsesCurrentState()
+        {
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(2000);
+            var experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            string persistenceRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Temp", "idle-composition-" + Guid.NewGuid().ToString("N"));
+            var host = new GameObject("idle-composition-legacy-commands");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            try
+            {
+                host.SetActive(true);
+                controller.enabled = false;
+                yield return null;
+                controller.StartFreshRun();
+                controller.CompleteTutorial();
+                Assert.That(controller.PulseBeamUnlocked, Is.False);
+                Assert.That(controller.TryPurchasePulseBeamModule(), Is.True);
+                int damageRank = controller.DamageUpgradeRank;
+                Assert.That(controller.TryUseModuleAction(IdleAutoDefenseModuleRole.PrecisionBeam), Is.True,
+                    "The player command must observe a module unlocked through the legacy public run API without waiting for Update.");
+                Assert.That(controller.DamageUpgradeRank, Is.EqualTo(damageRank + 1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                DestroyPlayerFlowContent(contentSet, experience);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
         private sealed class PlayerExperienceProbeController : IdleAutoDefensePlayerExperienceController
         {
             public GameContentSetAsset ContentSet { get; set; }
