@@ -130,7 +130,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             try
             {
                 Assert.Throws<InvalidOperationException>(() => new IdleAutoDefensePlayerExperience(
-                    run, new IdleAutoDefenseProfileSession(storage, run), output, experience, new UnityEngine.UIElements.VisualElement()));
+                    run, new IdleAutoDefenseProfileSession(storage, run), output, experience, () => new UnityEngine.UIElements.VisualElement()));
                 Assert.That(storage.DisposeCount, Is.EqualTo(1));
                 Assert.That(output.DisposeCount, Is.EqualTo(1));
             }

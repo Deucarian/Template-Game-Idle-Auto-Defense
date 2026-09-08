@@ -33,4 +33,6 @@ The generated bootstrap still subclasses `IdleAutoDefensePlayerExperienceControl
 
 Failure and teardown paths release owned resources even when initialization or profile persistence fails. Quit followed by destroy does not save or dispose the profile twice. The original facade invokes base runtime cleanup in a `finally` block.
 
+The run recreates its Unity UI document during restart. The player view receives a narrow current-root provider and reattaches its existing tree after player restart commands and at frame boundaries. This preserves live HUD/modal attachment and callback state across both player-flow transitions and direct legacy restarts without rebuilding the view or giving it a gameplay mutation port.
+
 Scope remains local to this template. The legacy simulation/controller source still contains unrelated authored-content construction and gameplay/presentation clusters; this migration does not claim that moving the player implementation makes those existing responsibilities disappear. Track further extraction by state and reasons to change, not numbered partial files.

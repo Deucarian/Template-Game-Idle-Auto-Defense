@@ -673,10 +673,57 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             }
         }
 
+        [UnityTest]
+        public IEnumerator PlayerUiRemainsAttachedAcrossStartLegacyRestartAndReturnToMenu()
+        {
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(2000);
+            var experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            string persistenceRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Temp", "idle-ui-attachment-" + Guid.NewGuid().ToString("N"));
+            var host = new GameObject("idle-ui-attachment");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            try
+            {
+                host.SetActive(true);
+                yield return null;
+                VisualElement menuRoot = controller.Root;
+                VisualElement playerTree = menuRoot.Q<VisualElement>("idle-player-experience");
+                Assert.That(playerTree, Is.Not.Null);
+                controller.StartFreshRun();
+                Assert.That(controller.Root, Is.Not.SameAs(menuRoot), "Starting rebuilds the run's Unity UI document.");
+                Assert.That(playerTree.parent, Is.SameAs(controller.Root), "The existing player tree must move to the live document immediately.");
+                Assert.That(controller.TutorialVisible, Is.True);
+                controller.CompleteTutorial();
+                yield return null;
+                Assert.That(playerTree.panel, Is.Not.Null);
+                Assert.That(playerTree.panel, Is.SameAs(controller.Root.panel));
+                Assert.That(controller.Root.Q<VisualElement>("player-hud").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+
+                controller.RestartRun();
+                yield return null;
+                Assert.That(playerTree.parent, Is.SameAs(controller.Root), "External legacy restart must reattach on the next frame.");
+                controller.ReturnToMainMenu();
+                Assert.That(playerTree.parent, Is.SameAs(controller.Root));
+                Assert.That(controller.MainMenuVisible, Is.True);
+                Assert.That(controller.Root.Query<VisualElement>("idle-player-experience").ToList().Count, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                DestroyPlayerFlowContent(contentSet, experience);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
         private sealed class PlayerExperienceProbeController : IdleAutoDefensePlayerExperienceController
         {
             public GameContentSetAsset ContentSet { get; set; }
             public IdleAutoDefensePlayerExperienceAsset Experience { get; set; }
+            public VisualElement Root => RuntimeUiRoot;
 
             protected override void ConfigurePlayerExperienceBeforeBuild()
             {

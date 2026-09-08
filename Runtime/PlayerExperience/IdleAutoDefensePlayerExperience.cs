@@ -19,14 +19,15 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         private readonly IdleAutoDefensePlayerView _view;
         private bool _disposed;
         internal IdleAutoDefenseRunSnapshot RunState => _run.Snapshot;
-        internal void RefreshRun() => _run.Refresh();
+        internal void RefreshRun() { _run.Refresh(); _view.EnsureAttached(); }
+        private void RestartRun() { _run.RestartRun(); _view.EnsureAttached(); }
         public IdleAutoDefensePlayerFlowState CurrentFlowState { get => _flow.State; private set => _flow.State = value; }
         internal IdleAutoDefensePlayerProfile _profile => _profiles.Profile;
         internal IdleProgressionResult _offlinePreview => _profiles.OfflinePreview;
         internal int _tutorialStepIndex => _flow.TutorialStepIndex;
         internal IdleAutoDefensePlayerExperience(
             IIdleAutoDefenseRunSession run, IdleAutoDefenseProfileSession profiles, IIdleAutoDefenseAudioOutput output,
-            IdleAutoDefensePlayerExperienceAsset assignedExperience, VisualElement runtimeRoot)
+            IdleAutoDefensePlayerExperienceAsset assignedExperience, Func<VisualElement> runtimeRoot)
         {
             _run = run;
             _profiles = profiles;
@@ -60,14 +61,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         internal void Tick(float deltaSeconds)
         {
             if (_disposed) return;
-            _run.Refresh();
+            RefreshRun();
             _input.Handle();
             _flow.Advance(_run, PortraitMessageVisible, deltaSeconds);
         }
         internal void Present()
         {
             if (_disposed) return;
-            _run.Refresh();
+            RefreshRun();
             _view.Hud.RefreshPlayerUi();
             _audio.Observe(RunState);
             if (_flow.RunActive && !_flow.SummaryRecorded && (RunState.EncounterCompleted || RunState.EncounterFailed)) ShowRunSummary();
@@ -154,7 +155,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 return;
             }
 
-            _run.RestartRun();
+            RestartRun();
             _flow.StartRun();
             _debugVisible = false;
             _audio.Reset();
@@ -174,7 +175,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public void ReturnToMainMenu()
         {
-            if (_flow.RunActive) _run.RestartRun();
+            if (_flow.RunActive) RestartRun();
             _flow.ReturnToMenu();
             _debugVisible = false;
             ShowMainMenu();
@@ -304,7 +305,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             bool reset = _profiles.Reset();
             _run.ResetPersistentProgression();
-            _run.RestartRun();
+            RestartRun();
             ResolveActiveTheme(_effectiveExperience.DefaultThemeId);
             IdleAutoDefensePlayerView.SetVisible(_view._resetConfirmationOverlay, false);
             PersistProfile(DateTimeOffset.UtcNow);

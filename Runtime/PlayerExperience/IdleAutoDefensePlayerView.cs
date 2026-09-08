@@ -113,15 +113,16 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         internal bool _compactLayout;
 
         internal readonly IdleAutoDefensePlayerExperience App;
-        internal readonly VisualElement RuntimeRoot;
+        private readonly Func<VisualElement> _getRuntimeRoot;
+        internal VisualElement RuntimeRoot => _getRuntimeRoot();
         internal readonly IdleAutoDefenseHudPresenter Hud;
         internal readonly IdleAutoDefenseMenuPresenter Menu;
         internal readonly IdleAutoDefenseModalPresenter Modal;
         internal readonly IdleAutoDefenseStylePresenter Style;
-        internal IdleAutoDefensePlayerView(IdleAutoDefensePlayerExperience app, VisualElement runtimeRoot)
+        internal IdleAutoDefensePlayerView(IdleAutoDefensePlayerExperience app, Func<VisualElement> runtimeRoot)
         {
             App = app;
-            RuntimeRoot = runtimeRoot;
+            _getRuntimeRoot = runtimeRoot ?? throw new ArgumentNullException(nameof(runtimeRoot));
             Hud = new IdleAutoDefenseHudPresenter(this);
             Menu = new IdleAutoDefenseMenuPresenter(this);
             Modal = new IdleAutoDefenseModalPresenter(this);
@@ -131,6 +132,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         {
             _playerUiRoot?.UnregisterCallback<GeometryChangedEvent>(OnPlayerUiGeometryChanged);
             _playerUiRoot?.RemoveFromHierarchy();
+        }
+
+        internal void EnsureAttached()
+        {
+            VisualElement root = RuntimeRoot;
+            if (_playerUiRoot != null && _playerUiRoot.parent != root) root.Add(_playerUiRoot);
         }
 
         internal static bool IsVisible(VisualElement element)

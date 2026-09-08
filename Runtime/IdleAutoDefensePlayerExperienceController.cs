@@ -37,7 +37,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             var profiles = new IdleAutoDefenseProfileSession(
                 new IdleAutoDefensePlayerProfileStore(_persistenceRootOverride, ActiveContentPackId), run);
             var output = new IdleAutoDefenseUnityAudioOutput(gameObject);
-            try { _experience = new IdleAutoDefensePlayerExperience(run, profiles, output, _playerExperience, RuntimeUiRoot); }
+            try { _experience = new IdleAutoDefensePlayerExperience(run, profiles, output, _playerExperience, () => RuntimeUiRoot); }
             catch
             {
                 try { profiles.Dispose(); } finally { output.Dispose(); }
