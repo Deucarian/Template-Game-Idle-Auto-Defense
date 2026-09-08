@@ -719,6 +719,64 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             }
         }
 
+        [UnityTest]
+        public IEnumerator ReplayedTutorialReturnsToVisiblePausedMenuUntilExplicitResume()
+        {
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(2000);
+            var experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            string persistenceRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Temp", "idle-tutorial-return-" + Guid.NewGuid().ToString("N"));
+            var host = new GameObject("idle-tutorial-return");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            try
+            {
+                host.SetActive(true);
+                yield return null;
+                controller.StartFreshRun();
+                controller.CompleteTutorial();
+                Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+                for (int menu = 0; menu < 2; menu++)
+                {
+                    if (menu == 0) controller.TogglePause();
+                    else controller.OpenSettings();
+                    int pausedTicks = controller.SessionElapsedTicks;
+                    controller.OpenTutorial();
+                    Assert.That(controller.TutorialVisible, Is.True);
+                    controller.CompleteTutorial();
+                    yield return new WaitForSecondsRealtime(0.2f);
+                    Assert.That(controller.TutorialVisible, Is.False);
+                    Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Paused));
+                    Assert.That(controller.PauseMenuVisible, Is.True);
+                    Assert.That(controller.Root.Q("pause-overlay").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+                    Assert.That(controller.SessionElapsedTicks, Is.EqualTo(pausedTicks), "A visible paused menu must stop actual Update simulation.");
+                    controller.ResumeRun();
+                    yield return new WaitForSeconds(0.2f);
+                    Assert.That(controller.PauseMenuVisible, Is.False);
+                    Assert.That(controller.SessionElapsedTicks, Is.GreaterThan(pausedTicks));
+                }
+                controller.TogglePause();
+                controller.RestartCurrentRun();
+                Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+                Assert.That(controller.PauseMenuVisible, Is.False);
+                Assert.That(controller.Root.Q("idle-player-experience").parent, Is.SameAs(controller.Root));
+                controller.ReturnToMainMenu();
+                controller.OpenTutorial();
+                controller.CompleteTutorial();
+                Assert.That(controller.MainMenuVisible, Is.True);
+                Assert.That(controller.RunActive, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                DestroyPlayerFlowContent(contentSet, experience);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
         private sealed class PlayerExperienceProbeController : IdleAutoDefensePlayerExperienceController
         {
             public GameContentSetAsset ContentSet { get; set; }

@@ -63,7 +63,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         }
 
         internal void CompleteTutorial() => State = RunActive
-            ? IdleAutoDefensePlayerFlowState.Running : IdleAutoDefensePlayerFlowState.MainMenu;
+            ? BeforeModal == IdleAutoDefensePlayerFlowState.Paused
+                ? IdleAutoDefensePlayerFlowState.Paused : IdleAutoDefensePlayerFlowState.Running
+            : IdleAutoDefensePlayerFlowState.MainMenu;
 
         internal bool TryRecordSummary()
         {

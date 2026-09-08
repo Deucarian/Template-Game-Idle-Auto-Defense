@@ -22,10 +22,29 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             flow.Advance(clock, false, 0.5f);
             flow.CompleteTutorial();
             flow.Advance(clock, false, 0.6f);
+            Assert.That(flow.State, Is.EqualTo(IdleAutoDefensePlayerFlowState.Paused));
+            Assert.That(clock.TickCount, Is.EqualTo(1));
+            flow.State = IdleAutoDefensePlayerFlowState.Running;
+            flow.Advance(clock, false, 0.6f);
             flow.TryRecordSummary();
             flow.Advance(clock, false, 0.7f);
             Assert.That(clock.TickCount, Is.EqualTo(2));
             Assert.That(clock.Elapsed, Is.EqualTo(0.8f).Within(0.00001f));
+        }
+
+        [TestCase(IdleAutoDefensePlayerFlowState.Running, false, IdleAutoDefensePlayerFlowState.Running)]
+        [TestCase(IdleAutoDefensePlayerFlowState.Paused, false, IdleAutoDefensePlayerFlowState.Paused)]
+        [TestCase(IdleAutoDefensePlayerFlowState.Paused, true, IdleAutoDefensePlayerFlowState.Running)]
+        public void TutorialCompletionPreservesPauseExceptForFirstRun(
+            IdleAutoDefensePlayerFlowState origin, bool firstRun, IdleAutoDefensePlayerFlowState expected)
+        {
+            var flow = new IdleAutoDefensePlayerFlow();
+            flow.StartRun();
+            flow.State = origin;
+            flow.OpenTutorial(firstRun);
+            flow.CompleteTutorial();
+            Assert.That(flow.State, Is.EqualTo(expected));
+            Assert.That(flow.CanTick(false), Is.EqualTo(expected == IdleAutoDefensePlayerFlowState.Running));
         }
 
         [Test]
