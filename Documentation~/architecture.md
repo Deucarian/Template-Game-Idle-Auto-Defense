@@ -35,4 +35,28 @@ Failure and teardown paths release owned resources even when initialization or p
 
 The run recreates its Unity UI document during restart. The player view receives a narrow current-root provider and reattaches its existing tree after player restart commands and at frame boundaries. This preserves live HUD/modal attachment and callback state across both player-flow transitions and direct legacy restarts without rebuilding the view or giving it a gameplay mutation port.
 
-Scope remains local to this template. The legacy simulation/controller source still contains unrelated authored-content construction and gameplay/presentation clusters; this migration does not claim that moving the player implementation makes those existing responsibilities disappear. Track further extraction by state and reasons to change, not numbered partial files.
+## Run composition and ownership
+
+`IdleAutoDefenseTemplateController` retains its original component, serialized configuration and public commands. Its partial companions contain configuration bindings and forwarding observations; gameplay state and policy live in ordinary composed owners. `BasicIdleAutoDefenseGame` preserves its public factory methods while delegating authored fallback construction to content-specific factories.
+
+| Responsibility | Authoritative owner |
+| --- | --- |
+| Assigned graph, strict-startup diagnostics, generated fallback lifetime | `IdleAutoDefenseContentBinding` |
+| Lower-package construction and spawn-service teardown | `IdleAutoDefenseRuntimePlan`, `IdleAutoDefenseRuntimeServices` |
+| Elapsed ticks, frame residual, run sequence, victory and deferred restart | `IdleAutoDefenseRunTimeline` |
+| Ordered simulation phases | `IdleAutoDefenseRunLoop` |
+| Wallet accounting and passive-income residual | `IdleAutoDefenseRunWallet` |
+| Run ranks, unlocks, effect intents and Overdrive | `IdleAutoDefenseRunBuild` |
+| Commander XP, reward queues, selected ranks and kill/wave deduplication | `IdleAutoDefenseRewardProgression` |
+| Deterministic eligible-choice sampling | `IdleAutoDefenseRewardSelection` |
+| Persistent research, offline rewards and terminal reward operations | `IdleAutoDefensePersistentProgression` |
+| Existing monetization offers and legacy draft API | `IdleAutoDefenseRewardOffers`, `IdleAutoDefenseLegacyDraft` |
+| Target policy, cadence, accumulated damage, delayed impacts and feedback | Composed `IdleAutoDefenseCombatRuntime` owners |
+| World objects, visual bindings, events, beams and generated materials | Composed `IdleAutoDefenseWorldPresentation` owners |
+| UI document, panel settings and floating feedback | `IdleAutoDefenseRuntimeUi` |
+
+The run loop preserves the established phase order. It advances session ticks and Overdrive before checking a paused reward draft; survival time and combat remain paused. For an active frame it consumes encounter requests, updates targets, ticks combat, observes feedback, launches projectiles, ticks navigation, resolves expiry and delayed impacts, fires manual/module cadence, awards currency and progression, updates presentation, and finally evaluates authored session victory. Launching a projectile does not immediately apply its visible impact damage.
+
+Combat receives explicit enemy/projectile backends and presentation/reward ports. World presentation receives authored content and narrow target/lookup queries. These owners do not retain the MonoBehaviour or scan assemblies. The player's `IdleAutoDefenseRunSession` remains an adapter; it is distinct from the runtime's `IdleAutoDefenseRunTimeline`.
+
+Generated fallback assets and material copies have explicit lifetime owners. Assigned content, prefab source materials and themes are borrowed and survive teardown. Runtime construction rolls back world, UI and service resources on failure so a subsequent Build can retry cleanly. Restart resets run state while retaining persistent progression and the existing monetization session. Scope remains local to this concrete template; no new generic framework or shared-package API is introduced.
