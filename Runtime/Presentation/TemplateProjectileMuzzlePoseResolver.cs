@@ -10,12 +10,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
     /// <summary>Projectile spawn adapter that resolves authored attacks to the current turret muzzle transform.</summary>
     internal sealed class TemplateProjectileMuzzlePoseResolver : ISpawnPoseResolver
     {
-        private readonly IdleAutoDefenseTemplateController _controller;
+        private readonly IIdleAutoDefenseProjectileMuzzleQueries _queries;
         private readonly WorldSpawnChannelId _channelId;
 
-        public TemplateProjectileMuzzlePoseResolver(IdleAutoDefenseTemplateController controller, WorldSpawnChannelId channelId)
+        public TemplateProjectileMuzzlePoseResolver(IIdleAutoDefenseProjectileMuzzleQueries queries, WorldSpawnChannelId channelId)
         {
-            _controller = controller ?? throw new ArgumentNullException(nameof(controller));
+            _queries = queries ?? throw new ArgumentNullException(nameof(queries));
             _channelId = channelId;
         }
 
@@ -24,12 +24,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             if (!request.ChannelId.Equals(_channelId))
                 return SpawnPoseResult.Failure("Unknown projectile spawn channel: " + request.ChannelId);
 
-            AttackDefinitionAsset attack = _controller.FindAttackRecipeForPresentation(request.Context.WaveId);
-            Vector3 position = _controller.ResolveTowerMuzzlePosition(attack);
+            AttackDefinitionAsset attack = _queries.FindAttack(request.Context.WaveId);
+            Vector3 position = _queries.ResolveMuzzle(attack);
             Vector3 forward = Vector3.forward;
-            if (_controller.TrySelectPresentationEnemyWithinAnyRange(out AutoDefenseEnemySnapshot target))
+            if (_queries.TrySelectTarget(out AutoDefenseEnemySnapshot target))
             {
-                forward = IdleAutoDefenseTemplateController.CreateEnemyAimPosition(target.Position) - position;
+                forward = IdleAutoDefenseCombatTargets.CreateEnemyAimPosition(target.Position) - position;
                 forward.y = 0f;
             }
 
