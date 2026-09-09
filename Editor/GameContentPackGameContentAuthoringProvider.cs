@@ -129,8 +129,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             if (string.Equals(actionId, IdleAutoDefenseContentPackIndex.OpenSetupActionId, StringComparison.OrdinalIgnoreCase))
             {
-                IdleAutoDefenseTemplateMenu.CreateGameFromTemplate();
-                return GameContentActionResult.Success("Opened the existing Idle Auto Defense setup wizard.");
+                return new GameContentActionResult(true, "Open the Idle Auto Defense setup wizard.",
+                    navigationToolId: "deucarian.template.idle-auto-defense");
             }
 
             return GameContentActionResult.Failure("Unknown Idle Auto Defense content-pack action '" + actionId + "'.");
