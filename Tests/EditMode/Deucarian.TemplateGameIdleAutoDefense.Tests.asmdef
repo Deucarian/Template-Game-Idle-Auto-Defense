@@ -16,6 +16,7 @@
     "Deucarian.Encounters",
     "Deucarian.DefenseGames",
     "Deucarian.WorldSpawning",
+    "Deucarian.WorldNavigation",
     "Deucarian.WeaponSystems",
     "Deucarian.WeaponSystems.Authoring",
     "Deucarian.WeaponSystems.Editor",

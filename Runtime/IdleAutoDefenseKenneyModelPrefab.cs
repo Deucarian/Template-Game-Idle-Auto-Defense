@@ -82,7 +82,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 for (int j = 0; j < sourceMaterials.Length; j++)
                 {
                     Material source = sourceMaterials[j];
-                    materials[j] = source != null ? new Material(source) : (shader != null ? new Material(shader) : null);
+                    materials[j] = IdleAutoDefenseMaterialLifetime.Own(root, source != null ? new Material(source) : (shader != null ? new Material(shader) : null));
                     if (materials[j] != null && materials[j].HasProperty("_Color"))
                         materials[j].color = Color.Lerp(materials[j].color, tint, 0.28f);
                 }

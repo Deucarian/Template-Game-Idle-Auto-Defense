@@ -62,7 +62,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
         public int Value { get; set; }
     }
 
-    public sealed class IdleAutoDefensePlayerProfileStore : IDisposable
+    public sealed class IdleAutoDefensePlayerProfileStore : IDisposable, IIdleAutoDefenseProfileStorage
     {
         public const string DocumentName = "idle-auto-defense-player-profile";
         public const string DefaultProfileScopeId = "contentpack.idle-auto-defense.playable";

@@ -86,16 +86,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             }
 
             AutoDefenseDefinition definition = BasicIdleAutoDefenseGame.CreateDefinition();
-            Type resolverType = typeof(IdleAutoDefenseTemplateController).GetNestedType(
-                "TemplateJitteredPerimeterPoseResolver",
-                BindingFlags.NonPublic);
-            Assert.That(resolverType, Is.Not.Null);
-            var resolver = (ISpawnPoseResolver)Activator.CreateInstance(
-                resolverType,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                null,
-                new object[] { definition.Objective, definition.SpawnRing },
-                null);
+            ISpawnPoseResolver resolver = new TemplateJitteredPerimeterPoseResolver(definition.Objective, definition.SpawnRing);
             WaveEntryRecipe firstEntry = authored[0].Entries.Entries[0];
             string legacyId = authored[0].Id + ".group.0";
             string stableId = runtime[0].SpawnGroups[0].Id.Value;
@@ -2017,66 +2008,76 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileDoesNotContain(bootstrapPath, "GUILayout");
 
             string runtimePath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseTemplate.cs");
-            string playerUiPath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefensePlayerExperienceController.Ui.cs");
+            string publicStatePath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseTemplateController.PublicState.cs");
+            string runtimeUiPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseRuntimeUi.cs");
+            string runFeedbackPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseRunFeedback.cs");
+            string combatProjectilesPath = Path.Combine(packageRoot, "Runtime", "Combat", "IdleAutoDefenseCombatProjectiles.cs");
+            string worldAssetsPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseVisualAssets.cs");
+            string worldStatePath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseTemplateController.WorldState.cs");
+            string worldArenaPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseArenaPresentation.cs");
+            string worldTargetsPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseTargetPresentation.cs");
+            string worldBeamsPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseBeamPresentation.cs");
+            string worldEventsPath = Path.Combine(packageRoot, "Runtime", "Presentation", "IdleAutoDefenseEventPresentation.cs");
+            string playerUiPath = Path.Combine(packageRoot, "Runtime", "PlayerExperience", "IdleAutoDefensePlayerView.cs");
             AssertFileContains(playerUiPath, "BuildMainMenu");
-            AssertFileContains(playerUiPath, "BuildModuleBar");
+            AssertFileContains(Path.Combine(packageRoot, "Runtime", "PlayerExperience", "IdleAutoDefenseHudPresenter.cs"), "BuildModuleBar");
             AssertFileContains(playerUiPath, "BuildRewardDraft");
             AssertFileContains(playerUiPath, "ApplySafeArea");
             AssertFileContains(playerUiPath, "BuildRunSummary");
-            AssertFileContains(runtimePath, "RuntimeUiDocumentReady");
-            AssertFileContains(runtimePath, "RuntimeUiThemeAssigned");
-            AssertFileContains(runtimePath, "RuntimeUiDirectStylesApplied");
-            AssertFileContains(runtimePath, "RuntimeUiRootResolvedWidth");
-            AssertFileContains(runtimePath, "RuntimeUiRootResolvedHeight");
-            AssertFileContains(runtimePath, "ApplyRuntimeUiRootStyles");
+            AssertFileContains(publicStatePath, "RuntimeUiDocumentReady");
+            AssertFileContains(publicStatePath, "RuntimeUiThemeAssigned");
+            AssertFileContains(publicStatePath, "RuntimeUiDirectStylesApplied");
+            AssertFileContains(publicStatePath, "RuntimeUiRootResolvedWidth");
+            AssertFileContains(publicStatePath, "RuntimeUiRootResolvedHeight");
+            AssertFileContains(runtimeUiPath, "ApplyRuntimeUiRootStyles");
             AssertFileContains(runtimePath, "ApplyRuntimeUiFont");
-            AssertFileContains(runtimePath, "Resources.Load<ThemeStyleSheet>(\"IdleAutoDefenseRuntimeTheme\")");
-            AssertFileContains(runtimePath, "PanelScaleMode.ScaleWithScreenSize");
-            AssertFileContains(runtimePath, "settings.sortingOrder = 32767");
-            AssertFileContains(runtimePath, "settings.clearColor = false");
-            AssertFileContains(runtimePath, "CreateRuntimeVisualPrefab");
-            AssertFileContains(runtimePath, "Kenney3DResourceRoot");
-            AssertFileContains(runtimePath, "IdleAutoDefenseWeaponVisualBinding");
+            AssertFileContains(runtimeUiPath, "Resources.Load<ThemeStyleSheet>(\"IdleAutoDefenseRuntimeTheme\")");
+            AssertFileContains(runtimeUiPath, "PanelScaleMode.ScaleWithScreenSize");
+            AssertFileContains(runtimeUiPath, "settings.sortingOrder = 32767");
+            AssertFileContains(runtimeUiPath, "settings.clearColor = false");
+            AssertFileContains(worldAssetsPath, "CreateRuntimeVisualPrefab");
+            AssertFileContains(worldAssetsPath, "Kenney3DResourceRoot");
+            AssertFileContains(worldTargetsPath, "IdleAutoDefenseWeaponVisualBinding");
             AssertFileContains(runtimePath, "TemplateProjectileMuzzlePoseResolver");
-            AssertFileContains(runtimePath, "ResolveTowerMuzzlePosition");
-            AssertFileContains(runtimePath, "CreateWeaponPresentation");
-            AssertFileContains(runtimePath, "ShowDebugAimLines");
-            AssertFileContains(runtimePath, "DebugAimTracerSpawnCount");
-            AssertFileContains(runtimePath, "AuthoredWeaponPresentationSpawnCount");
-            AssertFileContains(runtimePath, "AuthoredVisibleInstanceStampCount");
-            AssertFileContains(runtimePath, "FallbackVisibleGameplaySpawnCount");
-            AssertFileContains(runtimePath, "AuthoredObjectivePresentationBindingCount");
-            AssertFileContains(runtimePath, "FallbackObjectivePresentationBindingCount");
-            AssertFileContains(runtimePath, "AuthoredModuleSlotPresentationBindingCount");
-            AssertFileContains(runtimePath, "FallbackModuleSlotPresentationBindingCount");
-            AssertFileContains(runtimePath, "FindWeaponDefinitionForPresentation");
-            AssertFileContains(runtimePath, "ProjectileImpactCallbackCount");
-            AssertFileContains(runtimePath, "ProjectileDamageResolvedFromImpactCount");
-            AssertFileContains(runtimePath, "ProjectileImpactRejectedCount");
-            AssertFileContains(runtimePath, "_projectiles.ReportImpact(new ProjectileImpactRequest");
-            AssertFileContains(runtimePath, "TryEmitBeamVfx");
-            AssertFileContains(runtimePath, "BeamVisualSpawnCount");
-            AssertFileContains(runtimePath, "Runtime Beam");
-            AssertFileContains(runtimePath, "ConfigureBeamLineRenderer");
-            AssertFileContains(runtimePath, "LineRenderer");
-            AssertFileContains(runtimePath, "UpdateActiveBeamVisuals");
-            AssertFileDoesNotContain(runtimePath, "CreateTransientPrimitiveVfxPrefab");
-            AssertFileDoesNotContain(runtimePath, "_projectiles?.Cleanup(pending.ProjectileId, ProjectileExpiryReason.HitLimitReached)");
-            AssertFileContains(runtimePath, "CreateEnemyModelPrefab");
-            AssertFileContains(runtimePath, "CreateProjectileModelPrefab");
-            AssertFileContains(runtimePath, "AttachKenneySprite");
+            AssertFileContains(worldTargetsPath, "ResolveTowerMuzzlePosition");
+            AssertFileContains(worldArenaPath, "CreateWeaponPresentation");
+            AssertFileContains(publicStatePath, "ShowDebugAimLines");
+            AssertFileContains(worldStatePath, "DebugAimTracerSpawnCount");
+            AssertFileContains(worldStatePath, "AuthoredWeaponPresentationSpawnCount");
+            AssertFileContains(worldStatePath, "AuthoredVisibleInstanceStampCount");
+            AssertFileContains(worldStatePath, "FallbackVisibleGameplaySpawnCount");
+            AssertFileContains(worldStatePath, "AuthoredObjectivePresentationBindingCount");
+            AssertFileContains(worldStatePath, "FallbackObjectivePresentationBindingCount");
+            AssertFileContains(worldStatePath, "AuthoredModuleSlotPresentationBindingCount");
+            AssertFileContains(worldStatePath, "FallbackModuleSlotPresentationBindingCount");
+            AssertFileContains(worldArenaPath, "FindWeaponDefinitionForPresentation");
+            AssertFileContains(combatProjectilesPath, "ProjectileImpactCallbackCount");
+            AssertFileContains(combatProjectilesPath, "ProjectileDamageResolvedFromImpactCount");
+            AssertFileContains(combatProjectilesPath, "ProjectileImpactRejectedCount");
+            AssertFileContains(combatProjectilesPath, "_projectiles.ReportImpact(new ProjectileImpactRequest");
+            AssertFileContains(worldBeamsPath, "TryEmitBeamVfx");
+            AssertFileContains(worldBeamsPath, "BeamVisualSpawnCount");
+            AssertFileContains(worldBeamsPath, "Runtime Beam");
+            AssertFileContains(worldBeamsPath, "ConfigureBeamLineRenderer");
+            AssertFileContains(worldBeamsPath, "LineRenderer");
+            AssertFileContains(worldBeamsPath, "UpdateActiveBeamVisuals");
+            AssertFileDoesNotContain(worldAssetsPath, "CreateTransientPrimitiveVfxPrefab");
+            AssertFileDoesNotContain(combatProjectilesPath, "_projectiles?.Cleanup(pending.ProjectileId, ProjectileExpiryReason.HitLimitReached)");
+            AssertFileContains(worldAssetsPath, "CreateEnemyModelPrefab");
+            AssertFileContains(worldAssetsPath, "CreateProjectileModelPrefab");
+            AssertFileContains(worldAssetsPath, "AttachKenneySprite");
             string runtimeSettingsPath = Path.Combine(packageRoot, "Runtime", "IdleAutoDefenseContentSetRuntimeSettings.cs");
             AssertFileContains(runtimeSettingsPath, "Pulse Beam Locked Pad");
             AssertFileContains(runtimeSettingsPath, "Arc Burst Locked Pad");
             AssertFileContains(runtimeSettingsPath, "Homing Pulse Locked Pad");
-            AssertFileContains(runtimePath, "TintSpriteRenderers");
-            AssertFileContains(runtimePath, "HideMeshRenderers");
-            AssertFileContains(runtimePath, "AddProjectileTrail");
-            AssertFileContains(runtimePath, "EmitKenneySpriteBurst");
-            AssertFileContains(runtimePath, "TriggerCameraShake");
-            AssertFileContains(runtimePath, "Art/impact_flame");
-            AssertFileContains(runtimePath, "Art/currency_coin_gold");
-            AssertFileDoesNotContain(runtimePath, "ScriptableObject.CreateInstance<ThemeStyleSheet>()");
+            AssertFileContains(worldAssetsPath, "TintSpriteRenderers");
+            AssertFileContains(worldAssetsPath, "HideMeshRenderers");
+            AssertFileContains(worldAssetsPath, "AddProjectileTrail");
+            AssertFileContains(worldEventsPath, "EmitKenneySpriteBurst");
+            AssertFileContains(worldEventsPath, "TriggerCameraShake");
+            AssertFileContains(worldEventsPath, "Art/impact_flame");
+            AssertFileContains(runFeedbackPath, "Art/currency_coin_gold");
+            AssertFileDoesNotContain(runtimeUiPath, "ScriptableObject.CreateInstance<ThemeStyleSheet>()");
             AssertFileDoesNotContain(runtimePath, "private sealed class IdleAutoDefenseWeaponVisualBinding");
             AssertFileDoesNotContain(runtimePath, "private sealed class IdleAutoDefenseEnemyModelPresentation");
             AssertFileDoesNotContain(runtimePath, "private sealed class TemplateProjectileMuzzlePoseResolver");
@@ -2098,8 +2099,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
             AssertFileContains(playableAuditMenuPath, "GenerateAuthoringRuntimeParityReport");
             AssertFileContains(playableAuditMenuPath, "GenerateFreshSampleReportsForBatch");
             AssertFileContains(playableAuditMenuPath, "FindVisibleObjectsWithoutAuthoredStamp");
-            AssertFileContains(runtimePath, "EnvironmentPresentation");
-            AssertFileContains(runtimePath, "environment.idle-auto-defense.arena");
+            AssertFileContains(worldArenaPath, "EnvironmentPresentation");
+            AssertFileContains(worldArenaPath, "environment.idle-auto-defense.arena");
             AssertFileExistsAtFullPath(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"));
             AssertFileContains(Path.Combine(packageRoot, "Runtime", "Resources", "IdleAutoDefenseRuntimeTheme.tss"), "unity-theme://default");
 
@@ -4447,9 +4448,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
 
         private static int GetRewardDraftSeed(IdleAutoDefenseTemplateController controller)
         {
-            FieldInfo field = typeof(IdleAutoDefenseTemplateController).GetField("_rewardDraftSeed", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(field);
-            return (int)field.GetValue(controller);
+            FieldInfo progressionField = typeof(IdleAutoDefenseTemplateController).GetField("_rewardProgression", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(progressionField);
+            var progression = (IdleAutoDefenseRewardProgression)progressionField.GetValue(controller);
+            if (progression == null) return 0;
+            FieldInfo selectionField = typeof(IdleAutoDefenseRewardProgression).GetField("_selection", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(selectionField);
+            return ((IdleAutoDefenseRewardSelection)selectionField.GetValue(progression)).Sequence;
         }
 
         private static EncounterDefinition CreateFailCapablePressureEncounterDefinition()
