@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -302,10 +303,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public static void Open()
         {
-            var window = GetWindow<IdleAutoDefenseTemplateSetupWizardWindow>("Create Playable Idle Defense");
+            var window = DeucarianEditorWindowPages.GetStandalone<IdleAutoDefenseTemplateSetupWizardWindow>("Create Playable Idle Defense");
             window.minSize = new Vector2(430f, 280f);
             window.Show();
         }
+
+        public static IDeucarianEditorPage CreatePage() =>
+            DeucarianEditorImGuiPage.Create<IdleAutoDefenseTemplateSetupWizardWindow>(
+                "deucarian.template.idle-auto-defense", window => window.OnGUI());
 
         private void OnGUI()
         {
