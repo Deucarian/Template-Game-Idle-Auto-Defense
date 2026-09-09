@@ -126,7 +126,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField("Content Sets", DeucarianEditorStyles.SectionTitle);
+                DeucarianEditorTextGUI.LabelField("Content Sets", DeucarianEditorStyles.SectionTitle);
                 GUILayout.FlexibleSpace();
                 if (DeucarianEditorMiniToolbar.Button("Refresh", true, GUILayout.Width(62f), GUILayout.Height(22f)))
                     context.RefreshLibrary();
@@ -154,7 +154,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             if (shown == 0)
-                EditorGUILayout.LabelField(items.Count == 0 ? "No authored content sets found." : "No content sets match the current search.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField(items.Count == 0 ? "No authored content sets found." : "No content sets match the current search.", DeucarianEditorStyles.MutedLabel);
             EditorGUILayout.EndScrollView();
         }
 
@@ -210,7 +210,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             GameContentSetAsset asset = context.SelectedItem == null ? null : context.SelectedItem.Asset as GameContentSetAsset;
             if (asset == null || state.EditingState == null || state.EditingContext == null)
             {
-                EditorGUILayout.LabelField("Select a content set to edit.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField("Select a content set to edit.", DeucarianEditorStyles.MutedLabel);
                 return;
             }
 
@@ -350,9 +350,9 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static void DrawHeader(string title, string subtitle, IReadOnlyList<DeucarianEditorStatusChip> chips)
         {
-            EditorGUILayout.LabelField(string.IsNullOrWhiteSpace(title) ? "Content Set" : title, HeaderStyle);
+            DeucarianEditorTextGUI.LabelField(string.IsNullOrWhiteSpace(title) ? "Content Set" : title, HeaderStyle);
             if (!string.IsNullOrWhiteSpace(subtitle))
-                EditorGUILayout.LabelField(subtitle, DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField(subtitle, DeucarianEditorStyles.MutedLabel);
             DeucarianEditorStatusChipRow.Draw(chips);
         }
 
@@ -469,7 +469,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             IdleAutoDefensePresentationDebugSettings debug = runtime.PresentationDebug;
 
             GUILayout.Space(DeucarianEditorSpacing.Small);
-            EditorGUILayout.LabelField("Reward Draft", DeucarianEditorStyles.SectionTitle);
+            DeucarianEditorTextGUI.LabelField("Reward Draft", DeucarianEditorStyles.SectionTitle);
             rewards.NormalEnemyExperience = context.Authoring.DrawIntField("Normal Enemy XP", (int)rewards.NormalEnemyExperience);
             rewards.EliteEnemyExperience = context.Authoring.DrawIntField("Elite Enemy XP", (int)rewards.EliteEnemyExperience);
             rewards.BossEnemyExperience = context.Authoring.DrawIntField("Boss Enemy XP", (int)rewards.BossEnemyExperience);
@@ -482,7 +482,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             rewards.BossUnlockWeightMultiplier = context.Authoring.DrawFloatField("Boss Unlock Weight", (float)rewards.BossUnlockWeightMultiplier);
 
             GUILayout.Space(DeucarianEditorSpacing.Small);
-            EditorGUILayout.LabelField("Debug Presentation", DeucarianEditorStyles.SectionTitle);
+            DeucarianEditorTextGUI.LabelField("Debug Presentation", DeucarianEditorStyles.SectionTitle);
             debug.ShowDebugAimLines = context.Authoring.DrawToggle("Show Debug Aim Lines", debug.ShowDebugAimLines);
             debug.ShowDebugRanges = context.Authoring.DrawToggle("Show Debug Ranges", debug.ShowDebugRanges);
             debug.ShowDebugSpawnRing = context.Authoring.DrawToggle("Show Debug Spawn Ring", debug.ShowDebugSpawnRing);
@@ -500,7 +500,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             if (item == null)
             {
-                EditorGUILayout.LabelField("Content packs and scene assignments appear after the content set is created.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField("Content packs and scene assignments appear after the content set is created.", DeucarianEditorStyles.MutedLabel);
                 return;
             }
 
@@ -525,13 +525,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(target.DisplayName, DeucarianEditorStyles.SectionTitle);
+                        DeucarianEditorTextGUI.LabelField(target.DisplayName, DeucarianEditorStyles.SectionTitle);
                         GUILayout.FlexibleSpace();
                         DeucarianEditorStatusBadge.Draw(target.Kind.ToString(), DeucarianEditorStatus.Info, GUILayout.Width(104f));
                         DeucarianEditorMiniToolbar.PingButton(target.Asset);
                     }
 
-                    EditorGUILayout.LabelField(string.IsNullOrWhiteSpace(reference.PropertyPath) ? target.Id : reference.PropertyPath, DeucarianEditorStyles.MutedLabel);
+                    DeucarianEditorTextGUI.LabelField(string.IsNullOrWhiteSpace(reference.PropertyPath) ? target.Id : reference.PropertyPath, DeucarianEditorStyles.MutedLabel);
                 });
             }
         }
@@ -554,7 +554,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             IReadOnlyList<string> lines = GameContentSetAssetCreator.GetPreviewLines(state);
             for (int i = 0; i < lines.Count; i++)
-                EditorGUILayout.LabelField(lines[i], DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField(lines[i], DeucarianEditorStyles.MutedLabel);
 
             DrawSummaryRows(
                 Row("Readiness", new GameContentAuthoringValidationSummary(validation).ReadinessLabel),
@@ -571,7 +571,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             GameContentSetAuthoringState source = state.Creating ? draft : state.EditingState;
             if (source == null)
             {
-                EditorGUILayout.LabelField("Select a content set to preview.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField("Select a content set to preview.", DeucarianEditorStyles.MutedLabel);
                 return;
             }
 
@@ -667,10 +667,10 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         private static void DrawWaveTimeline(GameContentSetAuthoringState source)
         {
-            EditorGUILayout.LabelField("Wave Timeline", DeucarianEditorStyles.SectionTitle);
+            DeucarianEditorTextGUI.LabelField("Wave Timeline", DeucarianEditorStyles.SectionTitle);
             if (source.WaveSet.Count == 0)
             {
-                EditorGUILayout.LabelField("No waves assigned.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField("No waves assigned.", DeucarianEditorStyles.MutedLabel);
                 return;
             }
 
@@ -681,19 +681,19 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(GetAssetName(wave, "Missing wave"), DeucarianEditorStyles.SectionTitle);
+                        DeucarianEditorTextGUI.LabelField(GetAssetName(wave, "Missing wave"), DeucarianEditorStyles.SectionTitle);
                         GUILayout.FlexibleSpace();
                         DeucarianEditorStatusChipRow.Draw(BuildWaveChips(wave));
                     }
 
-                    EditorGUILayout.LabelField(wave == null ? "Missing wave reference." : BuildEnemyMixSummary(wave), DeucarianEditorStyles.MutedLabel);
+                    DeucarianEditorTextGUI.LabelField(wave == null ? "Missing wave reference." : BuildEnemyMixSummary(wave), DeucarianEditorStyles.MutedLabel);
                 });
             }
         }
 
         private static void DrawWeaponAttackChains(GameContentSetAuthoringState source)
         {
-            EditorGUILayout.LabelField("Weapon / Attack Chains", DeucarianEditorStyles.SectionTitle);
+            DeucarianEditorTextGUI.LabelField("Weapon / Attack Chains", DeucarianEditorStyles.SectionTitle);
             for (int i = 0; i < source.AvailableWeapons.Count; i++)
             {
                 WeaponDefinitionAsset weapon = source.AvailableWeapons[i];
@@ -701,22 +701,22 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(GetAssetName(weapon, "Missing weapon"), DeucarianEditorStyles.SectionTitle);
+                        DeucarianEditorTextGUI.LabelField(GetAssetName(weapon, "Missing weapon"), DeucarianEditorStyles.SectionTitle);
                         GUILayout.FlexibleSpace();
                         DeucarianEditorStatusChipRow.Draw(BuildWeaponChips(weapon));
                     }
 
-                    EditorGUILayout.LabelField(BuildWeaponAttackSummary(weapon), DeucarianEditorStyles.MutedLabel);
+                    DeucarianEditorTextGUI.LabelField(BuildWeaponAttackSummary(weapon), DeucarianEditorStyles.MutedLabel);
                 });
             }
         }
 
         private static void DrawUpgradeTargets(GameContentSetAuthoringState source)
         {
-            EditorGUILayout.LabelField("Upgrade Targets", DeucarianEditorStyles.SectionTitle);
+            DeucarianEditorTextGUI.LabelField("Upgrade Targets", DeucarianEditorStyles.SectionTitle);
             if (source.UpgradePool.Count == 0)
             {
-                EditorGUILayout.LabelField("No upgrades assigned.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField("No upgrades assigned.", DeucarianEditorStyles.MutedLabel);
                 return;
             }
 
@@ -727,12 +727,12 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(GetAssetName(upgrade, "Missing upgrade"), DeucarianEditorStyles.SectionTitle);
+                        DeucarianEditorTextGUI.LabelField(GetAssetName(upgrade, "Missing upgrade"), DeucarianEditorStyles.SectionTitle);
                         GUILayout.FlexibleSpace();
                         DeucarianEditorStatusChipRow.Draw(BuildUpgradeChips(upgrade, source));
                     }
 
-                    EditorGUILayout.LabelField(BuildUpgradeTargetSummary(upgrade), DeucarianEditorStyles.MutedLabel);
+                    DeucarianEditorTextGUI.LabelField(BuildUpgradeTargetSummary(upgrade), DeucarianEditorStyles.MutedLabel);
                 });
             }
         }
@@ -778,14 +778,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.LabelField(title, DeucarianEditorStyles.SectionTitle);
+                DeucarianEditorTextGUI.LabelField(title, DeucarianEditorStyles.SectionTitle);
                 GUILayout.FlexibleSpace();
                 if (DeucarianEditorButtons.Secondary(addLabel, true, GUILayout.Height(24f), GUILayout.Width(104f)))
                     assets.Add(null);
             }
 
             if (assets.Count == 0)
-                EditorGUILayout.LabelField("None assigned.", DeucarianEditorStyles.MutedLabel);
+                DeucarianEditorTextGUI.LabelField("None assigned.", DeucarianEditorStyles.MutedLabel);
 
             for (int i = 0; i < assets.Count; i++)
             {
@@ -798,7 +798,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField("Item " + (index + 1).ToString(CultureInfo.InvariantCulture), DeucarianEditorStyles.SectionTitle);
+                        DeucarianEditorTextGUI.LabelField("Item " + (index + 1).ToString(CultureInfo.InvariantCulture), DeucarianEditorStyles.SectionTitle);
                         GUILayout.FlexibleSpace();
                         if (DeucarianEditorMiniToolbar.Button("Up", index > 0, GUILayout.Width(38f), GUILayout.Height(22f)))
                             moveUp = true;
@@ -844,7 +844,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             TAsset result = value;
             DeucarianEditorFieldRow.Draw(label, () =>
             {
-                result = EditorGUILayout.ObjectField(result, typeof(TAsset), false) as TAsset;
+                result = DeucarianEditorInputGUI.ObjectField(result, typeof(TAsset), false) as TAsset;
                 DeucarianEditorMiniToolbar.PingButton(result);
             });
             return result;
@@ -1534,7 +1534,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 if (headerStyle == null)
                 {
-                    headerStyle = new GUIStyle(EditorStyles.boldLabel)
+                    headerStyle = new GUIStyle(DeucarianEditorWorkbenchGUI.BoldLabelStyle)
                     {
                         fontSize = 14
                     };
