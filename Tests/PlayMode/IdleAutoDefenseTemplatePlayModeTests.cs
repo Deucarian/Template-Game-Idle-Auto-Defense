@@ -638,10 +638,150 @@ namespace Deucarian.TemplateGameIdleAutoDefense.PlayModeTests
             public VisualElement Root => RuntimeUiRoot;
         }
 
+        [UnityTest]
+        public IEnumerator LegacyRunCommandImmediatelyFollowedByPlayerActionUsesCurrentState()
+        {
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(2000);
+            var experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            string persistenceRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Temp", "idle-composition-" + Guid.NewGuid().ToString("N"));
+            var host = new GameObject("idle-composition-legacy-commands");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            try
+            {
+                host.SetActive(true);
+                controller.enabled = false;
+                yield return null;
+                controller.StartFreshRun();
+                controller.CompleteTutorial();
+                Assert.That(controller.PulseBeamUnlocked, Is.False);
+                Assert.That(controller.TryPurchasePulseBeamModule(), Is.True);
+                int damageRank = controller.DamageUpgradeRank;
+                Assert.That(controller.TryUseModuleAction(IdleAutoDefenseModuleRole.PrecisionBeam), Is.True,
+                    "The player command must observe a module unlocked through the legacy public run API without waiting for Update.");
+                Assert.That(controller.DamageUpgradeRank, Is.EqualTo(damageRank + 1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                DestroyPlayerFlowContent(contentSet, experience);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerUiRemainsAttachedAcrossStartLegacyRestartAndReturnToMenu()
+        {
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(2000);
+            var experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            string persistenceRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Temp", "idle-ui-attachment-" + Guid.NewGuid().ToString("N"));
+            var host = new GameObject("idle-ui-attachment");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            try
+            {
+                host.SetActive(true);
+                yield return null;
+                VisualElement menuRoot = controller.Root;
+                VisualElement playerTree = menuRoot.Q<VisualElement>("idle-player-experience");
+                Assert.That(playerTree, Is.Not.Null);
+                controller.StartFreshRun();
+                Assert.That(controller.Root, Is.Not.SameAs(menuRoot), "Starting rebuilds the run's Unity UI document.");
+                Assert.That(playerTree.parent, Is.SameAs(controller.Root), "The existing player tree must move to the live document immediately.");
+                Assert.That(controller.TutorialVisible, Is.True);
+                controller.CompleteTutorial();
+                yield return null;
+                Assert.That(playerTree.panel, Is.Not.Null);
+                Assert.That(playerTree.panel, Is.SameAs(controller.Root.panel));
+                Assert.That(controller.Root.Q<VisualElement>("player-hud").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+
+                controller.RestartRun();
+                yield return null;
+                Assert.That(playerTree.parent, Is.SameAs(controller.Root), "External legacy restart must reattach on the next frame.");
+                controller.ReturnToMainMenu();
+                Assert.That(playerTree.parent, Is.SameAs(controller.Root));
+                Assert.That(controller.MainMenuVisible, Is.True);
+                Assert.That(controller.Root.Query<VisualElement>("idle-player-experience").ToList().Count, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                DestroyPlayerFlowContent(contentSet, experience);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ReplayedTutorialReturnsToVisiblePausedMenuUntilExplicitResume()
+        {
+            GameContentSetAsset contentSet = CreatePlayerFlowContentSet(2000);
+            var experience = IdleAutoDefensePlayerExperienceAsset.CreateTransient();
+            string persistenceRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Temp", "idle-tutorial-return-" + Guid.NewGuid().ToString("N"));
+            var host = new GameObject("idle-tutorial-return");
+            host.SetActive(false);
+            var controller = host.AddComponent<PlayerExperienceProbeController>();
+            controller.ContentSet = contentSet;
+            controller.Experience = experience;
+            controller.ConfigurePersistenceRoot(persistenceRoot);
+            try
+            {
+                host.SetActive(true);
+                yield return null;
+                controller.StartFreshRun();
+                controller.CompleteTutorial();
+                Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+                for (int menu = 0; menu < 2; menu++)
+                {
+                    if (menu == 0) controller.TogglePause();
+                    else controller.OpenSettings();
+                    int pausedTicks = controller.SessionElapsedTicks;
+                    controller.OpenTutorial();
+                    Assert.That(controller.TutorialVisible, Is.True);
+                    controller.CompleteTutorial();
+                    yield return new WaitForSecondsRealtime(0.2f);
+                    Assert.That(controller.TutorialVisible, Is.False);
+                    Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Paused));
+                    Assert.That(controller.PauseMenuVisible, Is.True);
+                    Assert.That(controller.Root.Q("pause-overlay").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+                    Assert.That(controller.SessionElapsedTicks, Is.EqualTo(pausedTicks), "A visible paused menu must stop actual Update simulation.");
+                    controller.ResumeRun();
+                    yield return new WaitForSeconds(0.2f);
+                    Assert.That(controller.PauseMenuVisible, Is.False);
+                    Assert.That(controller.SessionElapsedTicks, Is.GreaterThan(pausedTicks));
+                }
+                controller.TogglePause();
+                controller.RestartCurrentRun();
+                Assert.That(controller.PlayerFlowState, Is.EqualTo(IdleAutoDefensePlayerFlowState.Running));
+                Assert.That(controller.PauseMenuVisible, Is.False);
+                Assert.That(controller.Root.Q("idle-player-experience").parent, Is.SameAs(controller.Root));
+                controller.ReturnToMainMenu();
+                controller.OpenTutorial();
+                controller.CompleteTutorial();
+                Assert.That(controller.MainMenuVisible, Is.True);
+                Assert.That(controller.RunActive, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                DestroyPlayerFlowContent(contentSet, experience);
+                if (Directory.Exists(persistenceRoot)) Directory.Delete(persistenceRoot, true);
+            }
+        }
+
         private sealed class PlayerExperienceProbeController : IdleAutoDefensePlayerExperienceController
         {
             public GameContentSetAsset ContentSet { get; set; }
             public IdleAutoDefensePlayerExperienceAsset Experience { get; set; }
+            public VisualElement Root => RuntimeUiRoot;
 
             protected override void ConfigurePlayerExperienceBeforeBuild()
             {

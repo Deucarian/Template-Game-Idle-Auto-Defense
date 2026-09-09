@@ -1632,12 +1632,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Tests
                 Assert.That(controller.FallbackModeActive, Is.False);
                 Assert.That(controller.ActiveRunProfile, Is.SameAs(contentSet.RunProfile));
                 Assert.That(controller.TotalWaveCount, Is.EqualTo(expectedWaves.Count));
-                FieldInfo wavesField = typeof(IdleAutoDefenseTemplateController).GetField(
-                    "_resolvedWaveDefinitions",
+                FieldInfo bindingField = typeof(IdleAutoDefenseTemplateController).GetField(
+                    "_contentBinding",
                     BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(wavesField, Is.Not.Null);
-                var resolved = (WaveDefinitionAsset[])wavesField.GetValue(controller);
-                Assert.That(resolved, Is.EqualTo(expectedWaves));
+                Assert.That(bindingField, Is.Not.Null);
+                var binding = (IdleAutoDefenseContentBinding)bindingField.GetValue(controller);
+                Assert.That(binding, Is.Not.Null);
+                Assert.That(binding.Waves, Is.EqualTo(expectedWaves));
             }
             finally
             {

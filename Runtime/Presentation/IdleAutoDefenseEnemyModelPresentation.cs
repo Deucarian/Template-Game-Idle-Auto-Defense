@@ -100,7 +100,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 {
                     var runtimeMaterials = new Material[materials.Length];
                     for (int j = 0; j < materials.Length; j++)
-                        runtimeMaterials[j] = materials[j] != null ? new Material(materials[j]) : null;
+                        runtimeMaterials[j] = IdleAutoDefenseMaterialLifetime.Own(gameObject, materials[j] != null ? new Material(materials[j]) : null);
                     renderers[i].sharedMaterials = runtimeMaterials;
                     materials = runtimeMaterials;
                 }
