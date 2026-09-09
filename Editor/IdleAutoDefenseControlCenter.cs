@@ -21,7 +21,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 IdleAutoDefenseTemplateMenu.CreateGameFromTemplate,
                 PackageId,
                 searchTerms: new[] { "idle", "defense", "template", "setup" },
-                order: 200));
+                order: 200, createPage: IdleAutoDefenseTemplateSetupWizardWindow.CreatePage));
             DeucarianControlCenterRegistry.RegisterSectionProvider(new Provider());
         }
 
@@ -67,7 +67,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                         new DeucarianControlCenterAction(
                             "create",
                             "Create Playable Game",
-                            IdleAutoDefenseTemplateMenu.CreateGameFromTemplate),
+                            IdleAutoDefenseTemplateMenu.CreateGameFromTemplate, navigationToolId: ToolId),
                         new DeucarianControlCenterAction(
                             "validate-authored",
                             "Validate Authored Content",
