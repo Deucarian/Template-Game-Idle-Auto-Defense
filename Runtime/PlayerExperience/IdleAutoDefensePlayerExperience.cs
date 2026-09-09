@@ -168,11 +168,6 @@ namespace Deucarian.TemplateGameIdleAutoDefense
                 OpenTutorial(true);
         }
 
-        public void RestartCurrentRun()
-        {
-            StartFreshRun();
-        }
-
         public void ReturnToMainMenu()
         {
             if (_flow.RunActive) RestartRun();

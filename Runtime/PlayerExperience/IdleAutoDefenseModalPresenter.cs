@@ -95,7 +95,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _view._summaryBodyLabel = _view.Style.AddLabel(scroll, string.Empty, 15);
             panel.Add(scroll);
             VisualElement row = _view.Style.ButtonRow(panel);
-            _view.Style.AddButton(row, "Restart Run", _view.App.RestartCurrentRun, 180, 50);
+            _view.Style.AddButton(row, "Restart Run", _view.App.StartFreshRun, 180, 50);
             _view.Style.AddButton(row, "Main Menu", _view.App.ReturnToMainMenu, 180, 50);
         }
 

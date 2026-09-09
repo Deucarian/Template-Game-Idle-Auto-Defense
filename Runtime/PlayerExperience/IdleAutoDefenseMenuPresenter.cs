@@ -88,7 +88,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
             _view.Style.AddButton(_view._pauseBody, "Resume", _view.App.ResumeRun, 260, 48);
             _view.Style.AddButton(_view._pauseBody, "Current Build", _view.App.OpenBuildView, 260, 48);
             _view.Style.AddButton(_view._pauseBody, "How to Play", () => _view.App.OpenTutorial(false), 260, 48);
-            _view.Style.AddButton(_view._pauseBody, "Restart Run", _view.App.RestartCurrentRun, 260, 48);
+            _view.Style.AddButton(_view._pauseBody, "Restart Run", _view.App.StartFreshRun, 260, 48);
             _view.Style.AddButton(_view._pauseBody, "Return to Main Menu", _view.App.ReturnToMainMenu, 260, 48);
         }
 

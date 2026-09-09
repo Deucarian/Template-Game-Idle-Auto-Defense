@@ -103,7 +103,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense
 
         public void StartFreshRun() { _experience.RefreshRun(); _experience.StartFreshRun(); }
 
-        public void RestartCurrentRun() { _experience.RefreshRun(); _experience.RestartCurrentRun(); }
+        public void RestartCurrentRun() { _experience.RefreshRun(); _experience.StartFreshRun(); }
 
         public void ReturnToMainMenu() { _experience.RefreshRun(); _experience.ReturnToMainMenu(); }
 
