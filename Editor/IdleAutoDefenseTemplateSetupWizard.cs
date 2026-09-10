@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -302,42 +303,46 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
         public static void Open()
         {
-            var window = GetWindow<IdleAutoDefenseTemplateSetupWizardWindow>("Create Playable Idle Defense");
+            var window = DeucarianEditorWindowPages.GetStandalone<IdleAutoDefenseTemplateSetupWizardWindow>("Create Playable Idle Defense");
             window.minSize = new Vector2(430f, 280f);
             window.Show();
         }
 
+        public static IDeucarianEditorPage CreatePage() =>
+            DeucarianEditorImGuiPage.Create<IdleAutoDefenseTemplateSetupWizardWindow>(
+                "deucarian.template.idle-auto-defense", window => window.OnGUI());
+
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Create Playable Game", EditorStyles.boldLabel);
+            DeucarianEditorTextGUI.LabelField("Create Playable Game", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
             EditorGUILayout.Space();
-            _targetRoot = EditorGUILayout.TextField("Target root", _targetRoot);
+            _targetRoot = DeucarianEditorInputGUI.TextField("Target root", _targetRoot);
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Space(EditorGUIUtility.labelWidth);
-                if (GUILayout.Button("Choose Folder", GUILayout.Width(120f)))
+                if (DeucarianEditorActionGUI.Button("Choose Folder", GUILayout.Width(120f)))
                     ChooseFolder();
             }
 
-            _contentRoot = EditorGUILayout.TextField("Content root", _contentRoot);
-            _gameNamespace = EditorGUILayout.TextField("Namespace", _gameNamespace);
-            _gamePrefix = EditorGUILayout.TextField("Game prefix", _gamePrefix);
-            _packSelection = (IdleAutoDefenseTemplatePackSelection)EditorGUILayout.EnumPopup("Content packs", _packSelection);
-            _openScene = EditorGUILayout.Toggle("Open created scene", _openScene);
-            _repairMissingContent = EditorGUILayout.Toggle("Repair missing content", _repairMissingContent);
-            _allowOverwrite = EditorGUILayout.Toggle("Allow overwrite", _allowOverwrite);
+            _contentRoot = DeucarianEditorInputGUI.TextField("Content root", _contentRoot);
+            _gameNamespace = DeucarianEditorInputGUI.TextField("Namespace", _gameNamespace);
+            _gamePrefix = DeucarianEditorInputGUI.TextField("Game prefix", _gamePrefix);
+            _packSelection = (IdleAutoDefenseTemplatePackSelection)DeucarianEditorInputGUI.EnumPopup("Content packs", _packSelection);
+            _openScene = DeucarianEditorInputGUI.Toggle("Open created scene", _openScene);
+            _repairMissingContent = DeucarianEditorInputGUI.Toggle("Repair missing content", _repairMissingContent);
+            _allowOverwrite = DeucarianEditorInputGUI.Toggle("Allow overwrite", _allowOverwrite);
 
-            EditorGUILayout.HelpBox(
+            DeucarianEditorTextGUI.HelpBox(
                 "Creates Basic Idle Auto Defense, the Scrap Frontier asset-flip proof, or both as separate strict-authored packs. Each selected pack gets a visible playable scene; shared runtime code remains in the package.",
                 MessageType.Info);
 
-            if (GUILayout.Button("Create Playable Game"))
+            if (DeucarianEditorActionGUI.Button("Create Playable Game"))
                 CreateGame();
 
             if (!string.IsNullOrEmpty(_lastSummary))
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(_lastSummary, MessageType.None);
+                DeucarianEditorTextGUI.HelpBox(_lastSummary, MessageType.None);
             }
         }
 
