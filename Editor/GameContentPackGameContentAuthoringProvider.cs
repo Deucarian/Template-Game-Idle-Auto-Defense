@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -129,8 +130,8 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
 
             if (string.Equals(actionId, IdleAutoDefenseContentPackIndex.OpenSetupActionId, StringComparison.OrdinalIgnoreCase))
             {
-                IdleAutoDefenseTemplateMenu.CreateGameFromTemplate();
-                return GameContentActionResult.Success("Opened the existing Idle Auto Defense setup wizard.");
+                return new GameContentActionResult(true, "Open the Idle Auto Defense setup wizard.",
+                    navigationToolId: "deucarian.template.idle-auto-defense");
             }
 
             return GameContentActionResult.Failure("Unknown Idle Auto Defense content-pack action '" + actionId + "'.");
@@ -209,13 +210,13 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                 _state.RequiredPackagesCsv = context.DrawTextField("Required Packages", _state.RequiredPackagesCsv);
                 _state.MinimumVersionsCsv = context.DrawTextField("Minimum Versions", _state.MinimumVersionsCsv);
                 _state.CompatibilityNotes = context.DrawTextArea("Compatibility Notes", _state.CompatibilityNotes);
-                EditorGUILayout.LabelField("Minimum versions may be left empty when the pack is tied to the installed template package set.", context.MutedStyle);
+                DeucarianEditorTextGUI.LabelField("Minimum versions may be left empty when the pack is tied to the installed template package set.", context.MutedStyle);
             });
 
             context.DrawSection("Preview", () =>
             {
                 foreach (string line in GameContentPackAssetCreator.GetPreviewLines(_state))
-                    EditorGUILayout.LabelField(line, context.MutedStyle);
+                    DeucarianEditorTextGUI.LabelField(line, context.MutedStyle);
                 GUILayout.Space(6f);
                 context.DrawValidation(report, "Ready to create one Content Pack root asset.");
                 GUILayout.Space(8f);
@@ -267,7 +268,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             }
 
             if (!string.IsNullOrWhiteSpace(_setup.LastMessage))
-                EditorGUILayout.LabelField(_setup.LastMessage, context.MutedStyle);
+                DeucarianEditorTextGUI.LabelField(_setup.LastMessage, context.MutedStyle);
         }
 
         private static void DrawContentSetList(GameContentAuthoringContext context, GameContentPackAuthoringState state)
@@ -276,14 +277,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField("Included Sets", context.SectionTitleStyle);
+                    DeucarianEditorTextGUI.LabelField("Included Sets", context.SectionTitleStyle);
                     GUILayout.FlexibleSpace();
                     if (context.DrawSecondaryButton("Add Set", true, GUILayout.Width(82f), GUILayout.Height(22f)))
                         state.ContentSets.Add(null);
                 }
 
                 if (state.ContentSets.Count == 0)
-                    EditorGUILayout.LabelField("None assigned.", context.MutedStyle);
+                    DeucarianEditorTextGUI.LabelField("None assigned.", context.MutedStyle);
 
                 for (int i = 0; i < state.ContentSets.Count; i++)
                 {
@@ -293,7 +294,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField("Set " + (i + 1).ToString(CultureInfo.InvariantCulture), context.SectionTitleStyle);
+                            DeucarianEditorTextGUI.LabelField("Set " + (i + 1).ToString(CultureInfo.InvariantCulture), context.SectionTitleStyle);
                             GUILayout.FlexibleSpace();
                             if (context.DrawSecondaryButton("Default", state.ContentSets[i] != null, GUILayout.Width(70f), GUILayout.Height(22f)))
                                 makeDefault = true;

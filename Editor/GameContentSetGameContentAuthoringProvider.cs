@@ -88,7 +88,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             context.DrawSection("Upgrade Pool", () =>
             {
                 DrawAssetList(context, "Upgrades", _state.UpgradePool, "Add Upgrade");
-                EditorGUILayout.LabelField("An empty upgrade pool is allowed; the playable run simply has no upgrade draft choices.", context.MutedStyle);
+                DeucarianEditorTextGUI.LabelField("An empty upgrade pool is allowed; the playable run simply has no upgrade draft choices.", context.MutedStyle);
             });
 
             context.DrawSection("Run Settings", () =>
@@ -105,7 +105,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             context.DrawSection("Preview", () =>
             {
                 foreach (string line in GameContentSetAssetCreator.GetPreviewLines(_state))
-                    EditorGUILayout.LabelField(line, context.MutedStyle);
+                    DeucarianEditorTextGUI.LabelField(line, context.MutedStyle);
                 GUILayout.Space(6f);
                 context.DrawValidation(report, "Ready to create one root GameContentSet asset that references existing authored content.");
                 GUILayout.Space(8f);
@@ -120,7 +120,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             IdleAutoDefenseContentSetRuntimeSettings runtime = state.RuntimeSettings ??= IdleAutoDefenseContentSetRuntimeSettings.CreateDefault();
             IdleAutoDefenseRewardDraftSettings rewards = runtime.RewardDraftSettings;
             IdleAutoDefensePresentationDebugSettings debug = runtime.PresentationDebug;
-            EditorGUILayout.LabelField("Reward Draft", context.SectionTitleStyle);
+            DeucarianEditorTextGUI.LabelField("Reward Draft", context.SectionTitleStyle);
             rewards.NormalEnemyExperience = context.DrawIntField("Normal Enemy XP", (int)rewards.NormalEnemyExperience);
             rewards.EliteEnemyExperience = context.DrawIntField("Elite Enemy XP", (int)rewards.EliteEnemyExperience);
             rewards.BossEnemyExperience = context.DrawIntField("Boss Enemy XP", (int)rewards.BossEnemyExperience);
@@ -128,14 +128,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             rewards.BaseExperienceToNextLevel = context.DrawIntField("Base XP To Level", (int)rewards.BaseExperienceToNextLevel);
             rewards.ExperienceToNextLevelGrowth = context.DrawIntField("XP Growth", (int)rewards.ExperienceToNextLevelGrowth);
             rewards.ProjectileRetargetRadius = context.DrawFloatField("Projectile Retarget Radius", rewards.ProjectileRetargetRadius);
-            EditorGUILayout.LabelField("Debug Presentation", context.SectionTitleStyle);
+            DeucarianEditorTextGUI.LabelField("Debug Presentation", context.SectionTitleStyle);
             debug.ShowDebugAimLines = context.DrawToggle("Show Debug Aim Lines", debug.ShowDebugAimLines);
             debug.ShowDebugRanges = context.DrawToggle("Show Debug Ranges", debug.ShowDebugRanges);
             debug.ShowDebugSpawnRing = context.DrawToggle("Show Debug Spawn Ring", debug.ShowDebugSpawnRing);
-            EditorGUILayout.LabelField("Authored Runtime Presentation", context.SectionTitleStyle);
-            EditorGUILayout.LabelField("Objective", runtime.ObjectivePresentation.DisplayName + " / " + runtime.ObjectivePresentation.Models.Count.ToString(CultureInfo.InvariantCulture) + " model(s)");
-            EditorGUILayout.LabelField("Module Slots", runtime.ModuleSlotPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored slot(s)");
-            EditorGUILayout.LabelField("Weapon Bindings", runtime.WeaponPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored binding(s)");
+            DeucarianEditorTextGUI.LabelField("Authored Runtime Presentation", context.SectionTitleStyle);
+            DeucarianEditorTextGUI.LabelField("Objective", runtime.ObjectivePresentation.DisplayName + " / " + runtime.ObjectivePresentation.Models.Count.ToString(CultureInfo.InvariantCulture) + " model(s)");
+            DeucarianEditorTextGUI.LabelField("Module Slots", runtime.ModuleSlotPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored slot(s)");
+            DeucarianEditorTextGUI.LabelField("Weapon Bindings", runtime.WeaponPresentationBindings.Count.ToString(CultureInfo.InvariantCulture) + " authored binding(s)");
         }
 
         private static void DrawAssetList<TAsset>(GameContentAuthoringContext context, string title, List<TAsset> assets, string addLabel) where TAsset : UnityEngine.Object
@@ -144,14 +144,14 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField(title, context.SectionTitleStyle);
+                    DeucarianEditorTextGUI.LabelField(title, context.SectionTitleStyle);
                     GUILayout.FlexibleSpace();
                     if (context.DrawSecondaryButton(addLabel, true, GUILayout.Width(104f), GUILayout.Height(22f)))
                         assets.Add(null);
                 }
 
                 if (assets.Count == 0)
-                    EditorGUILayout.LabelField("None assigned.", context.MutedStyle);
+                    DeucarianEditorTextGUI.LabelField("None assigned.", context.MutedStyle);
 
                 for (int i = 0; i < assets.Count; i++)
                 {
@@ -160,7 +160,7 @@ namespace Deucarian.TemplateGameIdleAutoDefense.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField("Item " + (i + 1).ToString(CultureInfo.InvariantCulture), context.SectionTitleStyle);
+                            DeucarianEditorTextGUI.LabelField("Item " + (i + 1).ToString(CultureInfo.InvariantCulture), context.SectionTitleStyle);
                             GUILayout.FlexibleSpace();
                             if (context.DrawSecondaryButton("Remove", true, GUILayout.Width(70f), GUILayout.Height(22f)))
                                 remove = true;
