@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.5] - 2026-09-11
+
+- Restyle the setup wizard with native controls while retaining its confirmation, generation and unsaved-scene safeguards. No gameplay changes.
+- Require Editor 1.10.6 for the shared native controls, typography, responsive layouts and accessible interaction states.
+
 ## [0.1.4] - 2026-09-09
 
 ### Changed
